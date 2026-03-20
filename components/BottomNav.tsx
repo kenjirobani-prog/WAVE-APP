@@ -17,7 +17,7 @@ export default function BottomNav({ current }: { current: NavTab }) {
         <button
           key={item.id}
           onClick={() => router.push(item.href)}
-          className={`flex-1 flex flex-col items-center py-5 gap-1 text-sm font-medium transition-colors ${
+          className={`flex-1 flex flex-col items-center py-6 gap-1 text-base font-medium transition-colors ${
             current === item.id ? 'text-sky-500' : 'text-slate-400'
           }`}
         >
