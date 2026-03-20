@@ -271,8 +271,7 @@ export default function TopPage() {
                 return (
                   <SpotCard key={score.spotId} spot={spot} score={score}
                     isFavorite={profile.favoriteSpots.includes(spot.id)}
-                    waveHeight={conditions[spot.id]?.waveHeight}
-
+                    condition={conditions[spot.id]}
                     date={targetDate}
                     isTop={i === 0}
                   />
@@ -286,7 +285,7 @@ export default function TopPage() {
             return (
               <SpotCard key={score.spotId} spot={spot} score={score}
                 isFavorite={profile.favoriteSpots.includes(spot.id)}
-                waveHeight={conditions[spot.id]?.waveHeight}
+                condition={conditions[spot.id]}
                 date={targetDate}
                 isTop={i === 0}
               />
