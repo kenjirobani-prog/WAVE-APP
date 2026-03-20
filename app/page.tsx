@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUserProfile } from '@/lib/userProfile'
 import { SPOTS } from '@/data/spots'
@@ -8,6 +8,7 @@ import type { UserProfile, SpotScore, WindType } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import BottomNav from '@/components/BottomNav'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 type DateTab = 'today' | 'tomorrow' | 'weekend'
 
@@ -50,6 +51,10 @@ function getTargetDate(tab: DateTab, weekendDay: 'sat' | 'sun'): Date {
   return weekendDay === 'sat' ? sat : sun
 }
 
+function formatTime(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 更新`
+}
+
 function waveHeightLabel(h: number): string {
   if (h >= 2.0) return 'オーバーヘッド'
   if (h >= 1.5) return '頭'
@@ -81,6 +86,8 @@ export default function TopPage() {
   const [tab, setTab] = useState<DateTab>('today')
   const [weekendDay, setWeekendDay] = useState<'sat' | 'sun'>('sat')
   const [summary, setSummary] = useState<Summary | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [showRefreshToast, setShowRefreshToast] = useState(false)
 
   const { sat, sun } = getUpcomingWeekend()
   const today = new Date(); today.setHours(12, 0, 0, 0)
@@ -157,6 +164,8 @@ export default function TopPage() {
 
       if (newScores.length === 0 && Object.values(condMap).every(v => v === null)) {
         setError('波データを取得できませんでした。通信状況を確認して再試行してください。')
+      } else {
+        setLastUpdated(new Date())
       }
     } catch {
       setError('データの取得に失敗しました。通信状況を確認してください。')
@@ -164,6 +173,14 @@ export default function TopPage() {
       setLoading(false)
     }
   }
+
+  const handleRefresh = useCallback(async () => {
+    await loadForecast(getTargetDate(tab, weekendDay))
+    setShowRefreshToast(true)
+    setTimeout(() => setShowRefreshToast(false), 2000)
+  }, [tab, weekendDay, profile])
+
+  const { scrollRef, pullDistance, isRefreshing, threshold } = usePullToRefresh(handleRefresh)
 
   if (!profile) return null
 
@@ -189,7 +206,10 @@ export default function TopPage() {
 
       {/* サマリーストリップ */}
       {summary && (
-        <div className="bg-sky-50 border-b border-sky-100 px-4 py-3">
+        <div className="bg-sky-50 border-b border-sky-100 px-4 pt-2 pb-3">
+          {lastUpdated && (
+            <p className="text-right text-[10px] text-sky-600 mb-1.5">{formatTime(lastUpdated)}</p>
+          )}
           <div className="grid grid-cols-3">
             <div className="text-center pr-3 border-r border-sky-100">
               <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-0.5">波高</p>
@@ -262,8 +282,25 @@ export default function TopPage() {
         </div>
       )}
 
+      {/* プルリフレッシュインジケーター */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none"
+          style={{ paddingTop: `${Math.min(pullDistance * 0.6, 16) + 8}px` }}>
+          <div className="bg-sky-900 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg">
+            {isRefreshing ? '更新中...' : pullDistance >= threshold ? '離して更新' : '引っ張って更新'}
+          </div>
+        </div>
+      )}
+
+      {/* 更新トースト */}
+      {showRefreshToast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-[#0a1628] text-white px-5 py-2.5 rounded-full shadow-lg text-sm font-semibold">
+          更新しました
+        </div>
+      )}
+
       {/* スポットリスト */}
-      <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
+      <main ref={scrollRef as React.RefObject<HTMLElement>} className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
         {loading ? (
           <SpotListSkeleton />
         ) : error ? (

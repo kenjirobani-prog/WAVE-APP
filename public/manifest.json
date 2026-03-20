@@ -1,11 +1,11 @@
 {
   "name": "湘南 波予報",
-  "short_name": "波予報",
+  "short_name": "湘南波予報",
   "description": "湘南特化・パーソナライズ波診断アプリ",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#0ea5e9",
+  "background_color": "#ffffff",
+  "theme_color": "#0c4a6e",
   "icons": [
     {
       "src": "/favicon.svg",

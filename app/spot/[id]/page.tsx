@@ -1,5 +1,5 @@
 'use client'
-import { use, useEffect, useState, Suspense } from 'react'
+import { use, useCallback, useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
@@ -12,6 +12,7 @@ import ForecastChart from '@/components/ForecastChart'
 import TideBar from '@/components/TideBar'
 import ReportList from '@/components/ReportList'
 import BottomNav from '@/components/BottomNav'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -53,6 +54,8 @@ function SpotDetailContent({ id }: { id: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [showRefreshToast, setShowRefreshToast] = useState(false)
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
   const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
   const [showToast, setShowToast] = useState(false)
@@ -87,6 +90,7 @@ function SpotDetailContent({ id }: { id: string }) {
       if (representative) {
         setCurrent(representative)
         setScore(calculateScore(representative, spot, profile))
+        setLastUpdated(new Date())
       }
     } catch {
       setError('データの取得に失敗しました。通信状況を確認してください。')
@@ -94,6 +98,14 @@ function SpotDetailContent({ id }: { id: string }) {
       setLoading(false)
     }
   }
+
+  const handleRefresh = useCallback(async () => {
+    await loadData()
+    setShowRefreshToast(true)
+    setTimeout(() => setShowRefreshToast(false), 2000)
+  }, [spot, profile, dateParam])
+
+  const { scrollRef, pullDistance, isRefreshing, threshold } = usePullToRefresh(handleRefresh)
 
   function handleSurfLogSave() {
     if (!spot || !score) return
@@ -139,7 +151,24 @@ function SpotDetailContent({ id }: { id: string }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-28">
+      {/* プルリフレッシュインジケーター */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none"
+          style={{ paddingTop: `${Math.min(pullDistance * 0.6, 16) + 8}px` }}>
+          <div className="bg-sky-900 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg">
+            {isRefreshing ? '更新中...' : pullDistance >= threshold ? '離して更新' : '引っ張って更新'}
+          </div>
+        </div>
+      )}
+
+      {/* 更新トースト */}
+      {showRefreshToast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-[#0a1628] text-white px-5 py-2.5 rounded-full shadow-lg text-sm font-semibold">
+          更新しました
+        </div>
+      )}
+
+      <main ref={scrollRef as React.RefObject<HTMLElement>} className="flex-1 overflow-auto pb-28">
         {loading ? (
           <SpotDetailSkeleton />
         ) : error ? (
@@ -179,7 +208,12 @@ function SpotDetailContent({ id }: { id: string }) {
             {/* 現在の4指標 */}
             {current && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">{dateLabel}</h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa]">{dateLabel}</h2>
+                  {lastUpdated && (
+                    <span className="text-[10px] text-[#8899aa]">{formatTime(lastUpdated)}</span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <ConditionCard
                     label="波の高さ"
@@ -396,6 +430,10 @@ function ConditionCard({ label, value, sub }: { label: string; value: string; su
       <p className="text-xs text-[#8899aa] mt-0.5">{sub}</p>
     </div>
   )
+}
+
+function formatTime(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 更新`
 }
 
 function waveHeightLabel(h: number): string {

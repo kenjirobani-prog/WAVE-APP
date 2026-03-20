@@ -15,8 +15,14 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
     apple: '/favicon.svg',
+    shortcut: '/favicon.svg',
   },
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '湘南波予報',
+  },
 }
 
 export default function RootLayout({
