@@ -5,7 +5,7 @@ export type NavTab = 'forecast' | 'surflog' | 'mypage'
 
 const NAV_ITEMS = [
   { id: 'forecast' as NavTab, label: '波予報', href: '/' },
-  { id: 'surflog' as NavTab, label: 'サーフログ', href: '/surf-log' },
+  { id: 'surflog' as NavTab, label: 'Surf Log', href: '/surf-log' },
   { id: 'mypage' as NavTab, label: 'マイページ', href: '/my-page' },
 ]
 

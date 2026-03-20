@@ -254,7 +254,7 @@ export default function SurfLogPage() {
   return (
     <div className="flex-1 flex flex-col">
       <header className="bg-gradient-to-br from-sky-500 to-blue-600 text-white px-4 pt-10 pb-6">
-        <h1 className="text-xl font-bold mb-4">サーフログ</h1>
+        <h1 className="text-xl font-bold mb-4">Surf Log</h1>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center">
             <p className="text-xs opacity-80">今年の日数</p>
