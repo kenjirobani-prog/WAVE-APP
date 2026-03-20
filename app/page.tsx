@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUserProfile } from '@/lib/userProfile'
 import { SPOTS } from '@/data/spots'
-import { calculateScore, classifyWind, windTypeLabel } from '@/lib/wave/scoring'
-import type { UserProfile, SpotScore, WindType } from '@/types'
+import { calculateScore } from '@/lib/wave/scoring'
+import type { UserProfile, SpotScore } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import BottomNav from '@/components/BottomNav'
@@ -55,26 +55,6 @@ function formatTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 更新`
 }
 
-function waveHeightLabel(h: number): string {
-  if (h >= 2.0) return 'オーバーヘッド'
-  if (h >= 1.5) return '頭'
-  if (h >= 0.8) return '胸〜肩'
-  if (h >= 0.5) return '腰'
-  return 'ヒザ以下'
-}
-
-function avgWindDir(conds: WaveCondition[]): number {
-  const sinSum = conds.reduce((s, c) => s + Math.sin((c.windDir * Math.PI) / 180), 0)
-  const cosSum = conds.reduce((s, c) => s + Math.cos((c.windDir * Math.PI) / 180), 0)
-  return ((Math.atan2(sinSum, cosSum) * 180) / Math.PI + 360) % 360
-}
-
-interface Summary {
-  waveAvg: number
-  windAvg: number
-  windType: WindType
-  weather: string
-}
 
 export default function TopPage() {
   const router = useRouter()
@@ -85,7 +65,6 @@ export default function TopPage() {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<DateTab>('today')
   const [weekendDay, setWeekendDay] = useState<'sat' | 'sun'>('sat')
-  const [summary, setSummary] = useState<Summary | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [showRefreshToast, setShowRefreshToast] = useState(false)
 
@@ -148,20 +127,6 @@ export default function TopPage() {
         })
       setScores(newScores)
 
-      const validConds = Object.values(condMap).filter((c): c is WaveCondition => c !== null)
-      if (validConds.length > 0) {
-        const waveAvg = Math.round(validConds.reduce((s, c) => s + c.waveHeight, 0) / validConds.length * 10) / 10
-        const windAvg = Math.round(validConds.reduce((s, c) => s + c.windSpeed, 0) / validConds.length * 10) / 10
-        const avgDir = avgWindDir(validConds)
-        const sunny = validConds.filter(c => c.weather === 'sunny').length
-        setSummary({
-          waveAvg,
-          windAvg,
-          windType: classifyWind(avgDir, windAvg),
-          weather: sunny > validConds.length / 2 ? '晴れ' : '曇り',
-        })
-      }
-
       if (newScores.length === 0 && Object.values(condMap).every(v => v === null)) {
         setError('波データを取得できませんでした。画面を引っ張って再読み込みしてください。')
       } else {
@@ -198,36 +163,16 @@ export default function TopPage() {
       <header className="bg-white px-4 pt-10 pb-4 border-b border-[#eef1f4]">
         <div className="flex items-center justify-between">
           <img src="/images/header.png" alt="Shonan Wave Forecast" style={{ height: 32, width: 'auto' }} />
-          <span className="text-[11px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-3 py-1 rounded-full tracking-widest uppercase">
-            {DOW_ENG[today.getDay()]} · {today.getMonth() + 1}/{today.getDate()}
-          </span>
-        </div>
-      </header>
-
-      {/* サマリーストリップ */}
-      {summary && (
-        <div className="bg-sky-50 border-b border-sky-100 px-4 pt-2 pb-3">
-          {lastUpdated && (
-            <p className="text-right text-[10px] text-sky-600 mb-1.5">{formatTime(lastUpdated)}</p>
-          )}
-          <div className="grid grid-cols-3">
-            <div className="text-center pr-3 border-r border-sky-100">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-0.5">波高</p>
-              <p className="text-lg font-bold text-sky-900">{summary.waveAvg}m</p>
-              <p className="text-[10px] text-sky-700">{waveHeightLabel(summary.waveAvg)}</p>
-            </div>
-            <div className="text-center px-3 border-r border-sky-100">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-0.5">風</p>
-              <p className="text-sm font-bold text-sky-900">{windTypeLabel(summary.windType)}</p>
-              <p className="text-[10px] text-sky-700">{summary.windAvg}m/s</p>
-            </div>
-            <div className="text-center pl-3">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-0.5">天気</p>
-              <p className="text-lg font-bold text-sky-900">{summary.weather}</p>
-            </div>
+          <div className="text-right">
+            <span className="text-[11px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-3 py-1 rounded-full tracking-widest uppercase">
+              {DOW_ENG[today.getDay()]} · {today.getMonth() + 1}/{today.getDate()}
+            </span>
+            {lastUpdated && (
+              <p className="text-[10px] text-[#94a3b8] mt-1">{formatTime(lastUpdated)}</p>
+            )}
           </div>
         </div>
-      )}
+      </header>
 
       {/* 日付タブ */}
       <div className="bg-white border-b border-[#eef1f4] px-3 flex items-center gap-1 py-2">
