@@ -157,13 +157,16 @@ function buildConditions(
   tideHourly: number[]
 ): WaveCondition[] {
   return times.map((time, i) => {
-    const hour = new Date(time).getHours()
+    // Open-Meteo returns JST local time strings like "2026-03-21T04:00" (no timezone suffix).
+    // Append +09:00 so the Date is correctly stored as UTC; extract JST hour from the string
+    // directly to avoid server-timezone ambiguity.
+    const hour = parseInt(time.split('T')[1].split(':')[0], 10)
     const tideHeight = tideHourly[hour] ?? estimateTideHeight(hour)
     const prevTide = hour > 0 ? (tideHourly[hour - 1] ?? estimateTideHeight(hour - 1)) : undefined
 
     return {
       spotId,
-      timestamp: new Date(time),
+      timestamp: new Date(time + '+09:00'),
       waveHeight: waveHeights[i] ?? 0,
       wavePeriod: wavePeriods[i] ?? 0,
       swellDir: swellDirs[i] ?? 180,
@@ -221,8 +224,8 @@ export const openMeteoAdapter: WaveAdapter = {
 
     const times: string[] = marine.hourly.time
     return times.map((time, i) => {
-      const dt = new Date(time)
-      const hour = dt.getHours()
+      const dt = new Date(time + '+09:00')
+      const hour = parseInt(time.split('T')[1].split(':')[0], 10)
       const thisDateStr = parseDate(dt)
       const tideHourly = thisDateStr === todayStr ? kaihoTide : null
 
