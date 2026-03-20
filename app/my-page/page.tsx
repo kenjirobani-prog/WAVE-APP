@@ -11,7 +11,7 @@ export default function MyPage() {
         <h1 className="text-xl font-bold text-slate-800">マイページ</h1>
       </header>
 
-      <main className="flex-1 overflow-auto pb-24">
+      <main className="flex-1 overflow-auto pb-28">
         <div className="mt-4 bg-white border-t border-b border-slate-100">
           <button
             onClick={() => router.push('/settings')}

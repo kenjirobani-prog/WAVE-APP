@@ -263,7 +263,7 @@ export default function TopPage() {
       )}
 
       {/* スポットリスト */}
-      <main className="flex-1 p-4 space-y-3 overflow-auto pb-24">
+      <main className="flex-1 p-4 space-y-3 overflow-auto pb-28">
         {loading ? (
           <SpotListSkeleton />
         ) : error ? (

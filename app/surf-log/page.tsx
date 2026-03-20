@@ -269,7 +269,7 @@ export default function SurfLogPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-24 space-y-4">
+      <main className="flex-1 overflow-auto pb-28 space-y-4">
         {/* 記録ボタン */}
         <div className="px-4 pt-4">
           <button

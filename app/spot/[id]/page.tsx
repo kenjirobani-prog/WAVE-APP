@@ -102,7 +102,7 @@ function SpotDetailContent({ id }: { id: string }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-24">
+      <main className="flex-1 overflow-auto pb-28">
         {loading ? (
           <SpotDetailSkeleton />
         ) : error ? (
