@@ -61,12 +61,13 @@ function scoreTide(
   optimalTideMin: number,
   optimalTideMax: number
 ): number {
+  // 潮位基準: 最低水面（横浜 平均水面=115cm, 大潮干潮≈20cm, 大潮高潮≈185cm）
   const inOptimal = tideHeight >= optimalTideMin && tideHeight <= optimalTideMax
   if (inOptimal && tideMovement === 'rising') return 15
   if (inOptimal) return 10
-  if (tideHeight >= 60 && tideHeight < optimalTideMin) return 7
-  if (tideHeight > optimalTideMax && tideHeight <= 150) return 7
-  if (tideHeight < 60) return 3
+  if (tideHeight >= 80 && tideHeight < optimalTideMin) return 7
+  if (tideHeight > optimalTideMax && tideHeight <= 175) return 7
+  if (tideHeight < 80) return 3
   return 3
 }
 
@@ -91,8 +92,8 @@ function levelCorrection(
     if (condition.waveHeight >= 2.0) correction -= 10
     // オンショア強風で -5点
     if (windType === 'onshore' && condition.windSpeed > 8) correction -= 5
-    // 干潮時（60cm以下）で -5点
-    if (condition.tideHeight <= 60) correction -= 5
+    // 干潮時（80cm以下）で -5点（最低水面基準）
+    if (condition.tideHeight <= 80) correction -= 5
   } else if (profile.level === 'advanced') {
     // 胸以下で -10点
     if (condition.waveHeight < 0.8) correction -= 10
