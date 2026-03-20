@@ -25,6 +25,7 @@ export interface Spot {
   parking: 'free' | 'paid' | 'none'
   shower: boolean
   access: string
+  liveCameraUrl?: string
   isActive: boolean
   order: number
   createdAt: string

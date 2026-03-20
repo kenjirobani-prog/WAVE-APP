@@ -7,9 +7,18 @@ interface Props {
   spot: Spot
   score: SpotScore
   isFavorite?: boolean
+  waveHeight?: number
 }
 
-export default function SpotCard({ spot, score, isFavorite }: Props) {
+function waveHeightLabel(h: number): string {
+  if (h >= 2.0) return 'オーバーヘッド'
+  if (h >= 1.5) return '頭'
+  if (h >= 0.8) return '胸〜肩'
+  if (h >= 0.5) return '腰'
+  return 'ヒザ以下'
+}
+
+export default function SpotCard({ spot, score, isFavorite, waveHeight }: Props) {
   return (
     <Link href={`/spot/${spot.id}`}>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-4 active:scale-[0.98] transition-transform">
@@ -26,9 +35,14 @@ export default function SpotCard({ spot, score, isFavorite }: Props) {
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-500 mt-0.5">{spot.waveCharacter}</p>
+          {waveHeight !== undefined && (
+            <p className="text-sm font-medium text-sky-600 mt-0.5">
+              {waveHeight.toFixed(1)}m
+              <span className="text-slate-400 font-normal ml-1">({waveHeightLabel(waveHeight)})</span>
+            </p>
+          )}
           {/* 理由タグ */}
-          <div className="flex flex-wrap gap-1.5 mt-2">
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
             {score.reasonTags.map(tag => (
               <span key={tag} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
                 {tag}

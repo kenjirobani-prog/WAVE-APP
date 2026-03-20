@@ -26,6 +26,7 @@ export default function SpotDetailPage({ params }: Props) {
   const [hourly, setHourly] = useState<WaveCondition[]>([])
   const [score, setScore] = useState<SpotScore | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Phase 1ではレポートはモックデータ
   const mockReports: Report[] = []
@@ -43,11 +44,15 @@ export default function SpotDetailPage({ params }: Props) {
   async function loadData() {
     if (!spot || !profile) return
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       const conditions: WaveCondition[] = data.conditions ?? []
       setHourly(conditions)
+
+      if (conditions.length === 0) throw new Error('No data')
 
       const nowHour = new Date().getHours()
       const closest = conditions.reduce((prev, curr) => {
@@ -60,8 +65,8 @@ export default function SpotDetailPage({ params }: Props) {
         setCurrent(closest)
         setScore(calculateScore(closest, spot, profile))
       }
-    } catch (e) {
-      console.error(e)
+    } catch {
+      setError('データの取得に失敗しました。通信状況を確認してください。')
     } finally {
       setLoading(false)
     }
@@ -92,9 +97,17 @@ export default function SpotDetailPage({ params }: Props) {
 
       <main className="flex-1 overflow-auto pb-8">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-10 h-10 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm">データを取得中...</p>
+          <SpotDetailSkeleton />
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="text-4xl">⚠️</div>
+            <p className="text-slate-500 text-sm text-center px-4">{error}</p>
+            <button
+              onClick={loadData}
+              className="px-6 py-2 bg-sky-500 text-white rounded-full text-sm font-medium"
+            >
+              再試行
+            </button>
           </div>
         ) : (
           <>
@@ -198,6 +211,24 @@ export default function SpotDetailPage({ params }: Props) {
                 </div>
               </div>
               <p className="text-xs text-slate-400 mt-3">{spot.access}</p>
+
+              {/* ライブカメラボタン */}
+              {spot.liveCameraUrl && (
+                <a
+                  href={spot.liveCameraUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-sky-50 border border-sky-200 text-sky-600 rounded-xl text-sm font-medium active:scale-[0.98] transition-transform"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  ライブカメラを見る
+                  <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              )}
             </section>
 
             {/* コミュニティレポート */}
@@ -213,6 +244,45 @@ export default function SpotDetailPage({ params }: Props) {
           </>
         )}
       </main>
+    </div>
+  )
+}
+
+function SpotDetailSkeleton() {
+  return (
+    <div className="animate-pulse">
+      {/* グレード */}
+      <section className="bg-white p-6 border-b border-slate-100">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-16 h-16 bg-slate-200 rounded-full" />
+          <div className="space-y-2">
+            <div className="h-5 bg-slate-200 rounded w-24" />
+            <div className="h-3 bg-slate-100 rounded w-20" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="h-7 bg-slate-100 rounded-full w-20" />
+          <div className="h-7 bg-slate-100 rounded-full w-16" />
+        </div>
+      </section>
+      {/* 指標 */}
+      <section className="bg-white mt-2 p-4 border-b border-slate-100">
+        <div className="h-4 bg-slate-100 rounded w-20 mb-3" />
+        <div className="grid grid-cols-2 gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-slate-50 rounded-xl p-3 space-y-2">
+              <div className="h-3 bg-slate-200 rounded w-16" />
+              <div className="h-6 bg-slate-200 rounded w-12" />
+              <div className="h-3 bg-slate-100 rounded w-10" />
+            </div>
+          ))}
+        </div>
+      </section>
+      {/* チャート */}
+      <section className="bg-white mt-2 p-4 border-b border-slate-100">
+        <div className="h-4 bg-slate-100 rounded w-28 mb-3" />
+        <div className="h-24 bg-slate-100 rounded" />
+      </section>
     </div>
   )
 }

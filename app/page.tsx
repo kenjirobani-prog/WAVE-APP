@@ -10,12 +10,21 @@ import SpotCard from '@/components/SpotCard'
 
 type DateTab = 'today' | 'tomorrow' | 'weekend'
 
+function waveHeightLabel(h: number): string {
+  if (h >= 2.0) return 'オーバーヘッド'
+  if (h >= 1.5) return '頭'
+  if (h >= 0.8) return '胸〜肩'
+  if (h >= 0.5) return '腰'
+  return 'ヒザ以下'
+}
+
 export default function TopPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [scores, setScores] = useState<SpotScore[]>([])
   const [conditions, setConditions] = useState<Record<string, WaveCondition | null>>({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<DateTab>('today')
   const [summary, setSummary] = useState<{ waveAvg: number; windAvg: number; weather: string } | null>(null)
 
@@ -35,6 +44,7 @@ export default function TopPage() {
 
   async function loadForecast() {
     setLoading(true)
+    setError(null)
     try {
       const activeSpots = SPOTS.filter(s => s.isActive)
       const condMap: Record<string, WaveCondition | null> = {}
@@ -43,9 +53,9 @@ export default function TopPage() {
         activeSpots.map(async spot => {
           try {
             const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily`)
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             const hourlyConditions: WaveCondition[] = data.conditions ?? []
-            // 正午のデータを代表値として使用
             const noon = hourlyConditions.find(c => new Date(c.timestamp).getHours() === 12)
             condMap[spot.id] = noon ?? hourlyConditions[0] ?? null
           } catch {
@@ -55,7 +65,6 @@ export default function TopPage() {
       )
       setConditions(condMap)
 
-      // スコア計算
       const newScores = activeSpots
         .map(spot => {
           const cond = condMap[spot.id]
@@ -64,7 +73,6 @@ export default function TopPage() {
         })
         .filter((s): s is SpotScore => s !== null)
         .sort((a, b) => {
-          // お気に入り優先、スコア降順
           const aFav = profile!.favoriteSpots.includes(a.spotId)
           const bFav = profile!.favoriteSpots.includes(b.spotId)
           if (aFav && !bFav) return -1
@@ -73,7 +81,6 @@ export default function TopPage() {
         })
       setScores(newScores)
 
-      // サマリー
       const validConds = Object.values(condMap).filter((c): c is WaveCondition => c !== null)
       if (validConds.length > 0) {
         const waveAvg = validConds.reduce((s, c) => s + c.waveHeight, 0) / validConds.length
@@ -85,6 +92,12 @@ export default function TopPage() {
           weather: sunny > validConds.length / 2 ? '晴れ' : '曇り',
         })
       }
+
+      if (newScores.length === 0 && validConds.length === 0) {
+        setError('波データを取得できませんでした。通信状況を確認して再試行してください。')
+      }
+    } catch {
+      setError('データの取得に失敗しました。通信状況を確認して再試行してください。')
     } finally {
       setLoading(false)
     }
@@ -98,6 +111,8 @@ export default function TopPage() {
     { value: 'weekend', label: '週末' },
   ]
 
+  const allBad = !loading && !error && scores.length > 0 && scores.every(s => s.grade === '×')
+
   return (
     <div className="flex-1 flex flex-col">
       {/* ヘッダー */}
@@ -108,6 +123,7 @@ export default function TopPage() {
             <div className="text-center">
               <p className="text-xs opacity-80">波高</p>
               <p className="text-2xl font-bold">{summary.waveAvg}m</p>
+              <p className="text-xs opacity-70">{waveHeightLabel(summary.waveAvg)}</p>
             </div>
             <div className="text-center border-x border-white/30">
               <p className="text-xs opacity-80">風速</p>
@@ -141,13 +157,37 @@ export default function TopPage() {
       {/* スポットリスト */}
       <main className="flex-1 p-4 space-y-3 overflow-auto pb-24">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-10 h-10 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm">波データを取得中...</p>
+          <SpotListSkeleton />
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="text-4xl">⚠️</div>
+            <p className="text-slate-500 text-sm text-center px-4">{error}</p>
+            <button
+              onClick={loadForecast}
+              className="px-6 py-2 bg-sky-500 text-white rounded-full text-sm font-medium"
+            >
+              再試行
+            </button>
           </div>
-        ) : scores.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
-            <p>データを取得できませんでした</p>
+        ) : allBad ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+            <div className="text-5xl">🌧️</div>
+            <p className="text-lg font-bold text-slate-600">今日はどこも厳しいです</p>
+            <p className="text-sm text-slate-400 px-8">コンディションが全スポットで× です。のんびりリサーチデーにしましょう。</p>
+            <div className="mt-2 space-y-3 w-full">
+              {scores.map(score => {
+                const spot = SPOTS.find(s => s.id === score.spotId)!
+                return (
+                  <SpotCard
+                    key={score.spotId}
+                    spot={spot}
+                    score={score}
+                    isFavorite={profile.favoriteSpots.includes(spot.id)}
+                    waveHeight={conditions[spot.id]?.waveHeight}
+                  />
+                )
+              })}
+            </div>
           </div>
         ) : (
           scores.map(score => {
@@ -158,6 +198,7 @@ export default function TopPage() {
                 spot={spot}
                 score={score}
                 isFavorite={profile.favoriteSpots.includes(spot.id)}
+                waveHeight={conditions[spot.id]?.waveHeight}
               />
             )
           })
@@ -167,6 +208,27 @@ export default function TopPage() {
       {/* ボトムナビ */}
       <BottomNav current="forecast" />
     </div>
+  )
+}
+
+function SpotListSkeleton() {
+  return (
+    <>
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-4 animate-pulse">
+          <div className="w-14 h-14 bg-slate-200 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 bg-slate-200 rounded w-1/3" />
+            <div className="h-3 bg-slate-100 rounded w-2/3" />
+            <div className="flex gap-2">
+              <div className="h-5 bg-slate-100 rounded-full w-16" />
+              <div className="h-5 bg-slate-100 rounded-full w-16" />
+            </div>
+          </div>
+          <div className="w-12 h-12 bg-slate-100 rounded shrink-0" />
+        </div>
+      ))}
+    </>
   )
 }
 

@@ -16,6 +16,14 @@ const PREFERRED_SIZE_M: Record<UserProfile['preferredSize'], number> = {
   'overhead': 2.0,
 }
 
+function waveHeightLabel(h: number): string {
+  if (h >= 2.0) return 'OH'
+  if (h >= 1.5) return '頭'
+  if (h >= 0.8) return '胸肩'
+  if (h >= 0.5) return '腰'
+  return 'ヒザ'
+}
+
 function getBarColor(waveHeight: number, preferred: number): string {
   if (waveHeight >= preferred) return 'bg-emerald-400'
   if (waveHeight >= preferred - 0.3) return 'bg-blue-400'
@@ -67,6 +75,7 @@ export default function ForecastChart({ conditions, profile, spotFacing }: Props
               </div>
               {/* 波高数値 */}
               <span className="text-xs text-slate-500">{c.waveHeight.toFixed(1)}m</span>
+              <span className="text-xs text-slate-400 leading-none">{waveHeightLabel(c.waveHeight)}</span>
               {/* 風矢印 */}
               <WindArrow dir={c.windDir} spotFacing={spotFacing} />
               {/* 時間 */}
