@@ -8,7 +8,7 @@ export default function MyPage() {
   return (
     <div className="flex-1 flex flex-col">
       <header className="bg-white border-b border-slate-100 px-4 pt-10 pb-4">
-        <h1 className="text-xl font-bold text-slate-800">マイページ</h1>
+        <h1 className="text-xl font-bold text-slate-800">My Page</h1>
       </header>
 
       <main className="flex-1 overflow-auto pb-28">

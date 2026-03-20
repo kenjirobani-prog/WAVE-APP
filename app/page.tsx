@@ -188,7 +188,7 @@ export default function TopPage() {
     <div className="flex-1 flex flex-col">
       {/* ヘッダー */}
       <header className="bg-gradient-to-br from-sky-500 to-blue-600 text-white px-4 pt-10 pb-6">
-        <h1 className="text-xl font-bold mb-4">湘南波予報</h1>
+        <h1 className="text-xl font-bold mb-4">湘南 波予報</h1>
         {summary && (
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 grid grid-cols-3 gap-4">
             <div className="text-center">

@@ -48,7 +48,7 @@ export default function OnboardingPage() {
       {/* ヘッダー */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">湘南波予報</h1>
+          <h1 className="text-2xl font-bold text-slate-800">湘南 波予報</h1>
           <p className="text-sm text-slate-500">あなたに最適な波を診断します</p>
         </div>
         <button onClick={handleSkip} className="text-sm text-slate-400 underline">

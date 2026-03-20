@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '湘南波予報',
+  title: '湘南 波予報',
   description: '湘南特化・パーソナライズ波診断アプリ。あなたのレベルに合ったサーフスポットをランキング表示',
   icons: {
     icon: '/favicon.svg',
