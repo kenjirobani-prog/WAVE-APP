@@ -10,7 +10,12 @@ import SpotCard from '@/components/SpotCard'
 import BottomNav from '@/components/BottomNav'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
-interface WeatherData {
+interface WeatherFullData {
+  current: { weatherCode: number; temperature: number }
+  daily: Array<{ date: string; weatherCode: number; temperatureMax: number; uvIndex: number }>
+}
+
+interface ActiveWeather {
   weatherCode: number
   temperature: number
   temperatureMax: number
@@ -62,6 +67,38 @@ function formatTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 更新`
 }
 
+function getActiveWeather(
+  weather: WeatherFullData,
+  tab: DateTab,
+  weekendDay: 'sat' | 'sun'
+): { active: ActiveWeather; isToday: boolean } | null {
+  if (tab === 'today') {
+    const d = weather.daily[0]
+    return {
+      active: {
+        weatherCode: weather.current.weatherCode,
+        temperature: weather.current.temperature,
+        temperatureMax: d?.temperatureMax ?? weather.current.temperature,
+        uvIndex: d?.uvIndex ?? 0,
+      },
+      isToday: true,
+    }
+  }
+  const target = getTargetDate(tab, weekendDay)
+  const dateStr = toDateStr(target)
+  const d = weather.daily.find(x => x.date === dateStr)
+  if (!d) return null
+  return {
+    active: {
+      weatherCode: d.weatherCode,
+      temperature: d.temperatureMax,
+      temperatureMax: d.temperatureMax,
+      uvIndex: d.uvIndex,
+    },
+    isToday: false,
+  }
+}
+
 
 export default function TopPage() {
   const router = useRouter()
@@ -74,7 +111,7 @@ export default function TopPage() {
   const [weekendDay, setWeekendDay] = useState<'sat' | 'sun'>('sat')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [showRefreshToast, setShowRefreshToast] = useState(false)
-  const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [weather, setWeather] = useState<WeatherFullData | null>(null)
 
   const { sat, sun } = getUpcomingWeekend()
   const today = new Date(); today.setHours(12, 0, 0, 0)
@@ -243,7 +280,10 @@ export default function TopPage() {
       )}
 
       {/* 天気バー */}
-      {weather && <WeatherBar weather={weather} />}
+      {weather && (() => {
+        const aw = getActiveWeather(weather, tab, weekendDay)
+        return aw ? <WeatherBar active={aw.active} isToday={aw.isToday} /> : null
+      })()}
 
       {/* プルリフレッシュインジケーター */}
       {(pullDistance > 0 || isRefreshing) && (
@@ -420,8 +460,8 @@ function WeatherIcon({ type }: { type: 'sunny' | 'cloudy' | 'rain' | 'snow' | 's
   )
 }
 
-function WeatherBar({ weather }: { weather: WeatherData }) {
-  const { name: weatherName, type: weatherType } = weatherInfo(weather.weatherCode)
+function WeatherBar({ active, isToday }: { active: ActiveWeather; isToday: boolean }) {
+  const { name: weatherName, type: weatherType } = weatherInfo(active.weatherCode)
   return (
     <div style={{ background: '#f8fafc', borderBottom: '0.5px solid #eef1f4', padding: '.55rem 1rem' }}
       className="flex items-center"
@@ -432,13 +472,17 @@ function WeatherBar({ weather }: { weather: WeatherData }) {
       </div>
       <div style={{ width: '0.5px', background: '#eef1f4', height: 24 }} />
       <div className="flex-1 flex flex-col items-center">
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#0a1628' }}>{weather.temperature}°</span>
-        <span style={{ fontSize: 9, color: '#94a3b8' }}>最高 {weather.temperatureMax}°</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#0a1628' }}>{active.temperature}°</span>
+        <span style={{ fontSize: 9, color: '#94a3b8' }}>
+          {isToday ? `最高 ${active.temperatureMax}°` : '最高気温'}
+        </span>
       </div>
       <div style={{ width: '0.5px', background: '#eef1f4', height: 24 }} />
       <div className="flex-1 flex flex-col items-center">
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#0a1628' }}>UV {weather.uvIndex}</span>
-        <span style={{ fontSize: 9, color: '#94a3b8' }}>{uvLabel(weather.uvIndex)}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#0a1628' }}>UV {active.uvIndex}</span>
+        <span style={{ fontSize: 9, color: '#94a3b8' }}>
+          {isToday ? uvLabel(active.uvIndex) : '最大UV'}
+        </span>
       </div>
     </div>
   )
