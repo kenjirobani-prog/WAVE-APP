@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import type { Spot, SpotScore } from '@/types'
-import ScoreGrade, { gradeLabel } from './ScoreGrade'
+import ScoreGrade from './ScoreGrade'
 import { useCountUp } from '@/hooks/useCountUp'
 
 interface Props {
@@ -58,7 +58,6 @@ export default function SpotCard({ spot, score, isFavorite, waveHeight, date, is
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-[#8899aa] mb-0.5">{gradeLabel(score.grade)}</p>
             {waveHeight !== undefined && (
               <p className="text-sm font-semibold text-sky-700">
                 {waveHeight.toFixed(1)}m
