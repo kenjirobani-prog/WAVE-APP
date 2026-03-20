@@ -35,6 +35,19 @@ export interface Spot {
 // グレード
 export type Grade = '◎' | '○' | '△' | '×'
 
+// 風向き種別（湘南は海岸線が東西方向）
+export type WindType = 'calm' | 'offshore' | 'side-offshore' | 'side-onshore' | 'onshore'
+
+// サーフログ
+export interface SurfLog {
+  id: string          // Date.now() の文字列
+  date: string        // "2026-03-20"
+  spotId: string
+  spotName: string
+  grade: Grade
+  score: number
+}
+
 // スポットスコア結果
 export interface SpotScore {
   spotId: string

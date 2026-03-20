@@ -3,12 +3,55 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUserProfile } from '@/lib/userProfile'
 import { SPOTS } from '@/data/spots'
-import { calculateScore } from '@/lib/wave/scoring'
-import type { UserProfile, SpotScore } from '@/types'
+import { calculateScore, classifyWind, windTypeLabel } from '@/lib/wave/scoring'
+import type { UserProfile, SpotScore, WindType } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
+import BottomNav from '@/components/BottomNav'
 
 type DateTab = 'today' | 'tomorrow' | 'weekend'
+
+// ---- 日付ユーティリティ ----
+
+function toDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function formatMD(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+const DOW_LABELS = ['(日)', '(月)', '(火)', '(水)', '(木)', '(金)', '(土)']
+
+function getUpcomingWeekend(): { sat: Date; sun: Date } {
+  const today = new Date()
+  today.setHours(12, 0, 0, 0)
+  const dow = today.getDay()
+  // 0=Sun: 次の土曜まで6日, 6=Sat: 0日, それ以外: (6-dow)日
+  const daysToSat = dow === 0 ? 6 : (6 - dow + 7) % 7
+  const sat = new Date(today)
+  sat.setDate(sat.getDate() + daysToSat)
+  sat.setHours(12, 0, 0, 0)
+  const sun = new Date(sat)
+  sun.setDate(sun.getDate() + 1)
+  return { sat, sun }
+}
+
+function getTargetDate(tab: DateTab, weekendDay: 'sat' | 'sun'): Date {
+  const today = new Date()
+  today.setHours(12, 0, 0, 0)
+  if (tab === 'today') return today
+  if (tab === 'tomorrow') {
+    const d = new Date(today)
+    d.setDate(d.getDate() + 1)
+    return d
+  }
+  const { sat, sun } = getUpcomingWeekend()
+  return weekendDay === 'sat' ? sat : sun
+}
 
 function waveHeightLabel(h: number): string {
   if (h >= 2.0) return 'オーバーヘッド'
@@ -16,6 +59,22 @@ function waveHeightLabel(h: number): string {
   if (h >= 0.8) return '胸〜肩'
   if (h >= 0.5) return '腰'
   return 'ヒザ以下'
+}
+
+// ベクトル平均で風向き計算
+function avgWindDir(conds: WaveCondition[]): number {
+  const sinSum = conds.reduce((s, c) => s + Math.sin((c.windDir * Math.PI) / 180), 0)
+  const cosSum = conds.reduce((s, c) => s + Math.cos((c.windDir * Math.PI) / 180), 0)
+  return ((Math.atan2(sinSum, cosSum) * 180) / Math.PI + 360) % 360
+}
+
+// ----
+
+interface Summary {
+  waveAvg: number
+  windAvg: number
+  windType: WindType
+  weather: string
 }
 
 export default function TopPage() {
@@ -26,7 +85,10 @@ export default function TopPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<DateTab>('today')
-  const [summary, setSummary] = useState<{ waveAvg: number; windAvg: number; weather: string } | null>(null)
+  const [weekendDay, setWeekendDay] = useState<'sat' | 'sun'>('sat')
+  const [summary, setSummary] = useState<Summary | null>(null)
+
+  const { sat, sun } = getUpcomingWeekend()
 
   useEffect(() => {
     const p = getUserProfile()
@@ -39,12 +101,14 @@ export default function TopPage() {
 
   useEffect(() => {
     if (!profile) return
-    loadForecast()
-  }, [profile, tab])
+    loadForecast(getTargetDate(tab, weekendDay))
+  }, [profile, tab, weekendDay])
 
-  async function loadForecast() {
+  async function loadForecast(targetDate: Date) {
     setLoading(true)
     setError(null)
+    const dateStr = toDateStr(targetDate)
+
     try {
       const activeSpots = SPOTS.filter(s => s.isActive)
       const condMap: Record<string, WaveCondition | null> = {}
@@ -52,12 +116,13 @@ export default function TopPage() {
       await Promise.all(
         activeSpots.map(async spot => {
           try {
-            const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily`)
+            const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
-            const hourlyConditions: WaveCondition[] = data.conditions ?? []
-            const noon = hourlyConditions.find(c => new Date(c.timestamp).getHours() === 12)
-            condMap[spot.id] = noon ?? hourlyConditions[0] ?? null
+            const hourly: WaveCondition[] = data.conditions ?? []
+            // 正午(12時)を代表値に
+            const noon = hourly.find(c => new Date(c.timestamp).getHours() === 12)
+            condMap[spot.id] = noon ?? hourly[0] ?? null
           } catch {
             condMap[spot.id] = null
           }
@@ -83,21 +148,23 @@ export default function TopPage() {
 
       const validConds = Object.values(condMap).filter((c): c is WaveCondition => c !== null)
       if (validConds.length > 0) {
-        const waveAvg = validConds.reduce((s, c) => s + c.waveHeight, 0) / validConds.length
-        const windAvg = validConds.reduce((s, c) => s + c.windSpeed, 0) / validConds.length
+        const waveAvg = Math.round(validConds.reduce((s, c) => s + c.waveHeight, 0) / validConds.length * 10) / 10
+        const windAvg = Math.round(validConds.reduce((s, c) => s + c.windSpeed, 0) / validConds.length * 10) / 10
+        const avgDir = avgWindDir(validConds)
         const sunny = validConds.filter(c => c.weather === 'sunny').length
         setSummary({
-          waveAvg: Math.round(waveAvg * 10) / 10,
-          windAvg: Math.round(windAvg * 10) / 10,
+          waveAvg,
+          windAvg,
+          windType: classifyWind(avgDir, windAvg),
           weather: sunny > validConds.length / 2 ? '晴れ' : '曇り',
         })
       }
 
-      if (newScores.length === 0 && validConds.length === 0) {
+      if (newScores.length === 0 && Object.values(condMap).every(v => v === null)) {
         setError('波データを取得できませんでした。通信状況を確認して再試行してください。')
       }
     } catch {
-      setError('データの取得に失敗しました。通信状況を確認して再試行してください。')
+      setError('データの取得に失敗しました。通信状況を確認してください。')
     } finally {
       setLoading(false)
     }
@@ -105,13 +172,17 @@ export default function TopPage() {
 
   if (!profile) return null
 
-  const tabs: { value: DateTab; label: string }[] = [
-    { value: 'today', label: '今日' },
-    { value: 'tomorrow', label: '明日' },
-    { value: 'weekend', label: '週末' },
-  ]
-
+  const targetDate = getTargetDate(tab, weekendDay)
   const allBad = !loading && !error && scores.length > 0 && scores.every(s => s.grade === '×')
+
+  const dateLabel =
+    tab === 'today' ? '今日' :
+    tab === 'tomorrow' ? '明日' :
+    weekendDay === 'sat' ? `${formatMD(sat)}(土)` : `${formatMD(sun)}(日)`
+
+  // タブ行：今日・明日は1行、週末は2行（日付入り）
+  const today = new Date(); today.setHours(12, 0, 0, 0)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
 
   return (
     <div className="flex-1 flex flex-col">
@@ -122,37 +193,74 @@ export default function TopPage() {
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 grid grid-cols-3 gap-4">
             <div className="text-center">
               <p className="text-xs opacity-80">波高</p>
-              <p className="text-2xl font-bold">{summary.waveAvg}m</p>
-              <p className="text-xs opacity-70">{waveHeightLabel(summary.waveAvg)}</p>
+              <p className="text-xl font-bold">{summary.waveAvg}m</p>
+              <p className="text-[11px] opacity-70">{waveHeightLabel(summary.waveAvg)}</p>
             </div>
             <div className="text-center border-x border-white/30">
-              <p className="text-xs opacity-80">風速</p>
-              <p className="text-2xl font-bold">{summary.windAvg}m/s</p>
+              <p className="text-xs opacity-80">風</p>
+              <p className="text-sm font-bold leading-tight">{windTypeLabel(summary.windType)}</p>
+              <p className="text-[11px] opacity-80">{summary.windAvg}m/s</p>
             </div>
             <div className="text-center">
               <p className="text-xs opacity-80">天気</p>
-              <p className="text-2xl font-bold">{summary.weather}</p>
+              <p className="text-xl font-bold">{summary.weather}</p>
             </div>
           </div>
         )}
       </header>
 
-      {/* タブ */}
+      {/* 日付タブ */}
       <div className="flex bg-white border-b border-slate-100 px-4">
-        {tabs.map(t => (
+        <button
+          onClick={() => setTab('today')}
+          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'today' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-400'
+          }`}
+        >
+          今日 {formatMD(today)}
+        </button>
+        <button
+          onClick={() => setTab('tomorrow')}
+          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'tomorrow' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-400'
+          }`}
+        >
+          明日 {formatMD(tomorrow)}
+        </button>
+        <button
+          onClick={() => setTab('weekend')}
+          className={`flex-1 py-3 text-xs font-medium border-b-2 transition-colors leading-tight ${
+            tab === 'weekend' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-400'
+          }`}
+        >
+          週末
+          <span className="block text-[10px] opacity-70">
+            {formatMD(sat)}{DOW_LABELS[6]}・{formatMD(sun)}{DOW_LABELS[0]}
+          </span>
+        </button>
+      </div>
+
+      {/* 週末サブタブ */}
+      {tab === 'weekend' && (
+        <div className="flex bg-slate-50 border-b border-slate-100 px-4 gap-2 py-2">
           <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-              tab === t.value
-                ? 'border-sky-500 text-sky-600'
-                : 'border-transparent text-slate-400'
+            onClick={() => setWeekendDay('sat')}
+            className={`flex-1 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+              weekendDay === 'sat' ? 'bg-sky-500 text-white' : 'bg-white text-slate-500 border border-slate-200'
             }`}
           >
-            {t.label}
+            土 {formatMD(sat)}
           </button>
-        ))}
-      </div>
+          <button
+            onClick={() => setWeekendDay('sun')}
+            className={`flex-1 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+              weekendDay === 'sun' ? 'bg-sky-500 text-white' : 'bg-white text-slate-500 border border-slate-200'
+            }`}
+          >
+            日 {formatMD(sun)}
+          </button>
+        </div>
+      )}
 
       {/* スポットリスト */}
       <main className="flex-1 p-4 space-y-3 overflow-auto pb-24">
@@ -163,27 +271,25 @@ export default function TopPage() {
             <div className="text-4xl">⚠️</div>
             <p className="text-slate-500 text-sm text-center px-4">{error}</p>
             <button
-              onClick={loadForecast}
+              onClick={() => loadForecast(targetDate)}
               className="px-6 py-2 bg-sky-500 text-white rounded-full text-sm font-medium"
             >
               再試行
             </button>
           </div>
         ) : allBad ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+          <div className="flex flex-col items-center justify-center pt-12 pb-4 gap-3 text-center">
             <div className="text-5xl">🌧️</div>
-            <p className="text-lg font-bold text-slate-600">今日はどこも厳しいです</p>
-            <p className="text-sm text-slate-400 px-8">コンディションが全スポットで× です。のんびりリサーチデーにしましょう。</p>
+            <p className="text-lg font-bold text-slate-600">{dateLabel}はどこも厳しいです</p>
+            <p className="text-sm text-slate-400 px-8">のんびりリサーチデーにしましょう。</p>
             <div className="mt-2 space-y-3 w-full">
               {scores.map(score => {
                 const spot = SPOTS.find(s => s.id === score.spotId)!
                 return (
-                  <SpotCard
-                    key={score.spotId}
-                    spot={spot}
-                    score={score}
+                  <SpotCard key={score.spotId} spot={spot} score={score}
                     isFavorite={profile.favoriteSpots.includes(spot.id)}
                     waveHeight={conditions[spot.id]?.waveHeight}
+                    date={targetDate}
                   />
                 )
               })}
@@ -193,19 +299,16 @@ export default function TopPage() {
           scores.map(score => {
             const spot = SPOTS.find(s => s.id === score.spotId)!
             return (
-              <SpotCard
-                key={score.spotId}
-                spot={spot}
-                score={score}
+              <SpotCard key={score.spotId} spot={spot} score={score}
                 isFavorite={profile.favoriteSpots.includes(spot.id)}
                 waveHeight={conditions[spot.id]?.waveHeight}
+                date={targetDate}
               />
             )
           })
         )}
       </main>
 
-      {/* ボトムナビ */}
       <BottomNav current="forecast" />
     </div>
   )
@@ -229,31 +332,5 @@ function SpotListSkeleton() {
         </div>
       ))}
     </>
-  )
-}
-
-function BottomNav({ current }: { current: 'forecast' | 'spots' | 'mypage' }) {
-  const router = useRouter()
-  const items = [
-    { id: 'forecast', label: '波予報', icon: '🌊', href: '/' },
-    { id: 'spots', label: 'スポット', icon: '📍', href: '/' },
-    { id: 'mypage', label: 'マイページ', icon: '👤', href: '/onboarding' },
-  ] as const
-
-  return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-100 flex">
-      {items.map(item => (
-        <button
-          key={item.id}
-          onClick={() => router.push(item.href)}
-          className={`flex-1 flex flex-col items-center py-3 gap-1 text-xs transition-colors ${
-            current === item.id ? 'text-sky-500' : 'text-slate-400'
-          }`}
-        >
-          <span className="text-xl">{item.icon}</span>
-          <span>{item.label}</span>
-        </button>
-      ))}
-    </nav>
   )
 }

@@ -8,6 +8,7 @@ interface Props {
   score: SpotScore
   isFavorite?: boolean
   waveHeight?: number
+  date?: Date  // 表示対象の日付（詳細画面に渡す）
 }
 
 function waveHeightLabel(h: number): string {
@@ -18,14 +19,23 @@ function waveHeightLabel(h: number): string {
   return 'ヒザ以下'
 }
 
-export default function SpotCard({ spot, score, isFavorite, waveHeight }: Props) {
+function toDateString(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+export default function SpotCard({ spot, score, isFavorite, waveHeight, date }: Props) {
+  const href = date
+    ? `/spot/${spot.id}?date=${toDateString(date)}`
+    : `/spot/${spot.id}`
+
   return (
-    <Link href={`/spot/${spot.id}`}>
+    <Link href={href}>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-4 active:scale-[0.98] transition-transform">
-        {/* グレード */}
         <ScoreGrade grade={score.grade} size="lg" />
 
-        {/* スポット情報 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-slate-800">{spot.name}</h2>
@@ -41,7 +51,6 @@ export default function SpotCard({ spot, score, isFavorite, waveHeight }: Props)
               <span className="text-slate-400 font-normal ml-1">({waveHeightLabel(waveHeight)})</span>
             </p>
           )}
-          {/* 理由タグ */}
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {score.reasonTags.map(tag => (
               <span key={tag} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
@@ -51,7 +60,6 @@ export default function SpotCard({ spot, score, isFavorite, waveHeight }: Props)
           </div>
         </div>
 
-        {/* スコア */}
         <div className="text-right shrink-0">
           <span className="text-2xl font-bold text-slate-700">{score.score}</span>
           <span className="text-xs text-slate-400 block">/ 100</span>

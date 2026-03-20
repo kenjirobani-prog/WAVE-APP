@@ -1,19 +1,42 @@
 import type { WaveCondition } from './types'
-import type { Spot, Grade, SpotScore, ScoreBreakdown } from '@/types'
+import type { Spot, Grade, SpotScore, ScoreBreakdown, WindType } from '@/types'
 import type { UserProfile } from '@/types'
 
-// 風向きからオフショア/サイド/オンショアを判定
-export function classifyWind(windDir: number, spotFacing: number): 'offshore' | 'side-offshore' | 'side' | 'onshore' {
-  const diff = Math.abs(((windDir - spotFacing + 540) % 360) - 180)
-  if (diff <= 45) return 'offshore'
-  if (diff <= 90) return 'side-offshore'
-  if (diff <= 135) return 'side'
+/**
+ * 風向き種別を判定する（湘南は海岸線が東西方向・海は南側）
+ * windDir: 気象学的風向き（風が吹いてくる方向、0°=北）
+ * windSpeed: m/s
+ */
+export function classifyWind(windDir: number, windSpeed: number): WindType {
+  if (windSpeed <= 2) return 'calm'
+  // 北風 315°〜45° → オフショア（海岸が南向き、北風は海方向へ吹く）
+  if (windDir >= 315 || windDir < 45) return 'offshore'
+  // 北東・北西寄り → サイドオフ
+  if ((windDir >= 45 && windDir < 90) || (windDir >= 270 && windDir < 315)) return 'side-offshore'
+  // 南東・南西寄り → サイドオン
+  if ((windDir >= 90 && windDir < 135) || (windDir >= 225 && windDir < 270)) return 'side-onshore'
+  // 南風 135°〜225° → オンショア
   return 'onshore'
+}
+
+export function windTypeLabel(type: WindType): string {
+  const labels: Record<WindType, string> = {
+    calm: '無風',
+    offshore: 'オフショア',
+    'side-offshore': 'サイドオフ',
+    'side-onshore': 'サイドオン',
+    onshore: 'オンショア',
+  }
+  return labels[type]
+}
+
+export function compassLabel(dir: number): string {
+  const labels = ['N 北', 'NE 北東', 'E 東', 'SE 南東', 'S 南', 'SW 南西', 'W 西', 'NW 北西']
+  return labels[Math.round(dir / 45) % 8]
 }
 
 // 波高スコア（30点満点）
 function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferredSize']): number {
-  // 好みサイズの閾値（m）
   const sizeThresholds: Record<UserProfile['preferredSize'], number> = {
     'ankle': 0.3,
     'waist-chest': 0.8,
@@ -28,18 +51,18 @@ function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferr
 }
 
 // 風スコア（30点満点）
-function scoreWind(windSpeed: number, windDir: number, spotFacing: number): number {
-  const type = classifyWind(windDir, spotFacing)
+// 無風・オフショア≤5m/s: 30, オフショア5〜10: 22, サイドオフ: 18,
+// サイドオン: 10, オンショア≤8: 5, オンショア>8: 0
+function scoreWind(windSpeed: number, windDir: number): number {
+  const type = classifyWind(windDir, windSpeed)
+  if (type === 'calm') return 30
   if (type === 'offshore') {
     if (windSpeed <= 5) return 30
     if (windSpeed <= 10) return 22
     return 15
   }
-  if (type === 'side-offshore') {
-    if (windSpeed <= 5) return 18
-    return 10
-  }
-  if (type === 'side') return 12
+  if (type === 'side-offshore') return 18
+  if (type === 'side-onshore') return 10
   // onshore
   if (windSpeed <= 8) return 5
   return 0
@@ -81,37 +104,31 @@ function scoreWeather(weather: WaveCondition['weather']): number {
 // レベル補正（±最大15点）
 function levelCorrection(
   condition: WaveCondition,
-  spot: Spot,
+  _spot: Spot,
   profile: UserProfile
 ): number {
   let correction = 0
-  const windType = classifyWind(condition.windDir, spot.bestSwellDir)
+  const windType = classifyWind(condition.windDir, condition.windSpeed)
 
   if (profile.level === 'beginner') {
-    // オーバーヘッド以上で -10点
     if (condition.waveHeight >= 2.0) correction -= 10
-    // オンショア強風で -5点
     if (windType === 'onshore' && condition.windSpeed > 8) correction -= 5
-    // 干潮時（80cm以下）で -5点（最低水面基準）
     if (condition.tideHeight <= 80) correction -= 5
   } else if (profile.level === 'advanced') {
-    // 胸以下で -10点
     if (condition.waveHeight < 0.8) correction -= 10
-    // オフショア強風で +3点
     if (windType === 'offshore' && condition.windSpeed > 5) correction += 3
   }
 
   return correction
 }
 
-// スポットのスコアを計算
 export function calculateScore(
   condition: WaveCondition,
   spot: Spot,
   profile: UserProfile
 ): SpotScore {
   const waveHeight = scoreWaveHeight(condition.waveHeight, profile.preferredSize)
-  const wind = scoreWind(condition.windSpeed, condition.windDir, spot.bestSwellDir)
+  const wind = scoreWind(condition.windSpeed, condition.windDir)
   const swellDir = scoreSwellDir(condition.swellDir, spot.bestSwellDir, spot.swellDirRange)
   const tide = scoreTide(condition.tideHeight, condition.tideMovement, spot.optimalTideMin, spot.optimalTideMax)
   const weatherBonus = scoreWeather(condition.weather)
@@ -147,24 +164,22 @@ export function scoreToGrade(score: number): Grade {
 function buildReasonTags(
   condition: WaveCondition,
   spot: Spot,
-  profile: UserProfile,
+  _profile: UserProfile,
   breakdown: ScoreBreakdown
 ): string[] {
   const tags: string[] = []
 
-  // 波高タグ
   if (breakdown.waveHeight >= 30) tags.push('波サイズぴったり')
   else if (breakdown.waveHeight >= 20) tags.push('波やや小さめ')
   else tags.push('波が小さい')
 
-  // 風タグ
-  const windType = classifyWind(condition.windDir, spot.bestSwellDir)
-  if (windType === 'offshore') tags.push(condition.windSpeed <= 5 ? 'オフショア良好' : 'オフショア強め')
+  const windType = classifyWind(condition.windDir, condition.windSpeed)
+  if (windType === 'calm') tags.push('無風')
+  else if (windType === 'offshore') tags.push(condition.windSpeed <= 5 ? 'オフショア良好' : 'オフショア強め')
   else if (windType === 'side-offshore') tags.push('サイドオフ')
-  else if (windType === 'side') tags.push('サイド風')
+  else if (windType === 'side-onshore') tags.push('サイドオン')
   else tags.push('オンショア')
 
-  // 潮タグ
   if (breakdown.tide >= 15) tags.push('潮位◎')
   else if (breakdown.tide <= 3) tags.push('潮位注意')
 

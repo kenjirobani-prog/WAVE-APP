@@ -1,24 +1,25 @@
 'use client'
-import { use, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { use, useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
-import { calculateScore } from '@/lib/wave/scoring'
-import { classifyWind } from '@/lib/wave/scoring'
+import { calculateScore, classifyWind, windTypeLabel, compassLabel } from '@/lib/wave/scoring'
 import type { UserProfile, SpotScore, Report } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade, { gradeLabel } from '@/components/ScoreGrade'
 import ForecastChart from '@/components/ForecastChart'
 import TideBar from '@/components/TideBar'
 import ReportList from '@/components/ReportList'
+import BottomNav from '@/components/BottomNav'
 
 interface Props {
   params: Promise<{ id: string }>
 }
 
-export default function SpotDetailPage({ params }: Props) {
-  const { id } = use(params)
+function SpotDetailContent({ id }: { id: string }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const dateParam = searchParams.get('date') // YYYY-MM-DD or null
   const spot = SPOTS.find(s => s.id === id)
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -39,14 +40,15 @@ export default function SpotDetailPage({ params }: Props) {
   useEffect(() => {
     if (!profile || !spot) return
     loadData()
-  }, [profile, spot])
+  }, [profile, spot, dateParam])
 
   async function loadData() {
     if (!spot || !profile) return
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily`)
+      const dateQuery = dateParam ? `&date=${dateParam}` : ''
+      const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily${dateQuery}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       const conditions: WaveCondition[] = data.conditions ?? []
@@ -54,16 +56,13 @@ export default function SpotDetailPage({ params }: Props) {
 
       if (conditions.length === 0) throw new Error('No data')
 
-      const nowHour = new Date().getHours()
-      const closest = conditions.reduce((prev, curr) => {
-        const prevDiff = Math.abs(new Date(prev.timestamp).getHours() - nowHour)
-        const currDiff = Math.abs(new Date(curr.timestamp).getHours() - nowHour)
-        return currDiff < prevDiff ? curr : prev
-      }, conditions[0])
+      // 正午(12時)を代表値に、なければ最近の時間
+      const noon = conditions.find(c => new Date(c.timestamp).getHours() === 12)
+      const representative = noon ?? conditions[Math.floor(conditions.length / 2)] ?? conditions[0]
 
-      if (closest) {
-        setCurrent(closest)
-        setScore(calculateScore(closest, spot, profile))
+      if (representative) {
+        setCurrent(representative)
+        setScore(calculateScore(representative, spot, profile))
       }
     } catch {
       setError('データの取得に失敗しました。通信状況を確認してください。')
@@ -71,6 +70,14 @@ export default function SpotDetailPage({ params }: Props) {
       setLoading(false)
     }
   }
+
+  // 日付ラベル
+  const dateLabel = dateParam
+    ? (() => {
+        const d = new Date(`${dateParam}T12:00:00+09:00`)
+        return `${d.getMonth() + 1}/${d.getDate()} の状況`
+      })()
+    : '現在の状況'
 
   if (!spot) {
     return (
@@ -95,7 +102,7 @@ export default function SpotDetailPage({ params }: Props) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-8">
+      <main className="flex-1 overflow-auto pb-24">
         {loading ? (
           <SpotDetailSkeleton />
         ) : error ? (
@@ -136,7 +143,7 @@ export default function SpotDetailPage({ params }: Props) {
             {/* 現在の4指標 */}
             {current && (
               <section className="bg-white mt-2 p-4 border-b border-slate-100">
-                <h2 className="text-sm font-bold text-slate-500 mb-3">現在の状況</h2>
+                <h2 className="text-sm font-bold text-slate-500 mb-3">{dateLabel}</h2>
                 <div className="grid grid-cols-2 gap-3">
                   <ConditionCard
                     label="波の高さ"
@@ -147,9 +154,7 @@ export default function SpotDetailPage({ params }: Props) {
                   <ConditionCard
                     label="風"
                     value={`${current.windSpeed.toFixed(1)}m/s`}
-                    sub={classifyWind(current.windDir, spot.bestSwellDir) === 'offshore' ? 'オフショア' :
-                         classifyWind(current.windDir, spot.bestSwellDir) === 'side-offshore' ? 'サイドオフ' :
-                         classifyWind(current.windDir, spot.bestSwellDir) === 'side' ? 'サイド' : 'オンショア'}
+                    sub={`${windTypeLabel(classifyWind(current.windDir, current.windSpeed))} (${compassLabel(current.windDir)})`}
                     icon="💨"
                   />
                   <ConditionCard
@@ -172,7 +177,7 @@ export default function SpotDetailPage({ params }: Props) {
             {hourly.length > 0 && profile && (
               <section className="bg-white mt-2 p-4 border-b border-slate-100">
                 <h2 className="text-sm font-bold text-slate-500 mb-3">1時間ごと予報</h2>
-                <ForecastChart conditions={hourly} profile={profile} spotFacing={spot.bestSwellDir} />
+                <ForecastChart conditions={hourly} profile={profile} />
                 <div className="flex gap-4 mt-3 text-xs text-slate-400">
                   <span><span className="inline-block w-3 h-3 bg-emerald-400 rounded-sm mr-1" />好みサイズ</span>
                   <span><span className="inline-block w-3 h-3 bg-blue-400 rounded-sm mr-1" />やや小さめ</span>
@@ -244,7 +249,18 @@ export default function SpotDetailPage({ params }: Props) {
           </>
         )}
       </main>
+
+      <BottomNav current="forecast" />
     </div>
+  )
+}
+
+export default function SpotDetailPage({ params }: Props) {
+  const { id } = use(params)
+  return (
+    <Suspense fallback={<SpotDetailSkeleton />}>
+      <SpotDetailContent id={id} />
+    </Suspense>
   )
 }
 
