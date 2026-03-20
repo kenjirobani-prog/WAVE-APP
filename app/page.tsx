@@ -322,7 +322,6 @@ export default function TopPage() {
         ) : allBad ? (
           <div className="flex flex-col items-center justify-center pt-12 pb-4 gap-3 text-center">
             <p className="text-lg font-bold text-[#0a1628]">{dateLabel}はどこも厳しいです</p>
-            <p className="text-sm text-[#8899aa] px-8">のんびりリサーチデーにしましょう。</p>
             <div className="mt-2 space-y-2.5 w-full">
               {scores.map((score, i) => {
                 const spot = SPOTS.find(s => s.id === score.spotId)!
