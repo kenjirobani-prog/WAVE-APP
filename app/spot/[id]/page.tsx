@@ -57,6 +57,7 @@ function SpotDetailContent({ id }: { id: string }) {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [showRefreshToast, setShowRefreshToast] = useState(false)
   const [showSwipeHint, setShowSwipeHint] = useState(false)
+  const [windyLoaded, setWindyLoaded] = useState(false)
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
   const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
   const [selectedSurfGrade, setSelectedSurfGrade] = useState<Grade | null>(null)
@@ -282,6 +283,23 @@ function SpotDetailContent({ id }: { id: string }) {
                 />
               </section>
             )}
+
+            {/* 風・波のマップ */}
+            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">風・波のマップ</h2>
+              <div className="relative" style={{ borderRadius: 12, overflow: 'hidden', height: 300 }}>
+                {!windyLoaded && (
+                  <div className="absolute inset-0 bg-[#f0f4f8] animate-pulse" />
+                )}
+                <iframe
+                  src={`https://embed.windy.com/embed2.html?lat=${spot.lat}&lon=${spot.lng}&detailLat=${spot.lat}&detailLon=${spot.lng}&zoom=12&level=surface&overlay=waves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default`}
+                  width="100%"
+                  height="300"
+                  style={{ border: 'none' }}
+                  onLoad={() => setWindyLoaded(true)}
+                />
+              </div>
+            </section>
 
             {/* スポット情報 */}
             <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
