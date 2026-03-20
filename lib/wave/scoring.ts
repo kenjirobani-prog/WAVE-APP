@@ -44,27 +44,29 @@ function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferr
     'overhead': 2.0,
   }
   const preferred = sizeThresholds[preferredSize]
-  if (waveHeight === 0) return 0
-  if (waveHeight >= preferred) return 30
-  if (waveHeight >= preferred - 0.3) return 20
-  return 5
+  if (waveHeight <= 0.2) return 0               // フラット
+  if (waveHeight >= preferred) return 30         // 好みサイズ以上
+  if (waveHeight >= preferred - 0.2) return 20  // −20cm以内
+  if (waveHeight >= preferred - 0.4) return 10  // −20〜40cm
+  return 3                                        // −40cm超
 }
 
 // 風スコア（30点満点）
-// 無風・オフショア≤5m/s: 30, オフショア5〜10: 22, サイドオフ: 18,
-// サイドオン: 10, オンショア≤8: 5, オンショア>8: 0
+// 無風: 30, オフショア≤5: 28, オフショア5〜10: 20, オフショア>10: 10
+// サイドオフ≤5: 16, サイドオフ>5: 10
+// サイドオン: 8, オンショア≤8: 3, オンショア>8: 0
 function scoreWind(windSpeed: number, windDir: number): number {
   const type = classifyWind(windDir, windSpeed)
   if (type === 'calm') return 30
   if (type === 'offshore') {
-    if (windSpeed <= 5) return 30
-    if (windSpeed <= 10) return 22
-    return 15
+    if (windSpeed <= 5) return 28
+    if (windSpeed <= 10) return 20
+    return 10
   }
-  if (type === 'side-offshore') return 18
-  if (type === 'side-onshore') return 10
+  if (type === 'side-offshore') return windSpeed <= 5 ? 16 : 10
+  if (type === 'side-onshore') return 8
   // onshore
-  if (windSpeed <= 8) return 5
+  if (windSpeed <= 8) return 3
   return 0
 }
 
@@ -155,9 +157,9 @@ export function calculateScore(
 }
 
 export function scoreToGrade(score: number): Grade {
-  if (score >= 80) return '◎'
-  if (score >= 60) return '○'
-  if (score >= 40) return '△'
+  if (score >= 85) return '◎'
+  if (score >= 65) return '○'
+  if (score >= 45) return '△'
   return '×'
 }
 
