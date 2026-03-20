@@ -1,6 +1,6 @@
 {
-  "name": "湘南 波予報",
-  "short_name": "湘南波予報",
+  "name": "Shonan Wave Forecast",
+  "short_name": "Shonan Wave",
   "description": "湘南特化・パーソナライズ波診断アプリ",
   "start_url": "/",
   "display": "standalone",

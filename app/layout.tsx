@@ -10,7 +10,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: '湘南 波予報',
+  title: 'Shonan Wave Forecast',
   description: '湘南特化・パーソナライズ波診断アプリ。あなたのレベルに合ったサーフスポットをランキング表示',
   icons: {
     icon: '/favicon.svg',
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: '湘南波予報',
+    title: 'Shonan Wave Forecast',
   },
 }
 
