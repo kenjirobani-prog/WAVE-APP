@@ -107,7 +107,6 @@ function SpotDetailContent({ id }: { id: string }) {
           <SpotDetailSkeleton />
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="text-4xl">⚠️</div>
             <p className="text-slate-500 text-sm text-center px-4">{error}</p>
             <button
               onClick={loadData}
@@ -149,25 +148,21 @@ function SpotDetailContent({ id }: { id: string }) {
                     label="波の高さ"
                     value={`${current.waveHeight.toFixed(1)}m`}
                     sub={waveHeightLabel(current.waveHeight)}
-                    icon="🌊"
                   />
                   <ConditionCard
                     label="風"
                     value={`${current.windSpeed.toFixed(1)}m/s`}
                     sub={`${windTypeLabel(classifyWind(current.windDir, current.windSpeed))} (${compassLabel(current.windDir)})`}
-                    icon="💨"
                   />
                   <ConditionCard
                     label="うねり方向"
                     value={`${current.swellDir}°`}
                     sub={swellDirLabel(current.swellDir, spot.bestSwellDir)}
-                    icon="🧭"
                   />
                   <ConditionCard
                     label="周期"
                     value={`${current.wavePeriod.toFixed(0)}秒`}
                     sub={current.wavePeriod >= 10 ? 'うねりあり' : 'うねりなし'}
-                    icon="⏱"
                   />
                 </div>
               </section>
@@ -203,16 +198,16 @@ function SpotDetailContent({ id }: { id: string }) {
               <p className="text-sm text-slate-600 mb-3">{spot.waveCharacter}</p>
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="bg-slate-50 rounded-xl p-3">
-                  <span className="text-lg block">🅿️</span>
-                  <span className="text-slate-600">{spot.parking === 'free' ? '無料' : spot.parking === 'paid' ? '有料' : 'なし'}</span>
+                  <span className="text-slate-500 block text-[10px] mb-1">駐車場</span>
+                  <span className="text-slate-700 font-medium">{spot.parking === 'free' ? '無料' : spot.parking === 'paid' ? '有料' : 'なし'}</span>
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3">
-                  <span className="text-lg block">🚿</span>
-                  <span className="text-slate-600">{spot.shower ? 'あり' : 'なし'}</span>
+                  <span className="text-slate-500 block text-[10px] mb-1">シャワー</span>
+                  <span className="text-slate-700 font-medium">{spot.shower ? 'あり' : 'なし'}</span>
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3">
-                  <span className="text-lg block">🔰</span>
-                  <span className="text-slate-600">{'⭐'.repeat(spot.beginnerScore)}</span>
+                  <span className="text-slate-500 block text-[10px] mb-1">初心者</span>
+                  <span className="text-slate-700 font-medium">{'★'.repeat(spot.beginnerScore)}</span>
                 </div>
               </div>
               <p className="text-xs text-slate-400 mt-3">{spot.access}</p>
@@ -304,16 +299,13 @@ function SpotDetailSkeleton() {
 }
 
 function ConditionCard({
-  label, value, sub, icon
+  label, value, sub
 }: {
-  label: string; value: string; sub: string; icon: string
+  label: string; value: string; sub: string
 }) {
   return (
     <div className="bg-slate-50 rounded-xl p-3">
-      <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-base">{icon}</span>
-        <span className="text-xs text-slate-500">{label}</span>
-      </div>
+      <p className="text-xs text-slate-500 mb-1">{label}</p>
       <p className="text-xl font-bold text-slate-800">{value}</p>
       <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
     </div>

@@ -4,9 +4,9 @@ import { useRouter } from 'next/navigation'
 export type NavTab = 'forecast' | 'surflog' | 'mypage'
 
 const NAV_ITEMS = [
-  { id: 'forecast' as NavTab, label: '波予報', icon: '🌊', href: '/' },
-  { id: 'surflog' as NavTab, label: 'サーフログ', icon: '🏄', href: '/surf-log' },
-  { id: 'mypage' as NavTab, label: 'マイページ', icon: '👤', href: '/onboarding' },
+  { id: 'forecast' as NavTab, label: '波予報', href: '/' },
+  { id: 'surflog' as NavTab, label: 'サーフログ', href: '/surf-log' },
+  { id: 'mypage' as NavTab, label: 'マイページ', href: '/my-page' },
 ]
 
 export default function BottomNav({ current }: { current: NavTab }) {
@@ -21,7 +21,6 @@ export default function BottomNav({ current }: { current: NavTab }) {
             current === item.id ? 'text-sky-500' : 'text-slate-400'
           }`}
         >
-          <span className="text-xl">{item.icon}</span>
           <span>{item.label}</span>
         </button>
       ))}

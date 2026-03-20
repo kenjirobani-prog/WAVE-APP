@@ -11,11 +11,10 @@ const LEVELS: { value: UserProfile['level']; label: string; desc: string }[] = [
   { value: 'advanced', label: '上級者', desc: 'カービング・チューブなど高度な技あり' },
 ]
 
-const BOARDS: { value: UserProfile['boardType']; label: string; emoji: string }[] = [
-  { value: 'longboard', label: 'ロングボード', emoji: '🏄' },
-  { value: 'funboard', label: 'ファンボード', emoji: '🏄' },
-  { value: 'shortboard', label: 'ショートボード', emoji: '🤙' },
-  { value: 'fish', label: 'フィッシュ', emoji: '🐟' },
+const BOARDS: { value: UserProfile['boardType']; label: string }[] = [
+  { value: 'longboard', label: 'ロングボード' },
+  { value: 'funboard', label: 'ファンボード' },
+  { value: 'shortboard', label: 'ショートボード' },
 ]
 
 const SIZES: { value: UserProfile['preferredSize']; label: string; height: string }[] = [
@@ -125,7 +124,7 @@ function Step1({
       {/* ボード */}
       <div className="mb-auto">
         <p className="text-sm font-medium text-slate-600 mb-3">使用ボード</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {BOARDS.map(b => (
             <button
               key={b.value}
@@ -136,8 +135,7 @@ function Step1({
                   : 'border-slate-200 bg-white'
               }`}
             >
-              <span className="text-2xl block">{b.emoji}</span>
-              <span className="text-sm font-medium text-slate-700 mt-1 block">{b.label}</span>
+              <span className="text-sm font-medium text-slate-700">{b.label}</span>
             </button>
           ))}
         </div>

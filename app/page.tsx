@@ -268,7 +268,6 @@ export default function TopPage() {
           <SpotListSkeleton />
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="text-4xl">⚠️</div>
             <p className="text-slate-500 text-sm text-center px-4">{error}</p>
             <button
               onClick={() => loadForecast(targetDate)}
@@ -279,7 +278,6 @@ export default function TopPage() {
           </div>
         ) : allBad ? (
           <div className="flex flex-col items-center justify-center pt-12 pb-4 gap-3 text-center">
-            <div className="text-5xl">🌧️</div>
             <p className="text-lg font-bold text-slate-600">{dateLabel}はどこも厳しいです</p>
             <p className="text-sm text-slate-400 px-8">のんびりリサーチデーにしましょう。</p>
             <div className="mt-2 space-y-3 w-full">

@@ -1,7 +1,7 @@
 // ユーザープロフィール
 export interface UserProfile {
   level: 'beginner' | 'intermediate' | 'advanced'
-  boardType: 'longboard' | 'funboard' | 'shortboard' | 'fish'
+  boardType: 'longboard' | 'funboard' | 'shortboard'
   preferredSize: 'ankle' | 'waist-chest' | 'head' | 'overhead'
   favoriteSpots: string[]
   onboardingDone: boolean
