@@ -70,6 +70,11 @@ export default function ForecastChart({ conditions, profile, onFirstScroll }: Pr
   const now = new Date()
   const scrolledRef = useRef(false)
 
+  // 基準日（最初のエントリの日付）
+  const baseDay = conditions.length > 0
+    ? new Date(conditions[0].timestamp).toDateString()
+    : null
+
   function handleScroll() {
     if (!scrolledRef.current && onFirstScroll) {
       scrolledRef.current = true
@@ -81,8 +86,10 @@ export default function ForecastChart({ conditions, profile, onFirstScroll }: Pr
     <div className="overflow-x-auto -mx-4 px-4" onScroll={handleScroll}>
       <div className="flex gap-1.5 pb-2" style={{ minWidth: `${conditions.length * 52}px` }}>
         {conditions.map((c, i) => {
-          const hour = new Date(c.timestamp).getHours()
-          const isNow = Math.abs(new Date(c.timestamp).getTime() - now.getTime()) < 1800000
+          const ts = new Date(c.timestamp)
+          const hour = ts.getHours()
+          const isNextDay = baseDay !== null && ts.toDateString() !== baseDay
+          const isNow = Math.abs(ts.getTime() - now.getTime()) < 1800000
           const barHeight = Math.round((c.waveHeight / maxHeight) * 80)
 
           return (
@@ -100,8 +107,8 @@ export default function ForecastChart({ conditions, profile, onFirstScroll }: Pr
               {/* 風（矢印・速度・種別） */}
               <WindCell dir={c.windDir} speed={c.windSpeed} />
               {/* 時間 */}
-              <span className={`text-xs font-medium leading-none ${isNow ? 'text-sky-600' : 'text-slate-400'}`}>
-                {isNow ? '▲' : ''}{hour}時
+              <span className={`text-[10px] font-medium leading-none ${isNow ? 'text-sky-600' : isNextDay ? 'text-slate-300' : 'text-slate-400'}`}>
+                {isNow ? '▲' : ''}{isNextDay ? '翌' : ''}{hour}時
               </span>
             </div>
           )
