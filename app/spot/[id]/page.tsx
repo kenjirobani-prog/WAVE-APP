@@ -56,6 +56,7 @@ function SpotDetailContent({ id }: { id: string }) {
 
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [showRefreshToast, setShowRefreshToast] = useState(false)
+  const [showSwipeHint, setShowSwipeHint] = useState(false)
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
   const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
   const [selectedSurfGrade, setSelectedSurfGrade] = useState<Grade | null>(null)
@@ -69,6 +70,7 @@ function SpotDetailContent({ id }: { id: string }) {
   useEffect(() => {
     const p = getUserProfile()
     setProfile(p)
+    setShowSwipeHint(!localStorage.getItem('hasScrolledForecast'))
   }, [])
 
   useEffect(() => {
@@ -252,8 +254,16 @@ function SpotDetailContent({ id }: { id: string }) {
             {/* 1時間ごと予報チャート */}
             {hourly.length > 0 && profile && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">1時間ごと予報</h2>
-                <ForecastChart conditions={hourly} profile={profile} />
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa]">1時間ごと予報</h2>
+                  {showSwipeHint && (
+                    <span className="text-[10px] text-[#94a3b8]">スワイプ →</span>
+                  )}
+                </div>
+                <ForecastChart conditions={hourly} profile={profile} onFirstScroll={() => {
+                  localStorage.setItem('hasScrolledForecast', '1')
+                  setShowSwipeHint(false)
+                }} />
                 <div className="flex gap-4 mt-3 text-xs text-[#8899aa]">
                   <span><span className="inline-block w-3 h-3 bg-sky-900 rounded-sm mr-1" />好みサイズ</span>
                   <span><span className="inline-block w-3 h-3 bg-sky-500 rounded-sm mr-1" />やや小さめ</span>

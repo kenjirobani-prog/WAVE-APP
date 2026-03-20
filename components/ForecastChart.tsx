@@ -1,4 +1,5 @@
 'use client'
+import { useRef } from 'react'
 import type { WaveCondition } from '@/lib/wave/types'
 import type { UserProfile, WindType } from '@/types'
 import { classifyWind } from '@/lib/wave/scoring'
@@ -6,6 +7,7 @@ import { classifyWind } from '@/lib/wave/scoring'
 interface Props {
   conditions: WaveCondition[]
   profile: UserProfile
+  onFirstScroll?: () => void
 }
 
 const PREFERRED_SIZE_M: Record<UserProfile['preferredSize'], number> = {
@@ -62,13 +64,21 @@ function WindCell({ dir, speed }: { dir: number; speed: number }) {
   )
 }
 
-export default function ForecastChart({ conditions, profile }: Props) {
+export default function ForecastChart({ conditions, profile, onFirstScroll }: Props) {
   const preferred = PREFERRED_SIZE_M[profile.preferredSize]
   const maxHeight = Math.max(...conditions.map(c => c.waveHeight), 1)
   const now = new Date()
+  const scrolledRef = useRef(false)
+
+  function handleScroll() {
+    if (!scrolledRef.current && onFirstScroll) {
+      scrolledRef.current = true
+      onFirstScroll()
+    }
+  }
 
   return (
-    <div className="overflow-x-auto -mx-4 px-4">
+    <div className="overflow-x-auto -mx-4 px-4" onScroll={handleScroll}>
       <div className="flex gap-1.5 pb-2" style={{ minWidth: `${conditions.length * 52}px` }}>
         {conditions.map((c, i) => {
           const hour = new Date(c.timestamp).getHours()
