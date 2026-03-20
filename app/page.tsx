@@ -11,7 +11,7 @@ import BottomNav from '@/components/BottomNav'
 
 type DateTab = 'today' | 'tomorrow' | 'weekend'
 
-// ---- 日付ユーティリティ ----
+const DOW_ENG = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear()
@@ -24,13 +24,10 @@ function formatMD(d: Date): string {
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
-const DOW_LABELS = ['(日)', '(月)', '(火)', '(水)', '(木)', '(金)', '(土)']
-
 function getUpcomingWeekend(): { sat: Date; sun: Date } {
   const today = new Date()
   today.setHours(12, 0, 0, 0)
   const dow = today.getDay()
-  // 0=Sun: 次の土曜まで6日, 6=Sat: 0日, それ以外: (6-dow)日
   const daysToSat = dow === 0 ? 6 : (6 - dow + 7) % 7
   const sat = new Date(today)
   sat.setDate(sat.getDate() + daysToSat)
@@ -61,14 +58,11 @@ function waveHeightLabel(h: number): string {
   return 'ヒザ以下'
 }
 
-// ベクトル平均で風向き計算
 function avgWindDir(conds: WaveCondition[]): number {
   const sinSum = conds.reduce((s, c) => s + Math.sin((c.windDir * Math.PI) / 180), 0)
   const cosSum = conds.reduce((s, c) => s + Math.cos((c.windDir * Math.PI) / 180), 0)
   return ((Math.atan2(sinSum, cosSum) * 180) / Math.PI + 360) % 360
 }
-
-// ----
 
 interface Summary {
   waveAvg: number
@@ -89,6 +83,8 @@ export default function TopPage() {
   const [summary, setSummary] = useState<Summary | null>(null)
 
   const { sat, sun } = getUpcomingWeekend()
+  const today = new Date(); today.setHours(12, 0, 0, 0)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
 
   useEffect(() => {
     const p = getUserProfile()
@@ -120,7 +116,6 @@ export default function TopPage() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             const hourly: WaveCondition[] = data.conditions ?? []
-            // 正午(12時)を代表値に
             const noon = hourly.find(c => new Date(c.timestamp).getHours() === 12)
             condMap[spot.id] = noon ?? hourly[0] ?? null
           } catch {
@@ -180,81 +175,86 @@ export default function TopPage() {
     tab === 'tomorrow' ? '明日' :
     weekendDay === 'sat' ? `${formatMD(sat)}(土)` : `${formatMD(sun)}(日)`
 
-  // タブ行：今日・明日は1行、週末は2行（日付入り）
-  const today = new Date(); today.setHours(12, 0, 0, 0)
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
-
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
       {/* ヘッダー */}
-      <header className="bg-gradient-to-br from-sky-500 to-blue-600 text-white px-4 pt-10 pb-6">
-        <h1 className="text-xl font-bold mb-4">湘南 波予報</h1>
-        {summary && (
-          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-xs opacity-80">波高</p>
-              <p className="text-xl font-bold">{summary.waveAvg}m</p>
-              <p className="text-[11px] opacity-70">{waveHeightLabel(summary.waveAvg)}</p>
-            </div>
-            <div className="text-center border-x border-white/30">
-              <p className="text-xs opacity-80">風</p>
-              <p className="text-sm font-bold leading-tight">{windTypeLabel(summary.windType)}</p>
-              <p className="text-[11px] opacity-80">{summary.windAvg}m/s</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs opacity-80">天気</p>
-              <p className="text-xl font-bold">{summary.weather}</p>
-            </div>
-          </div>
-        )}
+      <header className="bg-white px-4 pt-10 pb-4 border-b border-[#eef1f4]">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight text-[#0a1628]">湘南 波予報</h1>
+          <span className="text-[11px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-3 py-1 rounded-full tracking-widest uppercase">
+            {DOW_ENG[today.getDay()]} · {today.getMonth() + 1}/{today.getDate()}
+          </span>
+        </div>
       </header>
 
+      {/* サマリーストリップ */}
+      {summary && (
+        <div className="bg-sky-50 border-b border-sky-100 px-4 py-3">
+          <div className="grid grid-cols-3">
+            <div className="text-center pr-3 border-r border-sky-100">
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-0.5">波高</p>
+              <p className="text-lg font-bold text-sky-900">{summary.waveAvg}m</p>
+              <p className="text-[10px] text-sky-700">{waveHeightLabel(summary.waveAvg)}</p>
+            </div>
+            <div className="text-center px-3 border-r border-sky-100">
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-0.5">風</p>
+              <p className="text-sm font-bold text-sky-900">{windTypeLabel(summary.windType)}</p>
+              <p className="text-[10px] text-sky-700">{summary.windAvg}m/s</p>
+            </div>
+            <div className="text-center pl-3">
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-0.5">天気</p>
+              <p className="text-lg font-bold text-sky-900">{summary.weather}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 日付タブ */}
-      <div className="flex bg-white border-b border-slate-100 px-4">
+      <div className="bg-white border-b border-[#eef1f4] px-3 flex items-center gap-1 py-2">
         <button
           onClick={() => setTab('today')}
-          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'today' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-400'
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            tab === 'today' ? 'bg-sky-900 text-white' : 'text-[#8899aa]'
           }`}
         >
           今日 {formatMD(today)}
         </button>
         <button
           onClick={() => setTab('tomorrow')}
-          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'tomorrow' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-400'
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            tab === 'tomorrow' ? 'bg-sky-900 text-white' : 'text-[#8899aa]'
           }`}
         >
           明日 {formatMD(tomorrow)}
         </button>
         <button
           onClick={() => setTab('weekend')}
-          className={`flex-1 py-3 text-xs font-medium border-b-2 transition-colors leading-tight ${
-            tab === 'weekend' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-400'
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors leading-tight ${
+            tab === 'weekend' ? 'bg-sky-900 text-white' : 'text-[#8899aa]'
           }`}
         >
           週末
-          <span className="block text-[10px] opacity-70">
-            {formatMD(sat)}{DOW_LABELS[6]}・{formatMD(sun)}{DOW_LABELS[0]}
+          <span className="block text-[9px] opacity-80">
+            {formatMD(sat)}土・{formatMD(sun)}日
           </span>
         </button>
       </div>
 
       {/* 週末サブタブ */}
       {tab === 'weekend' && (
-        <div className="flex bg-slate-50 border-b border-slate-100 px-4 gap-2 py-2">
+        <div className="flex bg-[#f0f4f8] border-b border-[#eef1f4] px-4 gap-2 py-2">
           <button
             onClick={() => setWeekendDay('sat')}
-            className={`flex-1 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-              weekendDay === 'sat' ? 'bg-sky-500 text-white' : 'bg-white text-slate-500 border border-slate-200'
+            className={`flex-1 py-1.5 text-sm rounded-lg font-semibold transition-colors ${
+              weekendDay === 'sat' ? 'bg-sky-900 text-white' : 'bg-white text-[#8899aa] border border-[#eef1f4]'
             }`}
           >
             土 {formatMD(sat)}
           </button>
           <button
             onClick={() => setWeekendDay('sun')}
-            className={`flex-1 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-              weekendDay === 'sun' ? 'bg-sky-500 text-white' : 'bg-white text-slate-500 border border-slate-200'
+            className={`flex-1 py-1.5 text-sm rounded-lg font-semibold transition-colors ${
+              weekendDay === 'sun' ? 'bg-sky-900 text-white' : 'bg-white text-[#8899aa] border border-[#eef1f4]'
             }`}
           >
             日 {formatMD(sun)}
@@ -263,44 +263,46 @@ export default function TopPage() {
       )}
 
       {/* スポットリスト */}
-      <main className="flex-1 p-4 space-y-3 overflow-auto pb-28">
+      <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
         {loading ? (
           <SpotListSkeleton />
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <p className="text-slate-500 text-sm text-center px-4">{error}</p>
+            <p className="text-[#8899aa] text-sm text-center px-4">{error}</p>
             <button
               onClick={() => loadForecast(targetDate)}
-              className="px-6 py-2 bg-sky-500 text-white rounded-full text-sm font-medium"
+              className="px-6 py-2 bg-sky-900 text-white rounded-full text-sm font-semibold"
             >
               再試行
             </button>
           </div>
         ) : allBad ? (
           <div className="flex flex-col items-center justify-center pt-12 pb-4 gap-3 text-center">
-            <p className="text-lg font-bold text-slate-600">{dateLabel}はどこも厳しいです</p>
-            <p className="text-sm text-slate-400 px-8">のんびりリサーチデーにしましょう。</p>
-            <div className="mt-2 space-y-3 w-full">
-              {scores.map(score => {
+            <p className="text-lg font-bold text-[#0a1628]">{dateLabel}はどこも厳しいです</p>
+            <p className="text-sm text-[#8899aa] px-8">のんびりリサーチデーにしましょう。</p>
+            <div className="mt-2 space-y-2.5 w-full">
+              {scores.map((score, i) => {
                 const spot = SPOTS.find(s => s.id === score.spotId)!
                 return (
                   <SpotCard key={score.spotId} spot={spot} score={score}
                     isFavorite={profile.favoriteSpots.includes(spot.id)}
                     waveHeight={conditions[spot.id]?.waveHeight}
                     date={targetDate}
+                    isTop={i === 0}
                   />
                 )
               })}
             </div>
           </div>
         ) : (
-          scores.map(score => {
+          scores.map((score, i) => {
             const spot = SPOTS.find(s => s.id === score.spotId)!
             return (
               <SpotCard key={score.spotId} spot={spot} score={score}
                 isFavorite={profile.favoriteSpots.includes(spot.id)}
                 waveHeight={conditions[spot.id]?.waveHeight}
                 date={targetDate}
+                isTop={i === 0}
               />
             )
           })
@@ -316,17 +318,13 @@ function SpotListSkeleton() {
   return (
     <>
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-4 animate-pulse">
-          <div className="w-14 h-14 bg-slate-200 rounded-full shrink-0" />
+        <div key={i} className="bg-white rounded-xl border border-[#eef1f4] p-4 flex items-center gap-4 animate-pulse">
+          <div className="w-14 h-14 bg-[#f0f4f8] rounded-xl shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 bg-slate-200 rounded w-1/3" />
-            <div className="h-3 bg-slate-100 rounded w-2/3" />
-            <div className="flex gap-2">
-              <div className="h-5 bg-slate-100 rounded-full w-16" />
-              <div className="h-5 bg-slate-100 rounded-full w-16" />
-            </div>
+            <div className="h-4 bg-[#f0f4f8] rounded w-1/3" />
+            <div className="h-3 bg-[#f0f4f8] rounded w-2/3" />
           </div>
-          <div className="w-12 h-12 bg-slate-100 rounded shrink-0" />
+          <div className="w-10 h-8 bg-[#f0f4f8] rounded shrink-0" />
         </div>
       ))}
     </>

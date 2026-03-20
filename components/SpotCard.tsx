@@ -8,7 +8,8 @@ interface Props {
   score: SpotScore
   isFavorite?: boolean
   waveHeight?: number
-  date?: Date  // 表示対象の日付（詳細画面に渡す）
+  date?: Date
+  isTop?: boolean
 }
 
 function waveHeightLabel(h: number): string {
@@ -26,43 +27,64 @@ function toDateString(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-export default function SpotCard({ spot, score, isFavorite, waveHeight, date }: Props) {
+function scoreBarColor(s: number): string {
+  if (s >= 80) return 'bg-sky-900'
+  if (s >= 60) return 'bg-sky-700'
+  if (s >= 40) return 'bg-sky-500'
+  return 'bg-slate-300'
+}
+
+export default function SpotCard({ spot, score, isFavorite, waveHeight, date, isTop }: Props) {
   const href = date
     ? `/spot/${spot.id}?date=${toDateString(date)}`
     : `/spot/${spot.id}`
 
   return (
     <Link href={href}>
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-4 active:scale-[0.98] transition-transform">
-        <ScoreGrade grade={score.grade} size="lg" />
+      <div className={`rounded-xl border p-4 active:scale-[0.98] transition-all ${
+        isTop
+          ? 'bg-sky-50 border-sky-200'
+          : 'bg-white border-[#eef1f4] hover:border-sky-200 hover:bg-[#f8feff]'
+      }`}>
+        <div className="flex items-center gap-3">
+          <ScoreGrade grade={score.grade} size="lg" />
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-800">{spot.name}</h2>
-            {isFavorite && (
-              <span className="text-xs bg-sky-100 text-sky-600 px-2 py-0.5 rounded-full font-medium">
-                お気に入り
-              </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h2 className="text-base font-bold text-[#0a1628]">{spot.name}</h2>
+              {isFavorite && (
+                <span className="text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-100 px-2 py-0.5 rounded-full tracking-wide">
+                  よく行く
+                </span>
+              )}
+            </div>
+            {waveHeight !== undefined && (
+              <p className="text-sm font-semibold text-sky-700">
+                {waveHeight.toFixed(1)}m
+                <span className="text-[#8899aa] font-normal ml-1">({waveHeightLabel(waveHeight)})</span>
+              </p>
             )}
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {score.reasonTags.map(tag => (
+                <span key={tag} className="text-[10px] font-medium bg-[#f0f4f8] text-[#8899aa] px-2 py-0.5 rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
-          {waveHeight !== undefined && (
-            <p className="text-sm font-medium text-sky-600 mt-0.5">
-              {waveHeight.toFixed(1)}m
-              <span className="text-slate-400 font-normal ml-1">({waveHeightLabel(waveHeight)})</span>
-            </p>
-          )}
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {score.reasonTags.map(tag => (
-              <span key={tag} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                {tag}
-              </span>
-            ))}
+
+          <div className="text-right shrink-0">
+            <span className="text-2xl font-bold text-[#0a1628]">{score.score}</span>
+            <span className="text-xs text-[#8899aa] block">/ 100</span>
           </div>
         </div>
 
-        <div className="text-right shrink-0">
-          <span className="text-2xl font-bold text-slate-700">{score.score}</span>
-          <span className="text-xs text-slate-400 block">/ 100</span>
+        {/* スコアバー */}
+        <div className="mt-3 h-1 bg-[#eef1f4] rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${scoreBarColor(score.score)}`}
+            style={{ width: `${score.score}%` }}
+          />
         </div>
       </div>
     </Link>

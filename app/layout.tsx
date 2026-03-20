@@ -1,5 +1,13 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: '湘南 波予報',
@@ -17,14 +25,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ja">
+    <html lang="ja" className={inter.variable}>
       <head>
-        <meta name="theme-color" content="#0ea5e9" />
+        <meta name="theme-color" content="#0c4a6e" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="波予報" />
       </head>
-      <body className="min-h-screen bg-slate-50">
+      <body className={`${inter.className} min-h-screen bg-[#f0f4f8]`}>
         <div className="max-w-md mx-auto min-h-screen flex flex-col">
           {children}
         </div>

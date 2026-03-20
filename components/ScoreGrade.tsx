@@ -6,23 +6,23 @@ interface Props {
 }
 
 const gradeConfig: Record<Grade, { label: string; className: string }> = {
-  '◎': { label: '◎', className: 'text-emerald-600 bg-emerald-50 border-emerald-300' },
-  '○': { label: '○', className: 'text-blue-600 bg-blue-50 border-blue-300' },
-  '△': { label: '△', className: 'text-amber-600 bg-amber-50 border-amber-300' },
-  '×': { label: '×', className: 'text-gray-500 bg-gray-100 border-gray-300' },
+  '◎': { label: '◎', className: 'bg-sky-900 text-white' },
+  '○': { label: '○', className: 'bg-sky-700 text-white' },
+  '△': { label: '△', className: 'bg-slate-200 text-slate-600' },
+  '×': { label: '×', className: 'bg-red-100 text-red-400' },
 }
 
 const sizeClass = {
-  sm: 'text-lg w-9 h-9',
-  md: 'text-2xl w-12 h-12',
-  lg: 'text-4xl w-16 h-16',
+  sm: 'text-base w-8 h-8',
+  md: 'text-xl w-11 h-11',
+  lg: 'text-3xl w-14 h-14',
 }
 
 export default function ScoreGrade({ grade, size = 'md' }: Props) {
   const config = gradeConfig[grade]
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full border-2 font-bold ${config.className} ${sizeClass[size]}`}
+      className={`inline-flex items-center justify-center rounded-xl font-bold ${config.className} ${sizeClass[size]}`}
     >
       {config.label}
     </span>

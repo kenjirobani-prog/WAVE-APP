@@ -12,18 +12,26 @@ const NAV_ITEMS = [
 export default function BottomNav({ current }: { current: NavTab }) {
   const router = useRouter()
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-100 flex">
-      {NAV_ITEMS.map(item => (
-        <button
-          key={item.id}
-          onClick={() => router.push(item.href)}
-          className={`flex-1 flex flex-col items-center py-6 gap-1 text-base font-medium transition-colors ${
-            current === item.id ? 'text-sky-500' : 'text-slate-400'
-          }`}
-        >
-          <span>{item.label}</span>
-        </button>
-      ))}
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-[#eef1f4] flex">
+      {NAV_ITEMS.map(item => {
+        const isActive = current === item.id
+        return (
+          <button
+            key={item.id}
+            onClick={() => router.push(item.href)}
+            className={`flex-1 flex flex-col items-center py-6 gap-1 transition-colors ${
+              isActive ? 'text-sky-900' : 'text-[#8899aa]'
+            }`}
+          >
+            <span
+              className={`w-1 h-1 rounded-full mb-0.5 transition-all ${
+                isActive ? 'bg-sky-700 opacity-100' : 'opacity-0'
+              }`}
+            />
+            <span className="text-base font-medium">{item.label}</span>
+          </button>
+        )
+      })}
     </nav>
   )
 }

@@ -40,34 +40,33 @@ export default function SettingsPage() {
     setProfile({ ...profile, favoriteSpots: favs })
   }
 
+  const selectClass = (active: boolean) =>
+    `border-2 transition-colors ${active ? 'border-sky-900 bg-sky-50' : 'border-[#eef1f4] bg-white'}`
+
   return (
-    <div className="flex-1 flex flex-col">
-      <header className="bg-white border-b border-slate-100 px-4 py-4 flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 text-slate-500">
+    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
+      <header className="bg-white border-b border-[#eef1f4] px-4 py-4 flex items-center gap-3">
+        <button onClick={() => router.back()} className="p-2 -ml-2 text-[#8899aa]">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-xl font-bold text-slate-800">設定変更</h1>
+        <h1 className="text-xl font-bold tracking-tight text-[#0a1628]">設定変更</h1>
       </header>
 
       <main className="flex-1 overflow-auto pb-32 px-4 pt-4 space-y-6">
         {/* レベル */}
         <section>
-          <p className="text-sm font-medium text-slate-600 mb-3">サーフィンレベル</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">サーフィンレベル</p>
           <div className="space-y-2">
             {LEVELS.map(l => (
               <button
                 key={l.value}
                 onClick={() => setProfile({ ...profile, level: l.value })}
-                className={`w-full text-left p-4 rounded-xl border-2 transition-colors ${
-                  profile.level === l.value
-                    ? 'border-sky-500 bg-sky-50'
-                    : 'border-slate-200 bg-white'
-                }`}
+                className={`w-full text-left p-4 rounded-xl ${selectClass(profile.level === l.value)}`}
               >
-                <span className="font-semibold text-slate-800">{l.label}</span>
-                <span className="text-sm text-slate-500 block mt-0.5">{l.desc}</span>
+                <span className="font-bold text-[#0a1628]">{l.label}</span>
+                <span className="text-sm text-[#8899aa] block mt-0.5">{l.desc}</span>
               </button>
             ))}
           </div>
@@ -75,19 +74,15 @@ export default function SettingsPage() {
 
         {/* ボード */}
         <section>
-          <p className="text-sm font-medium text-slate-600 mb-3">使用ボード</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">使用ボード</p>
           <div className="grid grid-cols-3 gap-2">
             {BOARDS.map(b => (
               <button
                 key={b.value}
                 onClick={() => setProfile({ ...profile, boardType: b.value })}
-                className={`p-4 rounded-xl border-2 transition-colors text-center ${
-                  profile.boardType === b.value
-                    ? 'border-sky-500 bg-sky-50'
-                    : 'border-slate-200 bg-white'
-                }`}
+                className={`p-4 rounded-xl text-center ${selectClass(profile.boardType === b.value)}`}
               >
-                <span className="text-sm font-medium text-slate-700">{b.label}</span>
+                <span className="text-sm font-semibold text-[#0a1628]">{b.label}</span>
               </button>
             ))}
           </div>
@@ -95,20 +90,16 @@ export default function SettingsPage() {
 
         {/* 波サイズ */}
         <section>
-          <p className="text-sm font-medium text-slate-600 mb-3">好みの波サイズ</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">好みの波サイズ</p>
           <div className="grid grid-cols-2 gap-2">
             {SIZES.map(s => (
               <button
                 key={s.value}
                 onClick={() => setProfile({ ...profile, preferredSize: s.value })}
-                className={`p-4 rounded-xl border-2 transition-colors text-center ${
-                  profile.preferredSize === s.value
-                    ? 'border-sky-500 bg-sky-50'
-                    : 'border-slate-200 bg-white'
-                }`}
+                className={`p-4 rounded-xl text-center ${selectClass(profile.preferredSize === s.value)}`}
               >
-                <span className="font-bold text-slate-800">{s.label}</span>
-                <span className="text-xs text-slate-500 block mt-0.5">{s.height}</span>
+                <span className="font-bold text-[#0a1628]">{s.label}</span>
+                <span className="text-xs text-[#8899aa] block mt-0.5">{s.height}</span>
               </button>
             ))}
           </div>
@@ -116,22 +107,18 @@ export default function SettingsPage() {
 
         {/* スポット */}
         <section>
-          <p className="text-sm font-medium text-slate-600 mb-3">よく行くスポット（複数可）</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">よく行くスポット（複数可）</p>
           <div className="space-y-2">
             {SPOTS.filter(s => s.isActive).map(spot => (
               <button
                 key={spot.id}
                 onClick={() => toggleSpot(spot.id)}
-                className={`w-full text-left p-4 rounded-xl border-2 transition-colors flex items-center gap-3 ${
-                  profile.favoriteSpots.includes(spot.id)
-                    ? 'border-sky-500 bg-sky-50'
-                    : 'border-slate-200 bg-white'
-                }`}
+                className={`w-full text-left p-4 rounded-xl flex items-center gap-3 ${selectClass(profile.favoriteSpots.includes(spot.id))}`}
               >
                 <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                   profile.favoriteSpots.includes(spot.id)
-                    ? 'border-sky-500 bg-sky-500'
-                    : 'border-slate-300'
+                    ? 'border-sky-900 bg-sky-900'
+                    : 'border-[#dde3ea]'
                 }`}>
                   {profile.favoriteSpots.includes(spot.id) && (
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -140,8 +127,8 @@ export default function SettingsPage() {
                   )}
                 </span>
                 <div>
-                  <span className="font-semibold text-slate-800">{spot.name}</span>
-                  <span className="text-xs text-slate-500 block">{spot.access}</span>
+                  <span className="font-bold text-[#0a1628]">{spot.name}</span>
+                  <span className="text-xs text-[#8899aa] block">{spot.access}</span>
                 </div>
               </button>
             ))}
@@ -149,11 +136,10 @@ export default function SettingsPage() {
         </section>
       </main>
 
-      {/* 保存ボタン（固定フッター） */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md p-4 bg-white border-t border-slate-100">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md p-4 bg-white border-t border-[#eef1f4]">
         <button
           onClick={handleSave}
-          className="w-full py-4 bg-sky-500 text-white rounded-2xl font-bold text-lg active:scale-[0.98] transition-transform"
+          className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
         >
           保存する
         </button>
