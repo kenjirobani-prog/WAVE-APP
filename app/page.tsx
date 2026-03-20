@@ -197,7 +197,7 @@ export default function TopPage() {
       {/* ヘッダー */}
       <header className="bg-white px-4 pt-10 pb-4 border-b border-[#eef1f4]">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight text-[#0a1628]">湘南 波予報</h1>
+          <h1 className="text-base font-bold tracking-tight text-[#0a1628]">湘南 波予報</h1>
           <span className="text-[11px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-3 py-1 rounded-full tracking-widest uppercase">
             {DOW_ENG[today.getDay()]} · {today.getMonth() + 1}/{today.getDate()}
           </span>
