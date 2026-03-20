@@ -6,6 +6,7 @@ import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade from './ScoreGrade'
 import { useCountUp } from '@/hooks/useCountUp'
 import { classifyWind, windTypeLabel } from '@/lib/wave/scoring'
+import type { Grade } from '@/types'
 
 interface Props {
   spot: Spot
@@ -37,6 +38,13 @@ function scoreBarColor(s: number): string {
   if (s >= 60) return 'bg-sky-700'
   if (s >= 40) return 'bg-sky-500'
   return 'bg-slate-300'
+}
+
+function gradeCopy(grade: Grade): string {
+  if (grade === '◎') return '文句なしのコンディション。'
+  if (grade === '○') return 'まあまあ楽しめる。'
+  if (grade === '△') return '波はあるけど、いまいち。'
+  return '無理して行く日じゃない。'
 }
 
 function tideLabel(m: 'rising' | 'falling' | 'slack'): string {
@@ -98,6 +106,7 @@ export default function SpotCard({ spot, score, isFavorite, waveHeight, date, is
                 </span>
               )}
             </div>
+            <p className="text-[11px] text-[#8899aa] mb-0.5">{gradeCopy(score.grade)}</p>
             {waveHeight !== undefined && (
               <p className="text-sm font-semibold text-sky-700">
                 {waveHeight.toFixed(1)}m

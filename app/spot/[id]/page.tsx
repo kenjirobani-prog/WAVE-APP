@@ -5,13 +5,12 @@ import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
 import { calculateScore, classifyWind, windTypeLabel, compassLabel } from '@/lib/wave/scoring'
 import { addSurfLog } from '@/lib/surfLog'
-import type { UserProfile, SpotScore, Report, Grade } from '@/types'
+import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade, { gradeLabel } from '@/components/ScoreGrade'
 import { useCountUp } from '@/hooks/useCountUp'
 import ForecastChart from '@/components/ForecastChart'
 import TideBar from '@/components/TideBar'
-import ReportList from '@/components/ReportList'
 import BottomNav from '@/components/BottomNav'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
@@ -62,7 +61,6 @@ function SpotDetailContent({ id }: { id: string }) {
   const [showToast, setShowToast] = useState(false)
   const { count: scoreCount, ref: scoreCountRef } = useCountUp(score?.score ?? 0)
 
-  const mockReports: Report[] = []
   const surfDateOptions = getSurfDateOptions()
 
   useEffect(() => {
@@ -188,6 +186,9 @@ function SpotDetailContent({ id }: { id: string }) {
           <>
             {/* グレード＋おすすめ理由 */}
             <section className="bg-white p-6 border-b border-[#eef1f4]">
+              {score && (
+                <p className="text-base font-semibold text-[#0a1628] mb-4">{gradeCopy(score.grade)}</p>
+              )}
               <div className="flex items-center gap-4 mb-4">
                 {score && <ScoreGrade grade={score.grade} size="lg" />}
                 <div>
@@ -318,16 +319,6 @@ function SpotDetailContent({ id }: { id: string }) {
               </section>
             )}
 
-            {/* コミュニティレポート */}
-            <section className="bg-white mt-2 p-4">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa]">コミュニティレポート</h2>
-                <button className="text-xs text-sky-700 font-semibold">
-                  今日のレポートを書く
-                </button>
-              </div>
-              <ReportList reports={mockReports} spotId={spot.id} />
-            </section>
           </>
         )}
       </main>
@@ -435,6 +426,13 @@ function ConditionCard({ label, value, sub }: { label: string; value: string; su
       <p className="text-xs text-[#8899aa] mt-0.5">{sub}</p>
     </div>
   )
+}
+
+function gradeCopy(grade: Grade): string {
+  if (grade === '◎') return '文句なしのコンディション。'
+  if (grade === '○') return 'まあまあ楽しめる。'
+  if (grade === '△') return '波はあるけど、いまいち。'
+  return '無理して行く日じゃない。'
 }
 
 function formatTime(d: Date): string {

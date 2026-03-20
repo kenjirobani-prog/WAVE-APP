@@ -65,13 +65,3 @@ export interface ScoreBreakdown {
   weatherBonus: number
   levelCorrection: number
 }
-
-// コミュニティレポート
-export interface Report {
-  id: string
-  spotId: string
-  content: string
-  grade: Grade
-  createdAt: string
-  authorName: string
-}
