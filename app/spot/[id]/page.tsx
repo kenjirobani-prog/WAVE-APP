@@ -109,18 +109,23 @@ function SpotDetailContent({ id }: { id: string }) {
         }
       } catch {}
 
-      // 4am–3am next day
-      const from4 = conditions.filter(c => new Date(c.timestamp).getHours() >= 4)
-      const to3 = nextConditions.filter(c => new Date(c.timestamp).getHours() <= 3)
-      setHourly([...from4, ...to3])
-
+      // スコアは生の波高で計算（scoring.ts内でwaveHeightMultiplierを適用）
       const noon = conditions.find(c => new Date(c.timestamp).getHours() === 12)
       const representative = noon ?? conditions[Math.floor(conditions.length / 2)] ?? conditions[0]
       if (representative) {
-        setCurrent(representative)
         setScore(calculateScore(representative, spot, profile))
         setLastUpdated(new Date())
       }
+
+      // 表示用に波高を補正（スコア計算後に適用）
+      const m = spot.waveHeightMultiplier ?? 1.0
+      const applyMult = (c: WaveCondition): WaveCondition =>
+        m !== 1.0 ? { ...c, waveHeight: c.waveHeight * m } : c
+
+      const from4 = conditions.filter(c => new Date(c.timestamp).getHours() >= 4).map(applyMult)
+      const to3 = nextConditions.filter(c => new Date(c.timestamp).getHours() <= 3).map(applyMult)
+      setHourly([...from4, ...to3])
+      if (representative) setCurrent(applyMult(representative))
     } catch {
       setError('データの取得に失敗しました。通信状況を確認してください。')
     } finally {

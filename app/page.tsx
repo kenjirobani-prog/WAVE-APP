@@ -161,8 +161,7 @@ export default function TopPage() {
           }
         })
       )
-      setConditions(condMap)
-
+      // スコアは生の波高で計算（scoring.ts内でwaveHeightMultiplierを適用）
       const newScores = activeSpots
         .map(spot => {
           const cond = condMap[spot.id]
@@ -178,6 +177,15 @@ export default function TopPage() {
           return b.score - a.score
         })
       setScores(newScores)
+
+      // 表示用に波高を補正（スコア計算後に適用して二重適用を防ぐ）
+      activeSpots.forEach(spot => {
+        const m = spot.waveHeightMultiplier ?? 1.0
+        if (m !== 1.0 && condMap[spot.id]) {
+          condMap[spot.id] = { ...condMap[spot.id]!, waveHeight: condMap[spot.id]!.waveHeight * m }
+        }
+      })
+      setConditions(condMap)
 
       if (newScores.length === 0 && Object.values(condMap).every(v => v === null)) {
         setError('波データを取得できませんでした。画面を引っ張って再読み込みしてください。')

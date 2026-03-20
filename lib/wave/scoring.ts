@@ -123,12 +123,18 @@ export function calculateScore(
   spot: Spot,
   profile: UserProfile
 ): SpotScore {
-  const waveHeight = scoreWaveHeight(condition.waveHeight, profile.preferredSize)
+  // スポット固有の波高補正（例: 水族館前は江ノ島の影響で0.8倍）
+  const multiplier = spot.waveHeightMultiplier ?? 1.0
+  const effCondition = multiplier !== 1.0
+    ? { ...condition, waveHeight: condition.waveHeight * multiplier }
+    : condition
+
+  const waveHeight = scoreWaveHeight(effCondition.waveHeight, profile.preferredSize)
   const wind = scoreWind(condition.windSpeed, condition.windDir)
   const swellDir = scoreSwellDir(condition.swellDir, spot.bestSwellDir)
   const tide = scoreTide(condition.tideHeight, condition.tideMovement)
   const weatherBonus = scoreWeather(condition.weather)
-  const correction = boardCorrection(condition, profile)
+  const correction = boardCorrection(effCondition, profile)
 
   const total = Math.max(0, Math.min(100, waveHeight + wind + swellDir + tide + weatherBonus + correction))
 

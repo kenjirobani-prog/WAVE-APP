@@ -26,6 +26,7 @@ export interface Spot {
   shower: boolean
   access: string
   liveCameraUrl?: string
+  waveHeightMultiplier?: number  // スポット固有の波高補正係数（デフォルト: 1.0）
   isActive: boolean
   order: number
   createdAt: string
