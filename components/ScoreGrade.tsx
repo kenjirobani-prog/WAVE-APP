@@ -31,10 +31,10 @@ export default function ScoreGrade({ grade, size = 'md' }: Props) {
 
 export function gradeLabel(grade: Grade): string {
   const labels: Record<Grade, string> = {
-    '◎': '今日は絶対行け',
-    '○': 'まあまあ楽しめる',
-    '△': '微妙、他と比較して',
-    '×': '今日は見送り推奨',
+    '◎': '文句なしのコンディション。',
+    '○': 'まあまあ楽しめる。',
+    '△': '波はあるけど、いまいち。',
+    '×': '無理して行く日じゃない。',
   }
   return labels[grade]
 }

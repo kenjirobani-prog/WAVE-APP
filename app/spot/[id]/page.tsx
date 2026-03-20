@@ -58,7 +58,10 @@ function SpotDetailContent({ id }: { id: string }) {
   const [showRefreshToast, setShowRefreshToast] = useState(false)
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
   const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
+  const [selectedSurfGrade, setSelectedSurfGrade] = useState<Grade | null>(null)
   const [showToast, setShowToast] = useState(false)
+
+  const GRADE_SCORE: Record<Grade, number> = { '◎': 90, '○': 70, '△': 50, '×': 20 }
   const { count: scoreCount, ref: scoreCountRef } = useCountUp(score?.score ?? 0)
 
   const surfDateOptions = getSurfDateOptions()
@@ -108,16 +111,17 @@ function SpotDetailContent({ id }: { id: string }) {
   const { scrollRef, pullDistance, isRefreshing, threshold } = usePullToRefresh(handleRefresh)
 
   function handleSurfLogSave() {
-    if (!spot || !score) return
+    if (!spot || !selectedSurfGrade) return
     addSurfLog({
       date: selectedDateStr,
       spotId: spot.id,
       spotName: spot.name,
-      grade: score.grade,
-      score: score.score,
+      grade: selectedSurfGrade,
+      score: GRADE_SCORE[selectedSurfGrade],
     })
     try { navigator.vibrate([10, 50, 20]) } catch {}
     setShowSurfLogSheet(false)
+    setSelectedSurfGrade(null)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 2500)
   }
@@ -187,7 +191,7 @@ function SpotDetailContent({ id }: { id: string }) {
             {/* グレード＋おすすめ理由 */}
             <section className="bg-white p-6 border-b border-[#eef1f4]">
               {score && (
-                <p className="text-base font-semibold text-[#0a1628] mb-4">{gradeCopy(score.grade)}</p>
+                <p className="text-base font-semibold text-[#0a1628] mb-4">{gradeLabel(score.grade)}</p>
               )}
               <div className="flex items-center gap-4 mb-4">
                 {score && <ScoreGrade grade={score.grade} size="lg" />}
@@ -311,7 +315,7 @@ function SpotDetailContent({ id }: { id: string }) {
             {score && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
                 <button
-                  onClick={() => { try { navigator.vibrate(20) } catch {}; setShowSurfLogSheet(true) }}
+                  onClick={() => { try { navigator.vibrate(20) } catch {}; setSelectedSurfGrade(null); setShowSurfLogSheet(true) }}
                   className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
                 >
                   今日サーフィンした！
@@ -323,15 +327,18 @@ function SpotDetailContent({ id }: { id: string }) {
         )}
       </main>
 
-      {/* Surf Log 日付選択シート */}
+      {/* Surf Log 記録シート */}
       {showSurfLogSheet && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowSurfLogSheet(false)} />
           <div className="relative bg-white rounded-t-3xl w-full max-w-md px-6 pt-6 pb-10">
             <div className="w-10 h-1 bg-[#dde3ea] rounded-full mx-auto mb-6" />
-            <h3 className="text-lg font-bold text-[#0a1628] mb-1">日付を選択</h3>
-            <p className="text-sm text-[#8899aa] mb-4">{spot.name}でのサーフを記録します</p>
-            <div className="grid grid-cols-2 gap-2 mb-6">
+            <h3 className="text-lg font-bold text-[#0a1628] mb-1">Surf Log に記録</h3>
+            <p className="text-sm text-[#8899aa] mb-4">{spot.name}</p>
+
+            {/* 日付選択 */}
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">いつ？</p>
+            <div className="grid grid-cols-2 gap-2 mb-5">
               {surfDateOptions.map(opt => (
                 <button
                   key={opt.dateStr}
@@ -346,15 +353,36 @@ function SpotDetailContent({ id }: { id: string }) {
                 </button>
               ))}
             </div>
-            {score && (
-              <p className="text-center text-sm text-[#8899aa] mb-4">
-                スコア <span className="font-bold text-[#0a1628]">{score.score}点</span>・グレード{' '}
-                <span className="font-bold text-sky-900">{score.grade}</span> で記録します
-              </p>
-            )}
+
+            {/* コンディション評価 */}
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">今日の波どうだった？</p>
+            <div className="space-y-2 mb-6">
+              {(['◎', '○', '△', '×'] as Grade[]).map(g => (
+                <button
+                  key={g}
+                  onClick={() => setSelectedSurfGrade(g)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-colors text-left ${
+                    selectedSurfGrade === g
+                      ? 'border-sky-900 bg-sky-50'
+                      : 'border-[#eef1f4] bg-white'
+                  }`}
+                >
+                  <ScoreGrade grade={g} size="sm" />
+                  <span className={`font-semibold text-sm ${selectedSurfGrade === g ? 'text-sky-900' : 'text-[#8899aa]'}`}>
+                    {gradeLabel(g)}
+                  </span>
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={handleSurfLogSave}
-              className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base"
+              disabled={!selectedSurfGrade}
+              className={`w-full py-4 rounded-xl font-bold text-base transition-colors ${
+                selectedSurfGrade
+                  ? 'bg-sky-900 text-white'
+                  : 'bg-[#eef1f4] text-[#8899aa] cursor-not-allowed'
+              }`}
             >
               記録する
             </button>
@@ -426,13 +454,6 @@ function ConditionCard({ label, value, sub }: { label: string; value: string; su
       <p className="text-xs text-[#8899aa] mt-0.5">{sub}</p>
     </div>
   )
-}
-
-function gradeCopy(grade: Grade): string {
-  if (grade === '◎') return '文句なしのコンディション。'
-  if (grade === '○') return 'まあまあ楽しめる。'
-  if (grade === '△') return '波はあるけど、いまいち。'
-  return '無理して行く日じゃない。'
 }
 
 function formatTime(d: Date): string {
