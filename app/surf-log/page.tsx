@@ -132,7 +132,7 @@ function SpotSelectDialog({
               ))}
             </div>
             <button
-              onClick={handleConfirm}
+              onClick={() => { try { navigator.vibrate(20) } catch {}; handleConfirm() }}
               className="w-full py-3 bg-sky-900 text-white rounded-xl font-bold text-base"
             >
               記録する
@@ -214,6 +214,7 @@ export default function SurfLogPage() {
       grade,
       score,
     })
+    try { navigator.vibrate([10, 50, 20]) } catch {}
     setLogs(prev => [newLog, ...prev])
     setShowDialog(false)
   }
@@ -260,7 +261,7 @@ export default function SurfLogPage() {
         {/* 記録ボタン */}
         <div className="px-4 pt-4">
           <button
-            onClick={() => setShowDialog(true)}
+            onClick={() => { try { navigator.vibrate(20) } catch {}; setShowDialog(true) }}
             className="w-full py-4 bg-sky-900 text-white rounded-xl text-base font-bold active:scale-[0.98] transition-transform"
           >
             今日サーフィンした！
@@ -290,8 +291,14 @@ export default function SurfLogPage() {
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">最近のログ</h2>
           {recentLogs.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-[#eef1f4]">
-              <p className="text-[#8899aa] text-sm">まだ記録がありません</p>
-              <p className="text-[#8899aa] text-xs mt-1 opacity-60">サーフィン後に記録してみよう！</p>
+              <p className="text-[#0a1628] font-semibold text-base mb-1">まだ記録がありません</p>
+              <p className="text-[#8899aa] text-sm mb-5">サーフィン後に記録して、自分のサーフ履歴を作ろう！</p>
+              <button
+                onClick={() => { try { navigator.vibrate(20) } catch {}; setShowDialog(true) }}
+                className="px-6 py-3 bg-sky-900 text-white rounded-xl font-bold text-sm active:scale-[0.98] transition-transform"
+              >
+                今日のサーフを記録する
+              </button>
             </div>
           ) : (
             <div className="space-y-2">

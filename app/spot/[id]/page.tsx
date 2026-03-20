@@ -1,5 +1,5 @@
 'use client'
-import { use, useCallback, useEffect, useState, Suspense } from 'react'
+import { use, useCallback, useEffect, useState, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
@@ -8,6 +8,7 @@ import { addSurfLog } from '@/lib/surfLog'
 import type { UserProfile, SpotScore, Report, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade, { gradeLabel } from '@/components/ScoreGrade'
+import { useCountUp } from '@/hooks/useCountUp'
 import ForecastChart from '@/components/ForecastChart'
 import TideBar from '@/components/TideBar'
 import ReportList from '@/components/ReportList'
@@ -59,6 +60,7 @@ function SpotDetailContent({ id }: { id: string }) {
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
   const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
   const [showToast, setShowToast] = useState(false)
+  const { count: scoreCount, ref: scoreCountRef } = useCountUp(score?.score ?? 0)
 
   const mockReports: Report[] = []
   const surfDateOptions = getSurfDateOptions()
@@ -116,6 +118,7 @@ function SpotDetailContent({ id }: { id: string }) {
       grade: score.grade,
       score: score.score,
     })
+    try { navigator.vibrate([10, 50, 20]) } catch {}
     setShowSurfLogSheet(false)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 2500)
@@ -191,7 +194,9 @@ function SpotDetailContent({ id }: { id: string }) {
                   <p className="font-bold text-[#0a1628] text-lg">
                     {score ? gradeLabel(score.grade) : '—'}
                   </p>
-                  <p className="text-sm text-[#8899aa]">スコア: {score?.score ?? '—'} / 100</p>
+                  <p className="text-sm text-[#8899aa]">
+                    スコア: <span ref={scoreCountRef as React.Ref<HTMLSpanElement>}>{score ? scoreCount : '—'}</span> / 100
+                  </p>
                 </div>
               </div>
               {score && (
@@ -305,7 +310,7 @@ function SpotDetailContent({ id }: { id: string }) {
             {score && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
                 <button
-                  onClick={() => setShowSurfLogSheet(true)}
+                  onClick={() => { try { navigator.vibrate(20) } catch {}; setShowSurfLogSheet(true) }}
                   className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
                 >
                   今日サーフィンした！

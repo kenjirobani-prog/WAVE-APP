@@ -163,12 +163,12 @@ export default function TopPage() {
       }
 
       if (newScores.length === 0 && Object.values(condMap).every(v => v === null)) {
-        setError('波データを取得できませんでした。通信状況を確認して再試行してください。')
+        setError('波データを取得できませんでした。画面を引っ張って再読み込みしてください。')
       } else {
         setLastUpdated(new Date())
       }
     } catch {
-      setError('データの取得に失敗しました。通信状況を確認してください。')
+      setError('データの取得に失敗しました。画面を引っ張って再読み込みしてください。')
     } finally {
       setLoading(false)
     }
@@ -324,6 +324,7 @@ export default function TopPage() {
                   <SpotCard key={score.spotId} spot={spot} score={score}
                     isFavorite={profile.favoriteSpots.includes(spot.id)}
                     waveHeight={conditions[spot.id]?.waveHeight}
+                    condition={conditions[spot.id]}
                     date={targetDate}
                     isTop={i === 0}
                   />
@@ -338,6 +339,7 @@ export default function TopPage() {
               <SpotCard key={score.spotId} spot={spot} score={score}
                 isFavorite={profile.favoriteSpots.includes(spot.id)}
                 waveHeight={conditions[spot.id]?.waveHeight}
+                condition={conditions[spot.id]}
                 date={targetDate}
                 isTop={i === 0}
               />
