@@ -89,8 +89,31 @@ function SpotDetailContent({ id }: { id: string }) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       const conditions: WaveCondition[] = data.conditions ?? []
-      setHourly(conditions)
       if (conditions.length === 0) throw new Error('No data')
+
+      // Build next day date string
+      const baseDate = dateParam
+        ? new Date(`${dateParam}T12:00:00+09:00`)
+        : new Date()
+      const nextDate = new Date(baseDate)
+      nextDate.setDate(nextDate.getDate() + 1)
+      const nextDateStr = toDateStr(nextDate)
+
+      // Fetch next day for 翌0–3時
+      let nextConditions: WaveCondition[] = []
+      try {
+        const res2 = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${nextDateStr}`)
+        if (res2.ok) {
+          const data2 = await res2.json()
+          nextConditions = data2.conditions ?? []
+        }
+      } catch {}
+
+      // 4am–3am next day
+      const from4 = conditions.filter(c => new Date(c.timestamp).getHours() >= 4)
+      const to3 = nextConditions.filter(c => new Date(c.timestamp).getHours() <= 3)
+      setHourly([...from4, ...to3])
+
       const noon = conditions.find(c => new Date(c.timestamp).getHours() === 12)
       const representative = noon ?? conditions[Math.floor(conditions.length / 2)] ?? conditions[0]
       if (representative) {

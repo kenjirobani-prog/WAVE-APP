@@ -10,6 +10,13 @@ import SpotCard from '@/components/SpotCard'
 import BottomNav from '@/components/BottomNav'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
+interface WeatherData {
+  weatherCode: number
+  temperature: number
+  temperatureMax: number
+  uvIndex: number
+}
+
 type DateTab = 'today' | 'tomorrow' | 'weekend'
 
 const DOW_ENG = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
@@ -67,6 +74,7 @@ export default function TopPage() {
   const [weekendDay, setWeekendDay] = useState<'sat' | 'sun'>('sat')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [showRefreshToast, setShowRefreshToast] = useState(false)
+  const [weather, setWeather] = useState<WeatherData | null>(null)
 
   const { sat, sun } = getUpcomingWeekend()
   const today = new Date(); today.setHours(12, 0, 0, 0)
@@ -80,6 +88,13 @@ export default function TopPage() {
     }
     setProfile(p)
   }, [router])
+
+  useEffect(() => {
+    fetch('/api/weather')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && !d.error && setWeather(d))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!profile) return
@@ -227,6 +242,9 @@ export default function TopPage() {
         </div>
       )}
 
+      {/* 天気バー */}
+      {weather && <WeatherBar weather={weather} />}
+
       {/* プルリフレッシュインジケーター */}
       {(pullDistance > 0 || isRefreshing) && (
         <div className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none"
@@ -331,6 +349,96 @@ function AvgScoreHero({ scores }: { scores: SpotScore[] }) {
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+function weatherInfo(code: number): { name: string; type: 'sunny' | 'cloudy' | 'rain' | 'snow' | 'storm' } {
+  if (code === 0) return { name: '快晴', type: 'sunny' }
+  if (code === 1) return { name: '晴れ', type: 'sunny' }
+  if (code === 2) return { name: '晴れ時々曇', type: 'cloudy' }
+  if (code === 3) return { name: '曇り', type: 'cloudy' }
+  if (code === 45 || code === 48) return { name: '霧', type: 'cloudy' }
+  if (code >= 51 && code <= 67) return { name: '雨', type: 'rain' }
+  if (code >= 71 && code <= 77) return { name: '雪', type: 'snow' }
+  if (code >= 80 && code <= 82) return { name: 'にわか雨', type: 'rain' }
+  if (code >= 95) return { name: '雷雨', type: 'storm' }
+  return { name: '—', type: 'cloudy' }
+}
+
+function uvLabel(uv: number): string {
+  if (uv <= 2) return '低い'
+  if (uv <= 5) return '中程度'
+  if (uv <= 7) return '高い'
+  if (uv <= 10) return '非常に高い'
+  return '極端'
+}
+
+function WeatherIcon({ type }: { type: 'sunny' | 'cloudy' | 'rain' | 'snow' | 'storm' }) {
+  if (type === 'sunny') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="5" fill="#f59e0b" />
+      {[0,45,90,135,180,225,270,315].map(a => (
+        <line key={a} x1="12" y1="12" x2={12 + 9 * Math.cos(a * Math.PI / 180)} y2={12 + 9 * Math.sin(a * Math.PI / 180)}
+          stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round"
+          style={{ transformOrigin: 'center' }}
+        />
+      ))}
+    </svg>
+  )
+  if (type === 'rain') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M6 14a6 6 0 1 1 12 0" fill="#378ADD" />
+      <rect x="6" y="14" width="12" height="3" rx="1.5" fill="#378ADD" />
+      <line x1="9" y1="19" x2="8" y2="22" stroke="#378ADD" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="12" y1="19" x2="11" y2="22" stroke="#378ADD" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="15" y1="19" x2="14" y2="22" stroke="#378ADD" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+  if (type === 'snow') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M6 13a6 6 0 1 1 12 0" fill="#85B7EB" />
+      <rect x="6" y="13" width="12" height="3" rx="1.5" fill="#85B7EB" />
+      <circle cx="9" cy="20" r="1.5" fill="#85B7EB" />
+      <circle cx="12" cy="21" r="1.5" fill="#85B7EB" />
+      <circle cx="15" cy="20" r="1.5" fill="#85B7EB" />
+    </svg>
+  )
+  if (type === 'storm') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M5 12a7 7 0 1 1 14 0" fill="#94a3b8" />
+      <rect x="5" y="12" width="14" height="3" rx="1.5" fill="#94a3b8" />
+      <polyline points="13,17 11,21 13,21 11,24" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+  // cloudy
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M6.5 16a4.5 4.5 0 1 1 8.9-.5H17a3 3 0 0 1 0 6H6.5a4.5 4.5 0 0 1 0-9z" fill="#94a3b8" />
+    </svg>
+  )
+}
+
+function WeatherBar({ weather }: { weather: WeatherData }) {
+  const { name: weatherName, type: weatherType } = weatherInfo(weather.weatherCode)
+  return (
+    <div style={{ background: '#f8fafc', borderBottom: '0.5px solid #eef1f4', padding: '.55rem 1rem' }}
+      className="flex items-center"
+    >
+      <div className="flex-1 flex items-center gap-1.5 justify-center">
+        <WeatherIcon type={weatherType} />
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#0a1628' }}>{weatherName}</span>
+      </div>
+      <div style={{ width: '0.5px', background: '#eef1f4', height: 24 }} />
+      <div className="flex-1 flex flex-col items-center">
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#0a1628' }}>{weather.temperature}°</span>
+        <span style={{ fontSize: 9, color: '#94a3b8' }}>最高 {weather.temperatureMax}°</span>
+      </div>
+      <div style={{ width: '0.5px', background: '#eef1f4', height: 24 }} />
+      <div className="flex-1 flex flex-col items-center">
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#0a1628' }}>UV {weather.uvIndex}</span>
+        <span style={{ fontSize: 9, color: '#94a3b8' }}>{uvLabel(weather.uvIndex)}</span>
       </div>
     </div>
   )
