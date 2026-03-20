@@ -12,9 +12,9 @@ const LEVELS: { value: UserProfile['level']; label: string; desc: string }[] = [
 ]
 
 const BOARDS: { value: UserProfile['boardType']; label: string }[] = [
-  { value: 'longboard', label: 'ロングボード' },
-  { value: 'funboard', label: 'ファンボード' },
-  { value: 'shortboard', label: 'ショートボード' },
+  { value: 'longboard', label: 'ロング' },
+  { value: 'funboard', label: 'ミッドレングス' },
+  { value: 'shortboard', label: 'ショート' },
 ]
 
 const SIZES: { value: UserProfile['preferredSize']; label: string; height: string }[] = [
