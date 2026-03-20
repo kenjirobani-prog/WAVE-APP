@@ -301,6 +301,9 @@ export default function TopPage() {
 
       {/* スポットリスト */}
       <main ref={scrollRef as React.RefObject<HTMLElement>} className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
+        {!loading && !error && scores.length > 0 && (
+          <AvgScoreHero scores={scores} />
+        )}
         {loading ? (
           <SpotListSkeleton />
         ) : error ? (
@@ -348,6 +351,43 @@ export default function TopPage() {
       </main>
 
       <BottomNav current="forecast" />
+    </div>
+  )
+}
+
+function barColor(s: number): string {
+  if (s >= 80) return '#0c4a6e'
+  if (s >= 50) return '#0ea5e9'
+  return '#94a3b8'
+}
+
+function AvgScoreHero({ scores }: { scores: SpotScore[] }) {
+  const avg = Math.floor(scores.reduce((s, sc) => s + sc.score, 0) / scores.length)
+  return (
+    <div style={{ background: '#f8fafc', border: '0.5px solid #eef1f4', borderRadius: 14, padding: '.85rem 1rem' }}
+      className="flex gap-4"
+    >
+      <div className="flex flex-col justify-center shrink-0">
+        <p className="font-semibold uppercase tracking-widest text-[#94a3b8] mb-1" style={{ fontSize: 10 }}>
+          Shonan avg score
+        </p>
+        <p style={{ fontSize: 52, fontWeight: 700, color: '#0c4a6e', lineHeight: 1 }}>{avg}</p>
+      </div>
+      <div className="flex-1 flex flex-col justify-center gap-1.5 min-w-0">
+        {scores.map(sc => {
+          const spot = SPOTS.find(s => s.id === sc.spotId)
+          if (!spot) return null
+          return (
+            <div key={sc.spotId} className="flex items-center gap-1.5">
+              <span className="shrink-0 truncate text-[#94a3b8]" style={{ fontSize: 9, width: 52 }}>{spot.name}</span>
+              <div className="flex-1 h-1.5 bg-[#eef1f4] rounded-full overflow-hidden">
+                <div style={{ width: `${sc.score}%`, background: barColor(sc.score) }} className="h-full rounded-full" />
+              </div>
+              <span className="shrink-0 text-center text-[#94a3b8]" style={{ fontSize: 9, width: 14 }}>{sc.grade}</span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
