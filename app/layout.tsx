@@ -13,15 +13,15 @@ export const metadata: Metadata = {
   title: 'Shonan Wave Forecast',
   description: '湘南特化・パーソナライズ波診断アプリ。あなたのレベルに合ったサーフスポットをランキング表示',
   icons: {
-    icon: '/favicon.svg',
-    apple: '/favicon.svg',
-    shortcut: '/favicon.svg',
+    icon: '/images/logo.png',
+    apple: '/images/logo.png',
+    shortcut: '/images/logo.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Shonan Wave Forecast',
+    title: 'Shonan Wave',
   },
 }
 
@@ -36,7 +36,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#0c4a6e" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="波予報" />
+        <meta name="apple-mobile-web-app-title" content="Shonan Wave" />
       </head>
       <body className={`${inter.className} min-h-screen bg-[#f0f4f8]`}>
         <div className="max-w-md mx-auto min-h-screen flex flex-col">
