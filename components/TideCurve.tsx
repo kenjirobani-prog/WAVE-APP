@@ -70,8 +70,11 @@ export default function TideCurve({
     linePath +
     ` L ${pts[pts.length - 1].x.toFixed(2)} ${H} L ${pts[0].x.toFixed(2)} ${H} Z`
 
-  const cx = toX(currentHour)
-  const cy = toY(currentTideHeight)
+  // 破線・マーカーは同じX座標: (currentHour / 24) * W
+  const markerX = (currentHour / 24) * W
+  // マーカーのY座標はtideDataのcurrentHour対応点から正確にスケーリング
+  const currentPoint = sorted.find(p => p.hour === currentHour)
+  const markerY = toY(currentPoint ? currentPoint.tideHeight : currentTideHeight)
 
   const timeLabels = [0, 6, 12, 18, 24]
 
@@ -124,9 +127,9 @@ export default function TideCurve({
 
         {/* 現在時刻の破線 */}
         <line
-          x1={cx}
+          x1={markerX}
           y1={PAD_Y}
-          x2={cx}
+          x2={markerX}
           y2={H - PAD_Y}
           stroke="#0c4a6e"
           strokeWidth="1"
@@ -134,7 +137,7 @@ export default function TideCurve({
         />
 
         {/* 現在位置マーカー */}
-        <circle cx={cx} cy={cy} r="4" fill="#0c4a6e" />
+        <circle cx={markerX} cy={markerY} r="4" fill="#0c4a6e" />
       </svg>
 
       <div
