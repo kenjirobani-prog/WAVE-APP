@@ -1,8 +1,17 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SPOTS } from '@/data/spots'
 import { calculateScore } from '@/lib/wave/scoring'
-import { getSurfLogs, addSurfLog, deleteSurfLog, countDaysInYear, countTotalDays } from '@/lib/surfLog'
+import {
+  subscribeSurfLogs,
+  saveSurfLog,
+  deleteSurfLog,
+  migrateLocalStorageToFirestore,
+  saveLocalSurfLog,
+  getLocalSurfLogs,
+  countDaysInYear,
+  countTotalDays,
+} from '@/lib/surfLog'
 import { getUserProfile } from '@/lib/userProfile'
 import type { SurfLog, Grade } from '@/types'
 import type { Spot } from '@/types'
@@ -35,6 +44,19 @@ function getDaysInMonth(year: number, month: number): number {
 
 function getFirstDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 1).getDay()
+}
+
+// ---- スケルトンUI ----
+function SkeletonLog() {
+  return (
+    <div className="bg-white rounded-xl border border-[#eef1f4] p-4 flex items-center gap-3 animate-pulse">
+      <div className="w-10 h-10 rounded-xl bg-slate-200 shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 bg-slate-200 rounded w-3/5" />
+        <div className="h-3 bg-slate-100 rounded w-2/5" />
+      </div>
+    </div>
+  )
 }
 
 // ---- スポット選択ダイアログ ----
@@ -197,31 +219,108 @@ function MonthCalendar({ year, month, logs }: { year: number; month: number; log
 // ---- メインページ ----
 export default function SurfLogPage() {
   const [logs, setLogs] = useState<SurfLog[]>([])
+  const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
   const today = new Date()
   const [calYear, setCalYear] = useState(today.getFullYear())
   const [calMonth, setCalMonth] = useState(today.getMonth())
+  const unsubscribeRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
-    setLogs(getSurfLogs())
+    let cancelled = false
+
+    async function init() {
+      // オフライン時は localStorage にフォールバック
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setLogs(getLocalSurfLogs())
+        setLoading(false)
+        return
+      }
+
+      try {
+        // localStorage → Firestore 移行（初回のみ実行される）
+        await migrateLocalStorageToFirestore()
+
+        const unsub = await subscribeSurfLogs(
+          (firestoreLogs) => {
+            if (!cancelled) {
+              setLogs(firestoreLogs)
+              setLoading(false)
+            }
+          },
+          () => {
+            // Firestore エラー時は localStorage にフォールバック
+            if (!cancelled) {
+              setLogs(getLocalSurfLogs())
+              setLoading(false)
+            }
+          },
+        )
+
+        if (cancelled) {
+          unsub()
+        } else {
+          unsubscribeRef.current = unsub
+        }
+      } catch {
+        if (!cancelled) {
+          setLogs(getLocalSurfLogs())
+          setLoading(false)
+        }
+      }
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
+      unsubscribeRef.current?.()
+      unsubscribeRef.current = null
+    }
   }, [])
 
-  function handleRecordSurf(spot: Spot, grade: Grade, score: number) {
-    const newLog = addSurfLog({
+  async function handleRecordSurf(spot: Spot, grade: Grade, score: number) {
+    const logData = {
       date: toDateStr(new Date()),
       spotId: spot.id,
       spotName: spot.name,
       grade,
       score,
-    })
+    }
+
     try { navigator.vibrate([10, 50, 20]) } catch {}
-    setLogs(prev => [newLog, ...prev])
+
+    const isOnline = typeof navigator !== 'undefined' && navigator.onLine
+
+    if (isOnline) {
+      try {
+        await saveSurfLog(logData)
+        // onSnapshot が自動でlogsを更新するため手動更新不要
+      } catch {
+        const newLog = saveLocalSurfLog(logData)
+        setLogs(prev => [newLog, ...prev])
+      }
+    } else {
+      const newLog = saveLocalSurfLog(logData)
+      setLogs(prev => [newLog, ...prev])
+    }
+
     setShowDialog(false)
   }
 
-  function handleDelete(id: string) {
-    deleteSurfLog(id)
-    setLogs(getSurfLogs())
+  async function handleDelete(id: string) {
+    const isOnline = typeof navigator !== 'undefined' && navigator.onLine
+
+    if (isOnline) {
+      try {
+        await deleteSurfLog(id)
+        // onSnapshot が自動でlogsを更新するため手動更新不要
+      } catch {
+        setLogs(prev => prev.filter(l => l.id !== id))
+      }
+    } else {
+      setLogs(prev => prev.filter(l => l.id !== id))
+    }
   }
 
   function prevMonth() {
@@ -246,13 +345,29 @@ export default function SurfLogPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 text-center">
             <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-1">今年の日数</p>
-            <p className="text-3xl font-bold text-sky-900">{daysThisYear}</p>
-            <p className="text-xs text-sky-700">日</p>
+            {loading ? (
+              <div className="h-9 flex items-center justify-center">
+                <div className="w-12 h-7 bg-sky-100 rounded animate-pulse" />
+              </div>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-sky-900">{daysThisYear}</p>
+                <p className="text-xs text-sky-700">日</p>
+              </>
+            )}
           </div>
           <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 text-center">
             <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-1">通算日数</p>
-            <p className="text-3xl font-bold text-sky-900">{daysTotal}</p>
-            <p className="text-xs text-sky-700">日</p>
+            {loading ? (
+              <div className="h-9 flex items-center justify-center">
+                <div className="w-12 h-7 bg-sky-100 rounded animate-pulse" />
+              </div>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-sky-900">{daysTotal}</p>
+                <p className="text-xs text-sky-700">日</p>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -289,7 +404,11 @@ export default function SurfLogPage() {
         {/* 最近のログ */}
         <section className="mx-4">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">最近のログ</h2>
-          {recentLogs.length === 0 ? (
+          {loading ? (
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => <SkeletonLog key={i} />)}
+            </div>
+          ) : recentLogs.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-[#eef1f4]">
               <p className="text-[#0a1628] font-semibold text-base mb-1">まだ記録がありません</p>
               <p className="text-[#8899aa] text-sm mb-5">サーフィン後に記録して、自分のサーフ履歴を作ろう！</p>
