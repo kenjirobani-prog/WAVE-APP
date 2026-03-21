@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
 import { calculateScore, classifyWind, windTypeLabel, compassLabel } from '@/lib/wave/scoring'
-import { addSurfLog } from '@/lib/surfLog'
+import { saveSurfLog } from '@/lib/surfLog'
 import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade, { gradeLabel } from '@/components/ScoreGrade'
@@ -143,7 +143,7 @@ function SpotDetailContent({ id }: { id: string }) {
 
   function handleSurfLogSave() {
     if (!spot || !selectedSurfGrade) return
-    addSurfLog({
+    saveSurfLog({
       date: selectedDateStr,
       spotId: spot.id,
       spotName: spot.name,
