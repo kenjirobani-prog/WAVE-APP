@@ -35,7 +35,7 @@ export function compassLabel(dir: number): string {
   return labels[Math.round(dir / 45) % 8]
 }
 
-// 波高スコア（30点満点）
+// 波高スコア（40点満点）
 function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferredSize']): number {
   const sizeThresholds: Record<UserProfile['preferredSize'], number> = {
     'ankle': 0.3,
@@ -45,26 +45,26 @@ function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferr
   }
   const preferred = sizeThresholds[preferredSize]
   if (waveHeight <= 0.15) return 0               // フラット
-  if (waveHeight >= preferred) return 30         // 好みサイズ以上
-  if (waveHeight >= preferred - 0.2) return 18  // −20cm以内
-  if (waveHeight >= preferred - 0.4) return 8   // −20〜40cm
-  return 2                                        // −40cm超
+  if (waveHeight >= preferred) return 40         // 好みサイズ以上
+  if (waveHeight >= preferred - 0.2) return 24  // −20cm以内
+  if (waveHeight >= preferred - 0.4) return 11  // −20〜40cm
+  return 3                                        // −40cm超
 }
 
-// 風スコア（30点満点）
-// 無風: 30, オフショア≤5: 28, オフショア5〜10: 18, オフショア>10: 8
-// サイドオフ≤5: 14, サイドオフ>5: 8
-// サイドオン: 6, オンショア≤8: 2, オンショア>8: 0
+// 風スコア（25点満点）
+// 無風: 25, オフショア≤5: 23, オフショア5〜10: 15, オフショア>10: 7
+// サイドオフ≤5: 12, サイドオフ>5: 7
+// サイドオン: 5, オンショア≤8: 2, オンショア>8: 0
 function scoreWind(windSpeed: number, windDir: number): number {
   const type = classifyWind(windDir, windSpeed)
-  if (type === 'calm') return 30
+  if (type === 'calm') return 25
   if (type === 'offshore') {
-    if (windSpeed <= 5) return 28
-    if (windSpeed <= 10) return 18
-    return 8
+    if (windSpeed <= 5) return 23
+    if (windSpeed <= 10) return 15
+    return 7
   }
-  if (type === 'side-offshore') return windSpeed <= 5 ? 14 : 8
-  if (type === 'side-onshore') return 6
+  if (type === 'side-offshore') return windSpeed <= 5 ? 12 : 7
+  if (type === 'side-onshore') return 5
   // onshore
   if (windSpeed <= 8) return 2
   return 0
@@ -80,17 +80,17 @@ function scoreSwellDir(swellDir: number, bestSwellDir: number): number {
   return 0
 }
 
-// 潮スコア（15点満点）
+// 潮スコア（10点満点）
 // 潮位基準: 最低水面（横浜 平均水面=115cm, 大潮干潮≈20cm, 大潮高潮≈185cm）
 function scoreTide(
   tideHeight: number,
   tideMovement: WaveCondition['tideMovement'],
 ): number {
   if (tideHeight >= 80 && tideHeight <= 120) {
-    return tideMovement === 'rising' ? 15 : 8
+    return tideMovement === 'rising' ? 10 : 5
   }
-  if ((tideHeight >= 60 && tideHeight < 80) || (tideHeight > 120 && tideHeight <= 150)) return 5
-  return 2
+  if ((tideHeight >= 60 && tideHeight < 80) || (tideHeight > 120 && tideHeight <= 150)) return 3
+  return 1
 }
 
 // 天気ボーナス（+5点）
@@ -171,8 +171,8 @@ function buildReasonTags(
 ): string[] {
   const tags: string[] = []
 
-  if (breakdown.waveHeight >= 30) tags.push('波サイズぴったり')
-  else if (breakdown.waveHeight >= 18) tags.push('波やや小さめ')
+  if (breakdown.waveHeight >= 40) tags.push('波サイズぴったり')
+  else if (breakdown.waveHeight >= 24) tags.push('波やや小さめ')
   else tags.push('波が小さい')
 
   const windType = classifyWind(condition.windDir, condition.windSpeed)
@@ -182,8 +182,8 @@ function buildReasonTags(
   else if (windType === 'side-onshore') tags.push('サイドオン')
   else tags.push('オンショア')
 
-  if (breakdown.tide >= 15) tags.push('潮位◎')
-  else if (breakdown.tide <= 3) tags.push('潮位注意')
+  if (breakdown.tide >= 10) tags.push('潮位◎')
+  else if (breakdown.tide <= 2) tags.push('潮位注意')
 
   return tags
 }
