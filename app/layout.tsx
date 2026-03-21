@@ -33,8 +33,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://wave-app-nu.vercel.app',
   },
-  verification: {
-    google: 'JZHJ4_W4TnbZrH13d0t3-AqqDss1GUWC_L1Vs9hIoYU',
+  other: {
+    'google-site-verification': 'JZHJ4_W4TnbZrH13d0t3-AqqDss1GUWC_L1Vs9hIoYU',
   },
   icons: {
     icon: '/images/logo.png',
