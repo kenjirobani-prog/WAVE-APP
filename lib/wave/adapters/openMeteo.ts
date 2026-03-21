@@ -41,9 +41,11 @@ function classifyTideMovement(
 
 function parseObservations(html: string, date: Date): (number | undefined)[] {
   const hourlyValues: number[][] = Array.from({ length: 24 }, () => [])
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
+  // サーバーはUTCで動作するためgetFullYear/getDate等はUTC値を返す。JST(+9h)で計算する
+  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+  const yyyy = jst.getUTCFullYear()
+  const mm = String(jst.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(jst.getUTCDate()).padStart(2, '0')
 
   const pattern = new RegExp(
     `${yyyy}\\s+${mm}\\s+${dd}\\s+(\\d{2})\\s+\\d{2}\\s+(\\d+)`,
@@ -65,8 +67,10 @@ function parseObservations(html: string, date: Date): (number | undefined)[] {
 }
 
 function parsePredictionTable(html: string, date: Date): (number | undefined)[] {
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
+  // JST日付を使う（サーバーはUTC環境）
+  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+  const mm = String(jst.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(jst.getUTCDate()).padStart(2, '0')
   const dateStr = mm + dd
 
   const dateCell = `<td[^>]*>\\s*${dateStr}\\s*<\\/td>`
@@ -106,11 +110,20 @@ async function fetchKAihoTideHourly(date: Date): Promise<number[]> {
   const observations = parseObservations(html, date)
   const predictions = parsePredictionTable(html, date)
 
-  return Array.from({ length: 24 }, (_, h) => {
+  const result = Array.from({ length: 24 }, (_, h) => {
     if (observations[h] !== undefined) return observations[h]!
     if (predictions[h] !== undefined) return predictions[h]!
     return estimateTideHeight(h)
   })
+
+  // デバッグ用ログ（Vercel Function Logsで確認可能）
+  const jstForLog = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+  console.log('[KAiho] JST date:', jstForLog.toISOString().split('T')[0])
+  console.log('[KAiho] observations (0-23h):', observations)
+  console.log('[KAiho] predictions  (0-23h):', predictions)
+  console.log('[KAiho] result       (0-23h):', result)
+
+  return result
 }
 
 // ---- Open-Meteo 海象・気象データ ----

@@ -190,12 +190,17 @@ export default function SpotDetailContent({ id }: { id: string }) {
       if (representative) setCurrent(applyMult(representative))
 
       // 24時間潮位曲線用データ
-      setTideSeries(
-        conditions.map(c => ({
-          hour: new Date(c.timestamp).getHours(),
-          tideHeight: c.tideHeight,
-        })),
-      )
+      const series = conditions.map(c => ({
+        hour: new Date(c.timestamp).getHours(),
+        tideHeight: c.tideHeight,
+      }))
+      setTideSeries(series)
+
+      // デバッグ用ログ（ブラウザのDevToolsコンソールで確認）
+      const nowHour = dateParam ? 12 : new Date().getHours()
+      console.log('[TideDebug] currentHour:', nowHour)
+      console.log('[TideDebug] tideSeries:', series)
+      console.log('[TideDebug] currentPoint:', series.find(p => p.hour === nowHour))
     } catch {
       setError('データの取得に失敗しました。通信状況を確認してください。')
     } finally {

@@ -76,8 +76,9 @@ export default function TideCurve({
 
   // 破線・マーカーは同じX座標: (currentHour / 24) * W
   const markerX = (currentHour / 24) * W
-  // マーカーのY座標はactualTideHeightをminH〜maxHの範囲でスケーリング
-  const markerY = PAD_Y + (1 - (actualTideHeight - minH) / range) * (H - PAD_Y * 2)
+  // マーカーのY座標: actualTideHeightをminH〜maxHでスケーリング、SVG範囲内にクランプ
+  const rawMarkerY = PAD_Y + (1 - (actualTideHeight - minH) / range) * (H - PAD_Y * 2)
+  const markerY = Math.max(PAD_Y, Math.min(H - PAD_Y, rawMarkerY))
 
   const timeLabels = [0, 6, 12, 18, 24]
 
