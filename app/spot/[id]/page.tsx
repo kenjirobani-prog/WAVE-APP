@@ -330,31 +330,83 @@ function SpotDetailContent({ id }: { id: string }) {
             </section>
 
             {/* スポット情報 */}
-            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">スポット情報</h2>
-              <p className="text-sm text-[#0a1628] mb-3">{spot.waveCharacter}</p>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="bg-[#f0f4f8] rounded-xl p-3">
-                  <span className="text-[#8899aa] block text-[10px] mb-1">駐車場</span>
-                  <span className="text-[#0a1628] font-semibold">{spot.parking === 'free' ? '無料' : spot.parking === 'paid' ? '有料' : 'なし'}</span>
+            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4] space-y-5">
+              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa]">スポット情報</h2>
+
+              {spot.description && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">スポットの特徴</p>
+                  <p className="text-sm text-[#0a1628] leading-relaxed">{spot.description}</p>
                 </div>
-                <div className="bg-[#f0f4f8] rounded-xl p-3">
-                  <span className="text-[#8899aa] block text-[10px] mb-1">シャワー</span>
-                  <span className="text-[#0a1628] font-semibold">{spot.shower ? 'あり' : 'なし'}</span>
-                </div>
-                <div className="bg-[#f0f4f8] rounded-xl p-3">
-                  <span className="text-[#8899aa] block text-[10px] mb-1">初心者</span>
-                  <span className="text-[#0a1628] font-semibold">{'★'.repeat(spot.beginnerScore)}</span>
+              )}
+
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ベストシーズン</p>
+                <div className="flex gap-2">
+                  {(['spring', 'summer', 'autumn', 'winter'] as const).map(s => {
+                    const isBest = spot.bestSeasons?.includes(s) ?? false
+                    return (
+                      <span
+                        key={s}
+                        className={`flex-1 text-center text-xs font-semibold py-1.5 rounded-full ${
+                          isBest ? 'bg-sky-900 text-white' : 'bg-[#f0f4f8] text-[#c0ccd8]'
+                        }`}
+                      >
+                        {seasonLabel(s)}
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
-              <p className="text-xs text-[#8899aa] mt-3">{spot.access}</p>
+
+              {spot.bestTide && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ベスト潮回り</p>
+                  <p className="text-sm text-[#0a1628] leading-relaxed">{spot.bestTide}</p>
+                </div>
+              )}
+
+              {spot.waveTypeTags && spot.waveTypeTags.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">波のタイプ</p>
+                  <div className="flex flex-wrap gap-2">
+                    {spot.waveTypeTags.map(tag => (
+                      <span key={tag} className="text-xs font-medium bg-[#f0f4f8] text-[#0a1628] px-3 py-1 rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {spot.facilities && spot.facilities.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">周辺施設</p>
+                  <div className="flex flex-wrap gap-2">
+                    {spot.facilities.map(f => (
+                      <span key={f} className="text-xs font-medium bg-[#f0f4f8] text-[#0a1628] px-3 py-1 rounded-full">
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {spot.beginnerNote && (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 mb-2">初心者メモ</p>
+                  <p className="text-sm text-[#0a1628] leading-relaxed">{spot.beginnerNote}</p>
+                </div>
+              )}
+
+              <p className="text-xs text-[#8899aa]">{spot.access}</p>
 
               {spot.liveCameraUrl && (
                 <a
                   href={spot.liveCameraUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl text-sm font-semibold active:scale-[0.98] transition-transform"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl text-sm font-semibold active:scale-[0.98] transition-transform"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -366,73 +418,6 @@ function SpotDetailContent({ id }: { id: string }) {
                 </a>
               )}
             </section>
-
-            {/* スポット詳細情報 */}
-            {(spot.description || spot.bestSeasons?.length || spot.bestTide || spot.waveTypeTags?.length || spot.facilities?.length || spot.beginnerNote) && (
-              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4] space-y-5">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa]">スポット詳細</h2>
-
-                {spot.description && (
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">スポットの特徴</p>
-                    <p className="text-sm text-[#0a1628] leading-relaxed">{spot.description}</p>
-                  </div>
-                )}
-
-                {spot.bestSeasons && spot.bestSeasons.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ベストシーズン</p>
-                    <div className="flex flex-wrap gap-2">
-                      {spot.bestSeasons.map(s => (
-                        <span key={s} className="text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-100 px-3 py-1 rounded-full">
-                          {seasonLabel(s)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {spot.bestTide && (
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ベスト潮回り</p>
-                    <p className="text-sm text-[#0a1628] leading-relaxed">{spot.bestTide}</p>
-                  </div>
-                )}
-
-                {spot.waveTypeTags && spot.waveTypeTags.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">波のタイプ</p>
-                    <div className="flex flex-wrap gap-2">
-                      {spot.waveTypeTags.map(tag => (
-                        <span key={tag} className="text-xs font-medium bg-[#f0f4f8] text-[#0a1628] px-3 py-1 rounded-full">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {spot.facilities && spot.facilities.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">周辺施設</p>
-                    <div className="flex flex-wrap gap-2">
-                      {spot.facilities.map(f => (
-                        <span key={f} className="text-xs font-medium bg-[#f0f4f8] text-[#0a1628] px-3 py-1 rounded-full">
-                          {f}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {spot.beginnerNote && (
-                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 mb-2">初心者メモ</p>
-                    <p className="text-sm text-[#0a1628] leading-relaxed">{spot.beginnerNote}</p>
-                  </div>
-                )}
-              </section>
-            )}
 
             {/* Surf Log 記録ボタン */}
             {score && (
