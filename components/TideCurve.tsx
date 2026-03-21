@@ -70,11 +70,14 @@ export default function TideCurve({
     linePath +
     ` L ${pts[pts.length - 1].x.toFixed(2)} ${H} L ${pts[0].x.toFixed(2)} ${H} Z`
 
+  // tideDataからcurrentHourのデータポイントを取得（テキスト・マーカー両方に使用）
+  const currentPoint = sorted.find(p => p.hour === currentHour)
+  const actualTideHeight = currentPoint?.tideHeight ?? currentTideHeight
+
   // 破線・マーカーは同じX座標: (currentHour / 24) * W
   const markerX = (currentHour / 24) * W
-  // マーカーのY座標はtideDataのcurrentHour対応点から正確にスケーリング
-  const currentPoint = sorted.find(p => p.hour === currentHour)
-  const markerY = toY(currentPoint ? currentPoint.tideHeight : currentTideHeight)
+  // マーカーのY座標はactualTideHeightをminH〜maxHの範囲でスケーリング
+  const markerY = PAD_Y + (1 - (actualTideHeight - minH) / range) * (H - PAD_Y * 2)
 
   const timeLabels = [0, 6, 12, 18, 24]
 
@@ -96,7 +99,7 @@ export default function TideCurve({
           marginBottom: 8,
         }}
       >
-        現在 {currentTideHeight}cm {movementIcon[currentTideMovement]}{' '}
+        現在 {actualTideHeight}cm {movementIcon[currentTideMovement]}{' '}
         {movementLabel[currentTideMovement]}
       </p>
 
