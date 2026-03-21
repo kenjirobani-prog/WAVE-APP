@@ -198,7 +198,9 @@ export default function SpotDetailContent({ id }: { id: string }) {
       setTideSeries(series)
 
       // デバッグ用ログ（ブラウザのDevToolsコンソールで確認）
-      const nowHour = dateParam ? 12 : (new Date().getUTCHours() + 9) % 24
+      const jstHour = (new Date().getUTCHours() + 9) % 24
+      const todayStr = toDateStr(new Date())
+      const nowHour = (!dateParam || dateParam === todayStr) ? jstHour : 12
       console.log('[TideDebug] currentHour (JST):', nowHour)
       console.log('[TideDebug] tideSeries:', series)
       console.log('[TideDebug] currentPoint:', series.find(p => p.hour === nowHour))
@@ -380,7 +382,12 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">潮位</h2>
                 <TideBar
                   tideData={tideSeries}
-                  currentHour={dateParam ? 12 : (new Date().getUTCHours() + 9) % 24}
+                  currentHour={(() => {
+                    const jstHour = (new Date().getUTCHours() + 9) % 24
+                    // dateParamが今日と同じ日付なら実際のJST時刻を使う
+                    const todayStr = toDateStr(new Date())
+                    return (!dateParam || dateParam === todayStr) ? jstHour : 12
+                  })()}
                 />
               </section>
             )}
