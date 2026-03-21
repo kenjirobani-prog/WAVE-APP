@@ -10,7 +10,7 @@ import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade, { gradeLabel } from '@/components/ScoreGrade'
 import { useCountUp } from '@/hooks/useCountUp'
 import ForecastChart from '@/components/ForecastChart'
-import TideCurve from '@/components/TideCurve'
+import TideChart from '@/components/TideChart'
 import BottomNav from '@/components/BottomNav'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
@@ -374,15 +374,13 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </section>
             )}
 
-            {/* 潮位曲線 */}
-            {current && tideSeries.length > 0 && (
+            {/* 潮位グラフ */}
+            {tideSeries.length > 0 && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
                 <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">潮位</h2>
-                <TideCurve
+                <TideChart
                   tideData={tideSeries}
                   currentHour={dateParam ? 12 : (new Date().getUTCHours() + 9) % 24}
-                  currentTideHeight={current.tideHeight}
-                  currentTideMovement={current.tideMovement}
                 />
               </section>
             )}
