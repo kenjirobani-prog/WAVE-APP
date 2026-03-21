@@ -125,7 +125,9 @@ export async function migrateLocalStorageToFirestore(): Promise<void> {
 // ---- 純粋関数（ページで引き続き使用） ----
 
 export function countDaysInYear(logs: SurfLog[], year: number): number {
-  const dates = new Set(logs.filter((l) => l.date.startsWith(String(year))).map((l) => l.date))
+  const dates = new Set(
+    logs.filter((l) => Number(l.date.slice(0, 4)) === year).map((l) => l.date),
+  )
   return dates.size
 }
 
