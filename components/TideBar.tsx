@@ -1,58 +1,60 @@
 'use client'
 
+interface TidePoint {
+  hour: number
+  tideHeight: number
+}
+
 interface Props {
-  tideHeight: number      // cm
-  tideMovement: 'rising' | 'falling' | 'slack'
-  minTide?: number        // 表示範囲min（デフォルト0）
-  maxTide?: number        // 表示範囲max（デフォルト200）
+  tideData: TidePoint[]
+  currentHour: number
 }
 
-const movementLabel: Record<Props['tideMovement'], string> = {
-  rising: '上げ潮',
-  falling: '引き潮',
-  slack: '止まり',
-}
+export default function TideBar({ tideData, currentHour }: Props) {
+  if (tideData.length === 0) return null
 
-const movementIcon: Record<Props['tideMovement'], string> = {
-  rising: '↑',
-  falling: '↓',
-  slack: '→',
-}
+  const sorted = [...tideData].sort((a, b) => a.hour - b.hour)
+  const currentPoint = sorted.find(p => p.hour === currentHour)
+  const prevPoint = sorted.find(p => p.hour === currentHour - 1)
 
-export default function TideBar({
-  tideHeight,
-  tideMovement,
-  minTide = 0,
-  maxTide = 200,
-}: Props) {
-  const percent = Math.round(((tideHeight - minTide) / (maxTide - minTide)) * 100)
-  const clamped = Math.max(0, Math.min(100, percent))
+  const currentTide = currentPoint?.tideHeight ?? sorted[Math.floor(sorted.length / 2)].tideHeight
+  const prevTide = prevPoint?.tideHeight
+
+  const isRising = prevTide !== undefined ? currentTide > prevTide : false
+  const movementText = isRising ? '↑ 上げ潮' : '↓ 引き潮'
+
+  const heights = sorted.map(p => p.tideHeight)
+  const minTide = Math.min(...heights)
+  const maxTide = Math.max(...heights)
+  const range = maxTide - minTide || 1
+  const percent = Math.max(0, Math.min(100, ((currentTide - minTide) / range) * 100))
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm text-slate-500">
-        <span>干潮</span>
-        <span className="font-semibold text-slate-700">
-          {tideHeight}cm{' '}
-          <span className={tideMovement === 'rising' ? 'text-blue-500' : tideMovement === 'falling' ? 'text-amber-500' : 'text-slate-400'}>
-            {movementIcon[tideMovement]} {movementLabel[tideMovement]}
-          </span>
+    <div>
+      {/* 潮位値と満ち引き */}
+      <div className="flex items-baseline gap-2 mb-3">
+        <span className="text-2xl font-bold text-[#0a1628]">{currentTide}cm</span>
+        <span className={`text-sm font-semibold ${isRising ? 'text-sky-500' : 'text-amber-500'}`}>
+          {movementText}
         </span>
-        <span>満潮</span>
       </div>
-      <div className="relative h-4 bg-slate-200 rounded-full overflow-visible">
-        {/* 最適範囲ハイライト */}
-        <div className="absolute top-0 bottom-0 bg-emerald-100 rounded-full" style={{ left: '40%', right: '40%' }} />
-        {/* バー */}
-        <div
-          className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-sky-300 to-sky-500 rounded-full transition-all"
-          style={{ width: `${clamped}%` }}
-        />
-        {/* 現在位置マーカー */}
-        <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white border-2 border-sky-500 rounded-full shadow-sm"
-          style={{ left: `${clamped}%` }}
-        />
+
+      {/* 横バー */}
+      <div className="flex items-center gap-2 text-xs text-[#8899aa]">
+        <span>干潮</span>
+        <div className="flex-1 relative h-4 bg-[#eef1f4] rounded-full overflow-visible">
+          {/* バー本体 */}
+          <div
+            className="absolute top-0 bottom-0 left-0 rounded-full"
+            style={{ width: `${percent}%`, background: '#0ea5e9' }}
+          />
+          {/* 現在位置マーカー */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white border-2 border-[#0ea5e9] rounded-full shadow-sm"
+            style={{ left: `${percent}%` }}
+          />
+        </div>
+        <span>満潮</span>
       </div>
     </div>
   )
