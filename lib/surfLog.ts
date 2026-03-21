@@ -9,7 +9,7 @@ import {
   query,
   serverTimestamp,
 } from 'firebase/firestore'
-import { db, ensureAnonymousAuth } from './firebase'
+import { getDb, ensureAnonymousAuth } from './firebase'
 import type { SurfLog, Grade } from '@/types'
 
 const STORAGE_KEY = 'wave_app_surf_logs'
@@ -42,7 +42,7 @@ export function saveLocalSurfLog(log: Omit<SurfLog, 'id'>): SurfLog {
 // ---- Firestore ユーティリティ ----
 
 function surfLogCol(uid: string) {
-  return collection(db, `users/${uid}/surfLogs`)
+  return collection(getDb(), `users/${uid}/surfLogs`)
 }
 
 // Firestoreに保存
@@ -88,7 +88,7 @@ export async function subscribeSurfLogs(
 // Firestoreから削除
 export async function deleteSurfLog(id: string): Promise<void> {
   const uid = await ensureAnonymousAuth()
-  await deleteDoc(doc(db, `users/${uid}/surfLogs/${id}`))
+  await deleteDoc(doc(getDb(), `users/${uid}/surfLogs/${id}`))
 }
 
 // ---- localStorage → Firestore 移行 ----
