@@ -10,7 +10,7 @@ import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade, { gradeLabel } from '@/components/ScoreGrade'
 import { useCountUp } from '@/hooks/useCountUp'
 import ForecastChart from '@/components/ForecastChart'
-import TideBar from '@/components/TideBar'
+import TideCurve from '@/components/TideCurve'
 import BottomNav from '@/components/BottomNav'
 import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
@@ -115,6 +115,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [current, setCurrent] = useState<WaveCondition | null>(null)
   const [hourly, setHourly] = useState<WaveCondition[]>([])
+  const [tideSeries, setTideSeries] = useState<{ hour: number; tideHeight: number }[]>([])
   const [score, setScore] = useState<SpotScore | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -187,6 +188,14 @@ export default function SpotDetailContent({ id }: { id: string }) {
       const to3 = nextConditions.filter(c => new Date(c.timestamp).getHours() <= 3).map(applyMult)
       setHourly([...from4, ...to3])
       if (representative) setCurrent(applyMult(representative))
+
+      // 24時間潮位曲線用データ
+      setTideSeries(
+        conditions.map(c => ({
+          hour: new Date(c.timestamp).getHours(),
+          tideHeight: c.tideHeight,
+        })),
+      )
     } catch {
       setError('データの取得に失敗しました。通信状況を確認してください。')
     } finally {
@@ -359,13 +368,15 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </section>
             )}
 
-            {/* 潮位バー */}
-            {current && (
+            {/* 潮位曲線 */}
+            {current && tideSeries.length > 0 && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
                 <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">潮位</h2>
-                <TideBar
-                  tideHeight={current.tideHeight}
-                  tideMovement={current.tideMovement}
+                <TideCurve
+                  tideData={tideSeries}
+                  currentHour={dateParam ? 12 : new Date().getHours()}
+                  currentTideHeight={current.tideHeight}
+                  currentTideMovement={current.tideMovement}
                 />
               </section>
             )}
