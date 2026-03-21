@@ -367,6 +367,73 @@ function SpotDetailContent({ id }: { id: string }) {
               )}
             </section>
 
+            {/* スポット詳細情報 */}
+            {(spot.description || spot.bestSeasons?.length || spot.bestTide || spot.waveTypeTags?.length || spot.facilities?.length || spot.beginnerNote) && (
+              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4] space-y-5">
+                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa]">スポット詳細</h2>
+
+                {spot.description && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">スポットの特徴</p>
+                    <p className="text-sm text-[#0a1628] leading-relaxed">{spot.description}</p>
+                  </div>
+                )}
+
+                {spot.bestSeasons && spot.bestSeasons.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ベストシーズン</p>
+                    <div className="flex flex-wrap gap-2">
+                      {spot.bestSeasons.map(s => (
+                        <span key={s} className="text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-100 px-3 py-1 rounded-full">
+                          {seasonLabel(s)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {spot.bestTide && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ベスト潮回り</p>
+                    <p className="text-sm text-[#0a1628] leading-relaxed">{spot.bestTide}</p>
+                  </div>
+                )}
+
+                {spot.waveTypeTags && spot.waveTypeTags.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">波のタイプ</p>
+                    <div className="flex flex-wrap gap-2">
+                      {spot.waveTypeTags.map(tag => (
+                        <span key={tag} className="text-xs font-medium bg-[#f0f4f8] text-[#0a1628] px-3 py-1 rounded-full">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {spot.facilities && spot.facilities.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">周辺施設</p>
+                    <div className="flex flex-wrap gap-2">
+                      {spot.facilities.map(f => (
+                        <span key={f} className="text-xs font-medium bg-[#f0f4f8] text-[#0a1628] px-3 py-1 rounded-full">
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {spot.beginnerNote && (
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 mb-2">初心者メモ</p>
+                    <p className="text-sm text-[#0a1628] leading-relaxed">{spot.beginnerNote}</p>
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Surf Log 記録ボタン */}
             {score && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
@@ -529,4 +596,9 @@ function swellDirLabel(swellDir: number, bestDir: number): string {
   if (diff <= 30) return '正面'
   if (diff <= 60) return '斜め'
   return '外れ'
+}
+
+function seasonLabel(s: string): string {
+  const labels: Record<string, string> = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' }
+  return labels[s] ?? s
 }
