@@ -190,15 +190,16 @@ export default function SpotDetailContent({ id }: { id: string }) {
       if (representative) setCurrent(applyMult(representative))
 
       // 24時間潮位曲線用データ
+      // タイムゾーン非依存でJST時刻を取得: (UTCHours + 9) % 24
       const series = conditions.map(c => ({
-        hour: new Date(c.timestamp).getHours(),
+        hour: (new Date(c.timestamp).getUTCHours() + 9) % 24,
         tideHeight: c.tideHeight,
       }))
       setTideSeries(series)
 
       // デバッグ用ログ（ブラウザのDevToolsコンソールで確認）
-      const nowHour = dateParam ? 12 : new Date().getHours()
-      console.log('[TideDebug] currentHour:', nowHour)
+      const nowHour = dateParam ? 12 : (new Date().getUTCHours() + 9) % 24
+      console.log('[TideDebug] currentHour (JST):', nowHour)
       console.log('[TideDebug] tideSeries:', series)
       console.log('[TideDebug] currentPoint:', series.find(p => p.hour === nowHour))
     } catch {
@@ -379,7 +380,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">潮位</h2>
                 <TideCurve
                   tideData={tideSeries}
-                  currentHour={dateParam ? 12 : new Date().getHours()}
+                  currentHour={dateParam ? 12 : (new Date().getUTCHours() + 9) % 24}
                   currentTideHeight={current.tideHeight}
                   currentTideMovement={current.tideMovement}
                 />

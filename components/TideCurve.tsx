@@ -62,7 +62,9 @@ export default function TideCurve({
 
   // hour 0 → x=0, hour 24 → x=W
   const toX = (hour: number) => (hour / 24) * W
-  const toY = (h: number) => PAD_Y + (1 - (h - minH) / range) * (H - PAD_Y * 2)
+  // 指定のY座標変換式: 値が大きいほどY座標が小さい（上側）
+  const toY = (value: number) =>
+    H - PAD_Y - ((value - minH) / range) * (H - PAD_Y * 2)
 
   const pts = sorted.map(p => ({ x: toX(p.hour), y: toY(p.tideHeight) }))
   const linePath = buildSmoothPath(pts)
@@ -76,9 +78,8 @@ export default function TideCurve({
 
   // 破線・マーカーは同じX座標: (currentHour / 24) * W
   const markerX = (currentHour / 24) * W
-  // マーカーのY座標: actualTideHeightをminH〜maxHでスケーリング、SVG範囲内にクランプ
-  const rawMarkerY = PAD_Y + (1 - (actualTideHeight - minH) / range) * (H - PAD_Y * 2)
-  const markerY = Math.max(PAD_Y, Math.min(H - PAD_Y, rawMarkerY))
+  // マーカーのY座標: actualTideHeightを同じtoY関数でスケーリング（曲線と同一基準）
+  const markerY = toY(actualTideHeight)
 
   const timeLabels = [0, 6, 12, 18, 24]
 
