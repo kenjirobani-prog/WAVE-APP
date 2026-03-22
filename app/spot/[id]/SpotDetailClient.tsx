@@ -184,9 +184,11 @@ export default function SpotDetailContent({ id }: { id: string }) {
       const applyMult = (c: WaveCondition): WaveCondition =>
         m !== 1.0 ? { ...c, waveHeight: c.waveHeight * m } : c
 
-      // アクセス時間帯によって予報チャートの表示開始時刻を切り替え
+      // 今日タブか否かで予報開始時刻を切り替え
+      const isToday = !dateParam || dateParam === toDateStr(new Date())
       const accessHour = (new Date().getUTCHours() + 9) % 24
-      const startHour = accessHour >= 3 && accessHour <= 8 ? 4
+      const startHour = !isToday ? 4
+                      : accessHour >= 3 && accessHour <= 8 ? 4
                       : accessHour >= 9 && accessHour <= 14 ? 9
                       : 15
       const fromStart = conditions.filter(c => {
@@ -375,10 +377,15 @@ export default function SpotDetailContent({ id }: { id: string }) {
                     <span className="text-[10px] text-[#94a3b8]">スワイプ →</span>
                   )}
                 </div>
-                <ForecastChart conditions={hourly} profile={profile} onFirstScroll={() => {
-                  localStorage.setItem('hasScrolledForecast', '1')
-                  setShowSwipeHint(false)
-                }} />
+                <ForecastChart
+                  conditions={hourly}
+                  profile={profile}
+                  showNowMarker={!dateParam || dateParam === toDateStr(new Date())}
+                  onFirstScroll={() => {
+                    localStorage.setItem('hasScrolledForecast', '1')
+                    setShowSwipeHint(false)
+                  }}
+                />
                 <div className="flex gap-4 mt-3 text-xs text-[#8899aa]">
                   <span><span className="inline-block w-3 h-3 bg-sky-900 rounded-sm mr-1" />好みサイズ</span>
                   <span><span className="inline-block w-3 h-3 bg-sky-500 rounded-sm mr-1" />やや小さめ</span>

@@ -7,6 +7,7 @@ import { classifyWind } from '@/lib/wave/scoring'
 interface Props {
   conditions: WaveCondition[]
   profile: UserProfile
+  showNowMarker?: boolean
   onFirstScroll?: () => void
 }
 
@@ -64,7 +65,7 @@ function WindCell({ dir, speed }: { dir: number; speed: number }) {
   )
 }
 
-export default function ForecastChart({ conditions, profile, onFirstScroll }: Props) {
+export default function ForecastChart({ conditions, profile, showNowMarker = true, onFirstScroll }: Props) {
   const preferred = PREFERRED_SIZE_M[profile.preferredSize]
   const maxHeight = Math.max(...conditions.map(c => c.waveHeight), 1)
   const now = new Date()
@@ -89,7 +90,7 @@ export default function ForecastChart({ conditions, profile, onFirstScroll }: Pr
           const ts = new Date(c.timestamp)
           const hour = ts.getHours()
           const isNextDay = baseDay !== null && ts.toDateString() !== baseDay
-          const isNow = Math.abs(ts.getTime() - now.getTime()) < 1800000
+          const isNow = showNowMarker && Math.abs(ts.getTime() - now.getTime()) < 1800000
           const barHeight = Math.round((c.waveHeight / maxHeight) * 80)
 
           return (
