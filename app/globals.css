@@ -11,3 +11,8 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

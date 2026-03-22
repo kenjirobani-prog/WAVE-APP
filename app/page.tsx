@@ -228,7 +228,18 @@ export default function TopPage() {
               {DOW_ENG[today.getDay()]} · {today.getMonth() + 1}/{today.getDate()}
             </span>
             {lastUpdated && (
-              <p className="text-[10px] text-[#94a3b8] mt-1">{formatTime(lastUpdated)}</p>
+              <div className="flex items-center gap-1 justify-end mt-1">
+                <span style={{
+                  display: 'inline-block',
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: '#22c55e',
+                  animation: 'livePulse 2s ease-in-out infinite',
+                }} />
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#22c55e' }}>LIVE</span>
+                <span style={{ fontSize: 11, color: '#0a1628' }}>{formatTime(lastUpdated)}</span>
+              </div>
             )}
           </div>
         </div>

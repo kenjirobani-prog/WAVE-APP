@@ -184,9 +184,20 @@ export default function SpotDetailContent({ id }: { id: string }) {
       const applyMult = (c: WaveCondition): WaveCondition =>
         m !== 1.0 ? { ...c, waveHeight: c.waveHeight * m } : c
 
-      const from4 = conditions.filter(c => new Date(c.timestamp).getHours() >= 4).map(applyMult)
-      const to3 = nextConditions.filter(c => new Date(c.timestamp).getHours() <= 3).map(applyMult)
-      setHourly([...from4, ...to3])
+      // アクセス時間帯によって予報チャートの表示開始時刻を切り替え
+      const accessHour = (new Date().getUTCHours() + 9) % 24
+      const startHour = accessHour >= 3 && accessHour <= 8 ? 4
+                      : accessHour >= 9 && accessHour <= 14 ? 9
+                      : 15
+      const fromStart = conditions.filter(c => {
+        const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+        return h >= startHour
+      }).map(applyMult)
+      const to3 = nextConditions.filter(c => {
+        const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+        return h <= 3
+      }).map(applyMult)
+      setHourly([...fromStart, ...to3])
       if (representative) setCurrent(applyMult(representative))
 
       // 24時間潮位曲線用データ

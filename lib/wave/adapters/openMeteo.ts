@@ -86,7 +86,15 @@ function parsePredictionTable(html: string, date: Date): (number | undefined)[] 
   while ((tdMatch = tdPattern.exec(rowMatch[1])) !== null) {
     values.push(parseInt(tdMatch[1]))
   }
-  return values.slice(0, 24).map(v => (isNaN(v) ? undefined : v))
+
+  // 予測テーブルの最初の列は「1時」の値（0時は含まれない）
+  // values[0]=1時, values[1]=2時, ..., values[22]=23時 → hour h = values[h-1]
+  // hour 0 は undefined にして observations または estimateTideHeight にフォールバック
+  const shifted: (number | undefined)[] = new Array(24).fill(undefined)
+  values.slice(0, 23).forEach((v, i) => {
+    shifted[i + 1] = isNaN(v) ? undefined : v
+  })
+  return shifted
 }
 
 function estimateTideHeight(hour: number): number {
