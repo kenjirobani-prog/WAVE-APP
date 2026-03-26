@@ -213,7 +213,7 @@ export const SPOTS: Spot[] = [
     liveCameraUrl: 'https://www.surfers-ocean.com/%E3%82%B5%E3%83%BC%E3%83%95%E3%82%A3%E3%83%B3%E6%B3%A2%E6%83%85%E5%A0%B1/%E9%8E%8C%E5%80%89/',
     mapUrl: 'https://maps.app.goo.gl/bD4CTbYimqGxH97MA',
     mapPlaceName: '由比ガ浜海水浴場',
-    mapCenter: { lat: 35.3170, lng: 139.5480 },
+    mapCenter: { lat: 35.3093, lng: 139.5515 },
     description: '鎌倉の中心に位置する穏やかなビーチ。波は比較的小さくおだやかで初心者に人気。夏は海水浴客で非常に混雑するため、サーフィンには向かない時期もある。秋〜春がサーフィンには最適。',
     bestSeasons: ['spring', 'autumn', 'winter'],
     bestTide: '上げ込み〜中潮が波が立ちやすい。満潮時は波が崩れやすい。',
