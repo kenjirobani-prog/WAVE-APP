@@ -101,6 +101,12 @@ function waveHeightLabel(h: number): string {
   return 'ヒザ以下'
 }
 
+const COMPASS_8 = ['北', '北東', '東', '南東', '南', '南西', '西', '北西']
+
+function swellDir8(deg: number): string {
+  return COMPASS_8[Math.round(deg / 45) % 8]
+}
+
 function swellDirLabel(swellDir: number, bestDir: number): string {
   const diff = Math.abs(((swellDir - bestDir + 540) % 360) - 180)
   if (diff <= 30) return '正面'
@@ -349,7 +355,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   />
                   <ConditionCard
                     label="うねり方向"
-                    value={`${current.swellDir}°`}
+                    value={swellDir8(current.swellDir)}
                     sub={swellDirLabel(current.swellDir, spot.bestSwellDir)}
                   />
                   <ConditionCard

@@ -45,15 +45,10 @@ function windShortLabel(type: ReturnType<typeof classifyWind>): string {
   return 'ON'
 }
 
-const COMPASS_ABBR = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']
-const COMPASS_JA   = ['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西']
+const COMPASS_8 = ['北', '北東', '東', '南東', '南', '南西', '西', '北西']
 
-function compassAbbr(deg: number): string {
-  return COMPASS_ABBR[Math.round(deg / 22.5) % 16]
-}
-
-function compassJa(deg: number): string {
-  return COMPASS_JA[Math.round(deg / 22.5) % 16]
+function swellDir8(deg: number): string {
+  return COMPASS_8[Math.round(deg / 45) % 8]
 }
 
 function periodLabel(s: number): string {
@@ -109,8 +104,7 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
             </div>
             <div style={{ background: cellBg, borderRadius: 7 }} className="p-2 text-center">
               <p style={{ fontSize: 8 }} className="text-[#94a3b8] mb-0.5">うねり</p>
-              <p style={{ fontSize: 11, fontWeight: 600 }} className="text-[#0a1628] leading-tight">{compassAbbr(condition.swellDir)}</p>
-              <p style={{ fontSize: 8 }} className="text-[#64748b] leading-tight">{compassJa(condition.swellDir)}</p>
+              <p style={{ fontSize: 11, fontWeight: 600 }} className="text-[#0a1628] leading-tight">{swellDir8(condition.swellDir)}</p>
             </div>
             <div style={{ background: cellBg, borderRadius: 7 }} className="p-2 text-center">
               <p style={{ fontSize: 8 }} className="text-[#94a3b8] mb-0.5">周期</p>
