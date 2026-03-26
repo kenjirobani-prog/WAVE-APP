@@ -427,9 +427,8 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 <iframe
                   src={(() => {
                     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-                    const place = spot.mapPlaceName ?? spot.name
                     const center = spot.mapCenter ?? { lat: spot.lat, lng: spot.lng }
-                    return `https://www.google.com/maps/embed/v1/place?key=${key}&q=${encodeURIComponent(place)}&center=${center.lat},${center.lng}&zoom=15&language=ja`
+                    return `https://www.google.com/maps/embed/v1/view?key=${key}&center=${center.lat},${center.lng}&zoom=16&maptype=roadmap`
                   })()}
                   width="100%"
                   height="200"

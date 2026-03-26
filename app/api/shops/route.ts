@@ -11,24 +11,33 @@ export async function GET(req: NextRequest) {
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   if (!apiKey) {
+    console.error('[Shops] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set')
     return NextResponse.json({ error: 'Maps API key not configured' }, { status: 500 })
   }
 
   const params = new URLSearchParams({
     location: `${lat},${lng}`,
-    radius: '1500',
-    keyword: 'サーフショップ',
+    radius: '3000',
+    keyword: 'surf shop',
     language: 'ja',
     key: apiKey,
   })
 
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params}`
+  console.log('[Shops] Request URL:', url.replace(apiKey, 'API_KEY_REDACTED'))
+
   try {
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params}`,
-      { next: { revalidate: 86400 } } as RequestInit
-    )
-    if (!res.ok) throw new Error(`Places API error: ${res.status}`)
+    const res = await fetch(url, { next: { revalidate: 86400 } } as RequestInit)
+    if (!res.ok) {
+      console.error('[Shops] HTTP error:', res.status, res.statusText)
+      throw new Error(`Places API HTTP error: ${res.status}`)
+    }
     const data = await res.json()
+    console.log('[Shops] status:', data.status)
+    console.log('[Shops] results count:', data.results?.length ?? 0)
+    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+      console.error('[Shops] API error status:', data.status, data.error_message ?? '')
+    }
 
     const shops = (data.results ?? []).slice(0, 5).map((p: {
       name: string
@@ -44,8 +53,9 @@ export async function GET(req: NextRequest) {
       geometry: p.geometry,
     }))
 
-    return NextResponse.json({ shops })
-  } catch {
+    return NextResponse.json({ shops, status: data.status })
+  } catch (err) {
+    console.error('[Shops] Fetch error:', err)
     return NextResponse.json({ error: 'Failed to fetch shops' }, { status: 500 })
   }
 }
