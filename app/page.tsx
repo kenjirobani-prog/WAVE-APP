@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUserProfile } from '@/lib/userProfile'
+import { getUserProfile, saveUserProfile } from '@/lib/userProfile'
 import { SPOTS } from '@/data/spots'
 import { calculateScore } from '@/lib/wave/scoring'
 import type { UserProfile, SpotScore } from '@/types'
@@ -99,6 +99,33 @@ function getActiveWeather(
 }
 
 
+const SETTING_LEVELS: { value: UserProfile['level']; label: string }[] = [
+  { value: 'beginner', label: '初級' },
+  { value: 'intermediate', label: '中級' },
+  { value: 'advanced', label: '上級' },
+]
+const SETTING_BOARDS: { value: UserProfile['boardType']; label: string }[] = [
+  { value: 'longboard', label: 'ロング' },
+  { value: 'funboard', label: 'ミッド' },
+  { value: 'shortboard', label: 'ショート' },
+]
+const SETTING_SIZES: { value: UserProfile['preferredSize']; label: string }[] = [
+  { value: 'ankle', label: 'モモ' },
+  { value: 'waist-chest', label: '腰' },
+  { value: 'head', label: '胸' },
+  { value: 'overhead', label: '肩↑' },
+]
+
+function levelLabel(v: UserProfile['level']): string {
+  return SETTING_LEVELS.find(x => x.value === v)?.label ?? v
+}
+function boardLabel(v: UserProfile['boardType']): string {
+  return SETTING_BOARDS.find(x => x.value === v)?.label ?? v
+}
+function sizeLabel(v: UserProfile['preferredSize']): string {
+  return SETTING_SIZES.find(x => x.value === v)?.label ?? v
+}
+
 export default function TopPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -110,6 +137,10 @@ export default function TopPage() {
   const [weekendDay, setWeekendDay] = useState<'sat' | 'sun'>('sat')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [weather, setWeather] = useState<WeatherFullData | null>(null)
+  const [showSettingsSheet, setShowSettingsSheet] = useState(false)
+  const [draftLevel, setDraftLevel] = useState<UserProfile['level']>('intermediate')
+  const [draftBoard, setDraftBoard] = useState<UserProfile['boardType']>('funboard')
+  const [draftSize, setDraftSize] = useState<UserProfile['preferredSize']>('waist-chest')
 
   const { sat, sun } = getUpcomingWeekend()
   const today = new Date(); today.setHours(12, 0, 0, 0)
@@ -117,12 +148,8 @@ export default function TopPage() {
 
   useEffect(() => {
     const p = getUserProfile()
-    if (!p.onboardingDone) {
-      router.replace('/onboarding')
-      return
-    }
     setProfile(p)
-  }, [router])
+  }, [])
 
   useEffect(() => {
     fetch('/api/weather')
@@ -213,12 +240,23 @@ export default function TopPage() {
       <header className="bg-white px-4 pt-10 pb-4 border-b border-[#eef1f4]">
         <div className="flex items-center justify-between">
           <img src="/images/header.png" alt="Shonan Wave Forecast" style={{ height: 32, width: 'auto' }} />
-          <div className="text-right">
+          <div className="text-right flex flex-col items-end gap-1">
+            <button
+              onClick={() => {
+                setDraftLevel(profile.level)
+                setDraftBoard(profile.boardType)
+                setDraftSize(profile.preferredSize)
+                setShowSettingsSheet(true)
+              }}
+              style={{ background: '#f0f9ff', border: '0.5px solid #bae6fd', borderRadius: 99, padding: '4px 10px', fontSize: 10, fontWeight: 600, color: '#0369a1' }}
+            >
+              ⚙ {levelLabel(profile.level)}・{boardLabel(profile.boardType)}・{sizeLabel(profile.preferredSize)}
+            </button>
             <span className="text-[11px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-3 py-1 rounded-full tracking-widest uppercase">
               {DOW_ENG[today.getDay()]} · {today.getMonth() + 1}/{today.getDate()}
             </span>
             {lastUpdated && (
-              <div className="flex items-center gap-1 justify-end mt-1">
+              <div className="flex items-center gap-1">
                 <span style={{
                   display: 'inline-block',
                   width: 7,
@@ -342,6 +380,85 @@ export default function TopPage() {
           })
         )}
       </main>
+
+      {/* 設定ボトムシート */}
+      {showSettingsSheet && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowSettingsSheet(false)} />
+          <div className="relative bg-white rounded-t-3xl w-full max-w-md px-6 pt-6 pb-10">
+            <div className="w-10 h-1 bg-[#dde3ea] rounded-full mx-auto mb-5" />
+            <h3 className="text-lg font-bold text-[#0a1628] mb-5">サーフィン設定</h3>
+
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">レベル</p>
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              {SETTING_LEVELS.map(l => (
+                <button
+                  key={l.value}
+                  onClick={() => setDraftLevel(l.value)}
+                  className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  style={draftLevel === l.value
+                    ? { background: '#0c4a6e', color: '#fff' }
+                    : { background: '#f0f4f8', color: '#8899aa' }
+                  }
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ボード</p>
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              {SETTING_BOARDS.map(b => (
+                <button
+                  key={b.value}
+                  onClick={() => setDraftBoard(b.value)}
+                  className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  style={draftBoard === b.value
+                    ? { background: '#0c4a6e', color: '#fff' }
+                    : { background: '#f0f4f8', color: '#8899aa' }
+                  }
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">好みの波サイズ</p>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {SETTING_SIZES.map(s => (
+                <button
+                  key={s.value}
+                  onClick={() => setDraftSize(s.value)}
+                  className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  style={draftSize === s.value
+                    ? { background: '#0c4a6e', color: '#fff' }
+                    : { background: '#f0f4f8', color: '#8899aa' }
+                  }
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                const updated: UserProfile = {
+                  ...profile,
+                  level: draftLevel,
+                  boardType: draftBoard,
+                  preferredSize: draftSize,
+                }
+                saveUserProfile(updated)
+                setProfile(updated)
+                setShowSettingsSheet(false)
+              }}
+              className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
+            >
+              保存して再計算
+            </button>
+          </div>
+        </div>
+      )}
 
       <BottomNav current="forecast" />
     </div>

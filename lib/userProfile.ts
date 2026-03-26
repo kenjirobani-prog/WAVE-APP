@@ -4,10 +4,10 @@ const STORAGE_KEY = 'wave_app_user_profile'
 
 export const DEFAULT_PROFILE: UserProfile = {
   level: 'intermediate',
-  boardType: 'shortboard',
+  boardType: 'funboard',
   preferredSize: 'waist-chest',
   favoriteSpots: [],
-  onboardingDone: false,
+  onboardingDone: true,
 }
 
 export function getUserProfile(): UserProfile {
