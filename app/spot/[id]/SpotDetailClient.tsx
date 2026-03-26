@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
-import { calculateScore, classifyWind, windTypeLabel, compassLabel } from '@/lib/wave/scoring'
+import { calculateScore, classifyWind, windTypeLabel, compassLabel, waveQualityLabel, waveQualityColor, waveQualitySub } from '@/lib/wave/scoring'
 import { saveSurfLog } from '@/lib/surfLog'
 import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
@@ -363,6 +363,18 @@ export default function SpotDetailContent({ id }: { id: string }) {
                     value={`${current.wavePeriod.toFixed(0)}秒`}
                     sub={current.wavePeriod >= 10 ? 'うねりあり' : 'うねりなし'}
                   />
+                  {score && (() => {
+                    const qScore = score.breakdown.waveQuality
+                    const { text, bg } = waveQualityColor(qScore)
+                    const windType = classifyWind(current.windDir, current.windSpeed)
+                    return (
+                      <div className="bg-[#f0f4f8] rounded-xl p-3" style={{ gridColumn: '1 / -1', background: bg }}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波質</p>
+                        <p style={{ fontSize: 20, fontWeight: 700, color: text }}>{waveQualityLabel(qScore)}</p>
+                        <p className="text-xs text-[#8899aa] mt-0.5">{waveQualitySub(qScore, current.wavePeriod, windType)}</p>
+                      </div>
+                    )
+                  })()}
                 </div>
               </section>
             )}

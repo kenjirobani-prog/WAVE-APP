@@ -190,6 +190,38 @@ export function calculateScore(
   }
 }
 
+export function waveQualityLabel(score: number): string {
+  if (score >= 18) return 'キレた波'
+  if (score >= 13) return 'グッドウェーブ'
+  if (score >= 8)  return 'まあまあ'
+  if (score >= 3)  return 'ワイド気味'
+  return 'ダンパー'
+}
+
+export function waveQualityColor(score: number): { text: string; bg: string } {
+  if (score >= 18) return { text: '#0c4a6e', bg: '#dbeafe' }
+  if (score >= 13) return { text: '#0369a1', bg: '#e0f2fe' }
+  if (score >= 8)  return { text: '#64748b', bg: '#f8fafc' }
+  if (score >= 3)  return { text: '#d97706', bg: '#fef9c3' }
+  return { text: '#dc2626', bg: '#fee2e2' }
+}
+
+export function waveQualitySub(
+  score: number,
+  wavePeriod: number,
+  windType: WindType,
+): string {
+  const period = Math.round(wavePeriod)
+  if (score >= 18) {
+    if (windType === 'offshore') return `周期${period}秒 × オフショア`
+    return `周期${period}秒 × うねり正面`
+  }
+  if (score >= 13) return `周期${period}秒・コンディション良好`
+  if (score >= 8)  return `周期${period}秒・標準的なコンディション`
+  if (score >= 3)  return '周期短め・やや荒れ気味'
+  return '周期短め × オンショア・波が崩れやすい'
+}
+
 export function scoreToGrade(score: number): Grade {
   if (score >= 85) return '◎'
   if (score >= 65) return '○'

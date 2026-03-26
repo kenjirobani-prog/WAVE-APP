@@ -4,7 +4,7 @@ import type { Spot, SpotScore } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade from './ScoreGrade'
 import { useCountUp } from '@/hooks/useCountUp'
-import { classifyWind } from '@/lib/wave/scoring'
+import { classifyWind, waveQualityLabel, waveQualityColor } from '@/lib/wave/scoring'
 
 interface Props {
   spot: Spot
@@ -89,9 +89,9 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
           </div>
         </div>
 
-        {/* 4指標グリッド */}
+        {/* 5指標グリッド */}
         {condition ? (
-          <div className="grid grid-cols-4 gap-1.5 mb-3">
+          <div className="grid gap-1.5 mb-3" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
             <div style={{ background: cellBg, borderRadius: 7 }} className="p-2 text-center">
               <p style={{ fontSize: 8 }} className="text-[#94a3b8] mb-0.5">波高</p>
               <p style={{ fontSize: 11, fontWeight: 600 }} className="text-[#0a1628] leading-tight">{condition.waveHeight.toFixed(1)}m</p>
@@ -111,6 +111,16 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
               <p style={{ fontSize: 11, fontWeight: 600 }} className="text-[#0a1628] leading-tight">{condition.wavePeriod}s</p>
               <p style={{ fontSize: 8 }} className="text-[#64748b] leading-tight">{periodLabel(condition.wavePeriod)}</p>
             </div>
+            {(() => {
+              const qScore = score.breakdown.waveQuality
+              const { text, bg } = waveQualityColor(qScore)
+              return (
+                <div style={{ background: bg, borderRadius: 7 }} className="p-2 text-center">
+                  <p style={{ fontSize: 8, color: '#94a3b8' }} className="mb-0.5">波質</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: text, lineHeight: 1.2 }}>{waveQualityLabel(qScore)}</p>
+                </div>
+              )
+            })()}
           </div>
         ) : (
           <div className="mb-3" />
