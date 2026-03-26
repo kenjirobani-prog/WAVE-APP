@@ -3,59 +3,134 @@ import { useRouter } from 'next/navigation'
 
 export type NavTab = 'forecast' | 'surflog' | 'glossary' | 'mypage'
 
-const NAV_ITEMS: Array<
-  | { type: 'link'; id: NavTab; label: string; href: string }
-  | { type: 'disabled'; label: string; subLabel: string }
-> = [
-  { type: 'link', id: 'forecast',  label: '波予報',   href: '/' },
-  { type: 'link', id: 'surflog',   label: 'Surf Log', href: '/surf-log' },
-  { type: 'link', id: 'glossary',  label: '用語集',   href: '/glossary' },
-  { type: 'disabled', label: 'How to', subLabel: 'coming soon' },
-  { type: 'link', id: 'mypage',    label: 'My Page',  href: '/my-page' },
+function IconEye() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M3 12C3 12 6 5 12 5C18 5 21 12 21 12C21 12 18 19 12 19C6 19 3 12 3 12Z" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="12" cy="12" r="3" stroke="white" strokeWidth="2"/>
+    </svg>
+  )
+}
+
+function IconCalendar() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="4" width="18" height="18" rx="2" stroke="white" strokeWidth="2"/>
+      <path d="M16 2V6M8 2V6M3 10H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function IconLayers() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+      <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function IconClock() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C6.477 2 2 6.477 2 12C2 17.523 6.477 22 12 22C17.523 22 22 17.523 22 12C22 6.477 17.523 2 12 2Z" stroke="white" strokeWidth="2"/>
+      <path d="M12 8V12L15 15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function IconUser() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="4" stroke="white" strokeWidth="2"/>
+      <path d="M4 20C4 17.239 7.582 15 12 15C16.418 15 20 17.239 20 20" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+type LinkItem = { type: 'link'; id: NavTab; label: string; href: string; icon: React.ReactNode }
+type DisabledItem = { type: 'disabled'; label: string; icon: React.ReactNode }
+
+const NAV_ITEMS: Array<LinkItem | DisabledItem> = [
+  { type: 'link', id: 'forecast', label: '波予報',   href: '/',          icon: <IconEye /> },
+  { type: 'link', id: 'surflog',  label: 'Surf Log', href: '/surf-log',  icon: <IconCalendar /> },
+  { type: 'link', id: 'glossary', label: '用語集',   href: '/glossary',  icon: <IconLayers /> },
+  { type: 'disabled',             label: 'How to',   icon: <IconClock /> },
+  { type: 'link', id: 'mypage',   label: 'My Page',  href: '/my-page',   icon: <IconUser /> },
 ]
 
 export default function BottomNav({ current }: { current: NavTab }) {
   const router = useRouter()
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-3 pb-4 pt-2">
-      <div className="flex bg-[#f0f4f8] rounded-[20px] p-1.5">
-        {NAV_ITEMS.map((item, i) => {
-          if (item.type === 'disabled') {
+    <>
+      {/* ホームインジケーター背景 */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 34, background: '#0c4a6e', zIndex: 39 }} />
+
+      <nav style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 448, zIndex: 40 }}>
+        {/* ナビ本体 */}
+        <div style={{ background: '#0c4a6e', padding: '.45rem .3rem', display: 'flex', gap: '.15rem' }}>
+          {NAV_ITEMS.map((item, i) => {
+            if (item.type === 'disabled') {
+              return (
+                <div
+                  key="howto"
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 3,
+                    borderRadius: 8,
+                    padding: '.45rem .1rem',
+                    opacity: 1,
+                  }}
+                >
+                  <span style={{ opacity: 0.2 }}>{item.icon}</span>
+                  <span style={{ fontSize: 9, fontWeight: 500, color: 'rgba(255,255,255,0.2)', lineHeight: 1 }}>
+                    {item.label}
+                  </span>
+                </div>
+              )
+            }
+            const isActive = current === item.id
             return (
-              <div
-                key="howto"
-                className="flex-1 flex flex-col items-center justify-center"
-                style={{ padding: '.45rem .15rem' }}
+              <button
+                key={item.id}
+                onClick={() => router.push(item.href)}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 3,
+                  borderRadius: 8,
+                  padding: '.45rem .1rem',
+                  background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
               >
-                <span style={{ fontSize: 9, fontWeight: 500, color: '#c8d0d8', lineHeight: 1.3 }}>
+                <span style={{ opacity: isActive ? 1 : 0.45 }}>{item.icon}</span>
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? '#fff' : 'rgba(255,255,255,0.45)',
+                  lineHeight: 1,
+                }}>
                   {item.label}
                 </span>
-                <span style={{ fontSize: 7, color: '#c8d0d8', lineHeight: 1.3, marginTop: 1 }}>
-                  {item.subLabel}
-                </span>
-              </div>
+              </button>
             )
-          }
-          const isActive = current === item.id
-          return (
-            <button
-              key={item.id}
-              onClick={() => router.push(item.href)}
-              className="flex-1 rounded-xl transition-all"
-              style={{
-                padding: '.45rem .15rem',
-                fontSize: 9,
-                fontWeight: isActive ? 600 : 500,
-                color: isActive ? '#0c4a6e' : '#94a3b8',
-                background: isActive ? '#ffffff' : 'transparent',
-                boxShadow: isActive ? '0 2px 6px rgba(12,74,110,0.10)' : 'none',
-              }}
-            >
-              {item.label}
-            </button>
-          )
-        })}
-      </div>
-    </nav>
+          })}
+        </div>
+        {/* ホームインジケーターバー */}
+        <div style={{ background: '#0c4a6e', display: 'flex', justifyContent: 'center', paddingBottom: 8, paddingTop: 4 }}>
+          <div style={{ width: 134, height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.3)' }} />
+        </div>
+      </nav>
+    </>
   )
 }
