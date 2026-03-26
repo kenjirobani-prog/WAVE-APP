@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
@@ -12,7 +12,6 @@ import { useCountUp } from '@/hooks/useCountUp'
 import ForecastChart from '@/components/ForecastChart'
 import TideBar from '@/components/TideBar'
 import BottomNav from '@/components/BottomNav'
-import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear()
@@ -121,7 +120,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null)
 
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [showRefreshToast, setShowRefreshToast] = useState(false)
   const [showSwipeHint, setShowSwipeHint] = useState(false)
   const [windyLoaded, setWindyLoaded] = useState(false)
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
@@ -224,14 +222,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
     }
   }
 
-  const handleRefresh = useCallback(async () => {
-    await loadData()
-    setShowRefreshToast(true)
-    setTimeout(() => setShowRefreshToast(false), 2000)
-  }, [spot, profile, dateParam])
-
-  const { scrollRef, pullDistance, isRefreshing, threshold } = usePullToRefresh(handleRefresh)
-
   function handleSurfLogSave() {
     if (!spot || !selectedSurfGrade) return
     saveSurfLog({
@@ -278,24 +268,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
         </div>
       </header>
 
-      {/* プルリフレッシュインジケーター */}
-      {(pullDistance > 0 || isRefreshing) && (
-        <div className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none"
-          style={{ paddingTop: `${Math.min(pullDistance * 0.6, 16) + 8}px` }}>
-          <div className="bg-sky-900 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg">
-            {isRefreshing ? '更新中...' : pullDistance >= threshold ? '離して更新' : '引っ張って更新'}
-          </div>
-        </div>
-      )}
-
-      {/* 更新トースト */}
-      {showRefreshToast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-[#0a1628] text-white px-5 py-2.5 rounded-full shadow-lg text-sm font-semibold">
-          更新しました
-        </div>
-      )}
-
-      <main ref={scrollRef as React.RefObject<HTMLElement>} className="flex-1 overflow-auto pb-28">
+      <main className="flex-1 overflow-auto pb-28">
         {loading ? (
           <SpotDetailSkeleton />
         ) : error ? (

@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUserProfile } from '@/lib/userProfile'
 import { SPOTS } from '@/data/spots'
@@ -8,7 +8,6 @@ import type { UserProfile, SpotScore } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import BottomNav from '@/components/BottomNav'
-import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 interface WeatherFullData {
   current: { weatherCode: number; temperature: number }
@@ -110,7 +109,6 @@ export default function TopPage() {
   const [tab, setTab] = useState<DateTab>('today')
   const [weekendDay, setWeekendDay] = useState<'sat' | 'sun'>('sat')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [showRefreshToast, setShowRefreshToast] = useState(false)
   const [weather, setWeather] = useState<WeatherFullData | null>(null)
 
   const { sat, sun } = getUpcomingWeekend()
@@ -188,24 +186,16 @@ export default function TopPage() {
       setConditions(condMap)
 
       if (newScores.length === 0 && Object.values(condMap).every(v => v === null)) {
-        setError('波データを取得できませんでした。画面を引っ張って再読み込みしてください。')
+        setError('波データを取得できませんでした。')
       } else {
         setLastUpdated(new Date())
       }
     } catch {
-      setError('データの取得に失敗しました。画面を引っ張って再読み込みしてください。')
+      setError('データの取得に失敗しました。')
     } finally {
       setLoading(false)
     }
   }
-
-  const handleRefresh = useCallback(async () => {
-    await loadForecast(getTargetDate(tab, weekendDay))
-    setShowRefreshToast(true)
-    setTimeout(() => setShowRefreshToast(false), 2000)
-  }, [tab, weekendDay, profile])
-
-  const { scrollRef, pullDistance, isRefreshing, threshold } = usePullToRefresh(handleRefresh)
 
   if (!profile) return null
 
@@ -304,25 +294,8 @@ export default function TopPage() {
         return aw ? <WeatherBar active={aw.active} isToday={aw.isToday} /> : null
       })()}
 
-      {/* プルリフレッシュインジケーター */}
-      {(pullDistance > 0 || isRefreshing) && (
-        <div className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none"
-          style={{ paddingTop: `${Math.min(pullDistance * 0.6, 16) + 8}px` }}>
-          <div className="bg-sky-900 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg">
-            {isRefreshing ? '更新中...' : pullDistance >= threshold ? '離して更新' : '引っ張って更新'}
-          </div>
-        </div>
-      )}
-
-      {/* 更新トースト */}
-      {showRefreshToast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-[#0a1628] text-white px-5 py-2.5 rounded-full shadow-lg text-sm font-semibold">
-          更新しました
-        </div>
-      )}
-
       {/* スポットリスト */}
-      <main ref={scrollRef as React.RefObject<HTMLElement>} className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
+      <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
         {!loading && !error && scores.length > 0 && (
           <AvgScoreHero scores={scores} />
         )}
