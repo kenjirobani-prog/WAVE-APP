@@ -1,10 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { getUserProfile, saveUserProfile } from '@/lib/userProfile'
 import { SPOTS } from '@/data/spots'
-import { calculateScore } from '@/lib/wave/scoring'
-import type { UserProfile, SpotScore } from '@/types'
+import { calculateScore, scoreToGrade } from '@/lib/wave/scoring'
+import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import BottomNav from '@/components/BottomNav'
@@ -21,9 +20,17 @@ interface ActiveWeather {
   uvIndex: number
 }
 
-type DateTab = 'today' | 'tomorrow' | 'weekend'
+interface WeeklyDayData {
+  date: Date
+  dateStr: string
+  avgScore: number
+  grade: Grade
+}
+
+type DateTab = 'today' | 'tomorrow' | 'weekly'
 
 const DOW_ENG = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+const DOW_JA = ['日', '月', '火', '水', '木', '金', '土']
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear()
@@ -36,30 +43,13 @@ function formatMD(d: Date): string {
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
-function getUpcomingWeekend(): { sat: Date; sun: Date } {
-  const today = new Date()
-  today.setHours(12, 0, 0, 0)
-  const dow = today.getDay()
-  const daysToSat = dow === 0 ? 6 : (6 - dow + 7) % 7
-  const sat = new Date(today)
-  sat.setDate(sat.getDate() + daysToSat)
-  sat.setHours(12, 0, 0, 0)
-  const sun = new Date(sat)
-  sun.setDate(sun.getDate() + 1)
-  return { sat, sun }
-}
-
-function getTargetDate(tab: DateTab, weekendDay: 'sat' | 'sun'): Date {
+function getTargetDate(tab: 'today' | 'tomorrow'): Date {
   const today = new Date()
   today.setHours(12, 0, 0, 0)
   if (tab === 'today') return today
-  if (tab === 'tomorrow') {
-    const d = new Date(today)
-    d.setDate(d.getDate() + 1)
-    return d
-  }
-  const { sat, sun } = getUpcomingWeekend()
-  return weekendDay === 'sat' ? sat : sun
+  const d = new Date(today)
+  d.setDate(d.getDate() + 1)
+  return d
 }
 
 function formatTime(d: Date): string {
@@ -68,8 +58,7 @@ function formatTime(d: Date): string {
 
 function getActiveWeather(
   weather: WeatherFullData,
-  tab: DateTab,
-  weekendDay: 'sat' | 'sun'
+  tab: 'today' | 'tomorrow'
 ): { active: ActiveWeather; isToday: boolean } | null {
   if (tab === 'today') {
     const d = weather.daily[0]
@@ -83,7 +72,7 @@ function getActiveWeather(
       isToday: true,
     }
   }
-  const target = getTargetDate(tab, weekendDay)
+  const target = getTargetDate(tab)
   const dateStr = toDateStr(target)
   const d = weather.daily.find(x => x.date === dateStr)
   if (!d) return null
@@ -127,22 +116,21 @@ function sizeLabel(v: UserProfile['preferredSize']): string {
 }
 
 export default function TopPage() {
-  const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [scores, setScores] = useState<SpotScore[]>([])
   const [conditions, setConditions] = useState<Record<string, WaveCondition | null>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<DateTab>('today')
-  const [weekendDay, setWeekendDay] = useState<'sat' | 'sun'>('sat')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [weather, setWeather] = useState<WeatherFullData | null>(null)
   const [showSettingsSheet, setShowSettingsSheet] = useState(false)
   const [draftLevel, setDraftLevel] = useState<UserProfile['level']>('intermediate')
   const [draftBoard, setDraftBoard] = useState<UserProfile['boardType']>('funboard')
   const [draftSize, setDraftSize] = useState<UserProfile['preferredSize']>('waist-chest')
+  const [weeklyData, setWeeklyData] = useState<WeeklyDayData[]>([])
+  const [weeklyLoading, setWeeklyLoading] = useState(false)
 
-  const { sat, sun } = getUpcomingWeekend()
   const today = new Date(); today.setHours(12, 0, 0, 0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
 
@@ -160,8 +148,15 @@ export default function TopPage() {
 
   useEffect(() => {
     if (!profile) return
-    loadForecast(getTargetDate(tab, weekendDay))
-  }, [profile, tab, weekendDay])
+    if (tab === 'weekly') return
+    loadForecast(getTargetDate(tab))
+  }, [profile, tab])
+
+  useEffect(() => {
+    if (tab !== 'weekly' || !profile) return
+    if (weeklyData.length > 0) return
+    loadWeeklyForecast()
+  }, [tab, profile])
 
   async function loadForecast(targetDate: Date) {
     setLoading(true)
@@ -229,15 +224,61 @@ export default function TopPage() {
     }
   }
 
+  async function loadWeeklyForecast() {
+    setWeeklyLoading(true)
+    const base = new Date()
+    base.setHours(12, 0, 0, 0)
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(base)
+      d.setDate(d.getDate() + i)
+      return d
+    })
+
+    const activeSpots = SPOTS.filter(s => s.isActive)
+    const result: WeeklyDayData[] = []
+
+    for (const day of days) {
+      const dateStr = toDateStr(day)
+      const condResults = await Promise.all(
+        activeSpots.map(async spot => {
+          try {
+            const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
+            if (!res.ok) return null
+            const data = await res.json()
+            const hourly: WaveCondition[] = data.conditions ?? []
+            return hourly.find(c => new Date(c.timestamp).getHours() === 12) ?? hourly[0] ?? null
+          } catch {
+            return null
+          }
+        })
+      )
+
+      const dayScores = activeSpots
+        .map((spot, i) => {
+          const cond = condResults[i]
+          if (!cond) return null
+          return calculateScore(cond, spot, profile!)
+        })
+        .filter((s): s is SpotScore => s !== null)
+
+      const avgScore = dayScores.length > 0
+        ? Math.round(dayScores.reduce((s, sc) => s + sc.score, 0) / dayScores.length)
+        : 0
+
+      result.push({ date: day, dateStr, avgScore, grade: scoreToGrade(avgScore) })
+    }
+
+    setWeeklyData(result)
+    setWeeklyLoading(false)
+  }
+
   if (!profile) return null
 
-  const targetDate = getTargetDate(tab, weekendDay)
+  const targetDate = tab !== 'weekly' ? getTargetDate(tab) : today
   const allBad = !loading && !error && scores.length > 0 && scores.every(s => s.grade === '×')
 
   const dateLabel =
-    tab === 'today' ? '今日' :
-    tab === 'tomorrow' ? '明日' :
-    weekendDay === 'sat' ? `${formatMD(sat)}(土)` : `${formatMD(sun)}(日)`
+    tab === 'today' ? '今日' : tab === 'tomorrow' ? '明日' : '週間'
 
   return (
     <div className="flex-1 flex flex-col bg-[#f0f4f8]">
@@ -297,68 +338,104 @@ export default function TopPage() {
           明日 {formatMD(tomorrow)}
         </button>
         <button
-          onClick={() => setTab('weekend')}
-          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors leading-tight ${
-            tab === 'weekend' ? 'bg-sky-900 text-white' : 'text-[#8899aa]'
+          onClick={() => setTab('weekly')}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            tab === 'weekly' ? 'bg-sky-900 text-white' : 'text-[#8899aa]'
           }`}
         >
-          週末
-          <span className="block text-[9px] opacity-80">
-            {formatMD(sat)}土・{formatMD(sun)}日
-          </span>
+          週間
         </button>
       </div>
 
-      {/* 週末サブタブ */}
-      {tab === 'weekend' && (
-        <div className="flex bg-[#f0f4f8] border-b border-[#eef1f4] px-4 gap-2 py-2">
-          <button
-            onClick={() => setWeekendDay('sat')}
-            className={`flex-1 py-1.5 text-sm rounded-lg font-semibold transition-colors ${
-              weekendDay === 'sat' ? 'bg-sky-900 text-white' : 'bg-white text-[#8899aa] border border-[#eef1f4]'
-            }`}
-          >
-            土 {formatMD(sat)}
-          </button>
-          <button
-            onClick={() => setWeekendDay('sun')}
-            className={`flex-1 py-1.5 text-sm rounded-lg font-semibold transition-colors ${
-              weekendDay === 'sun' ? 'bg-sky-900 text-white' : 'bg-white text-[#8899aa] border border-[#eef1f4]'
-            }`}
-          >
-            日 {formatMD(sun)}
-          </button>
-        </div>
-      )}
-
-      {/* 天気バー */}
-      {weather && (() => {
-        const aw = getActiveWeather(weather, tab, weekendDay)
+      {/* 天気バー（今日・明日のみ） */}
+      {weather && tab !== 'weekly' && (() => {
+        const aw = getActiveWeather(weather, tab)
         return aw ? <WeatherBar active={aw.active} isToday={aw.isToday} /> : null
       })()}
 
-      {/* スポットリスト */}
+      {/* スポットリスト / 週間予報 */}
       <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
-        {!loading && !error && scores.length > 0 && (
-          <AvgScoreHero scores={scores} />
-        )}
-        {loading ? (
-          <SpotListSkeleton />
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <p className="text-[#8899aa] text-sm text-center px-4">{error}</p>
-            <button
-              onClick={() => loadForecast(targetDate)}
-              className="px-6 py-2 bg-sky-900 text-white rounded-full text-sm font-semibold"
-            >
-              再試行
-            </button>
-          </div>
-        ) : allBad ? (
-          <div className="flex flex-col items-center justify-center pt-12 pb-4 gap-3 text-center">
-            <p className="text-lg font-bold text-[#0a1628]">{dateLabel}はどこも厳しいです</p>
-            <div className="mt-2 space-y-2.5 w-full">
-              {scores.map((score, i) => {
+        {tab === 'weekly' ? (
+          weeklyLoading ? (
+            <WeeklyListSkeleton />
+          ) : (
+            weeklyData.map(day => {
+              const dow = DOW_JA[day.date.getDay()]
+              const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6
+              const dowColor = day.date.getDay() === 0 ? '#ef4444' : day.date.getDay() === 6 ? '#3b82f6' : '#0a1628'
+              const dayWeather = weather?.daily.find(w => w.date === day.dateStr)
+              const { type: wType } = weatherInfo(dayWeather?.weatherCode ?? 3)
+              const scoreColor = day.avgScore >= 85 ? '#0c4a6e' : day.avgScore >= 65 ? '#0369a1' : '#94a3b8'
+              return (
+                <div
+                  key={day.dateStr}
+                  style={{ background: '#fff', border: '0.5px solid #eef1f4', borderRadius: 12, padding: '12px 16px' }}
+                  className="flex items-center"
+                >
+                  {/* 曜日・日付 */}
+                  <div style={{ width: 48 }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: dowColor, lineHeight: 1.1 }}>{dow}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{formatMD(day.date)}</div>
+                  </div>
+                  {/* 天気アイコン・最高気温 */}
+                  <div className="flex-1 flex items-center justify-center gap-2">
+                    <WeatherIcon type={wType} />
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#0a1628' }}>
+                      {dayWeather ? `${dayWeather.temperatureMax}°` : '—'}
+                    </span>
+                  </div>
+                  {/* 平均スコア・グレード */}
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: 30, fontWeight: 700, color: scoreColor, lineHeight: 1 }}>
+                      {day.avgScore}
+                    </span>
+                    <span style={{
+                      fontSize: 13, fontWeight: 700, color: '#fff',
+                      background: scoreColor, borderRadius: 6, padding: '3px 7px',
+                    }}>
+                      {day.grade}
+                    </span>
+                  </div>
+                </div>
+              )
+            })
+          )
+        ) : (
+          <>
+            {!loading && !error && scores.length > 0 && (
+              <AvgScoreHero scores={scores} />
+            )}
+            {loading ? (
+              <SpotListSkeleton />
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <p className="text-[#8899aa] text-sm text-center px-4">{error}</p>
+                <button
+                  onClick={() => loadForecast(targetDate)}
+                  className="px-6 py-2 bg-sky-900 text-white rounded-full text-sm font-semibold"
+                >
+                  再試行
+                </button>
+              </div>
+            ) : allBad ? (
+              <div className="flex flex-col items-center justify-center pt-12 pb-4 gap-3 text-center">
+                <p className="text-lg font-bold text-[#0a1628]">{dateLabel}はどこも厳しいです</p>
+                <div className="mt-2 space-y-2.5 w-full">
+                  {scores.map((score, i) => {
+                    const spot = SPOTS.find(s => s.id === score.spotId)!
+                    return (
+                      <SpotCard key={score.spotId} spot={spot} score={score}
+                        isFavorite={profile.favoriteSpots.includes(spot.id)}
+                        condition={conditions[spot.id]}
+                        date={targetDate}
+                        isTop={i === 0}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              scores.map((score, i) => {
                 const spot = SPOTS.find(s => s.id === score.spotId)!
                 return (
                   <SpotCard key={score.spotId} spot={spot} score={score}
@@ -368,21 +445,9 @@ export default function TopPage() {
                     isTop={i === 0}
                   />
                 )
-              })}
-            </div>
-          </div>
-        ) : (
-          scores.map((score, i) => {
-            const spot = SPOTS.find(s => s.id === score.spotId)!
-            return (
-              <SpotCard key={score.spotId} spot={spot} score={score}
-                isFavorite={profile.favoriteSpots.includes(spot.id)}
-                condition={conditions[spot.id]}
-                date={targetDate}
-                isTop={i === 0}
-              />
-            )
-          })
+              })
+            )}
+          </>
         )}
       </main>
 
@@ -612,6 +677,22 @@ function SpotListSkeleton() {
             <div className="h-3 bg-[#f0f4f8] rounded w-2/3" />
           </div>
           <div className="w-10 h-8 bg-[#f0f4f8] rounded shrink-0" />
+        </div>
+      ))}
+    </>
+  )
+}
+
+function WeeklyListSkeleton() {
+  return (
+    <>
+      {[...Array(7)].map((_, i) => (
+        <div key={i} className="bg-white rounded-xl border border-[#eef1f4] p-4 flex items-center gap-4 animate-pulse">
+          <div className="w-12 h-10 bg-[#f0f4f8] rounded shrink-0" />
+          <div className="flex-1 flex justify-center">
+            <div className="w-16 h-6 bg-[#f0f4f8] rounded" />
+          </div>
+          <div className="w-16 h-8 bg-[#f0f4f8] rounded shrink-0" />
         </div>
       ))}
     </>
