@@ -11,7 +11,9 @@ export async function GET(req: NextRequest) {
 
   // サーバーサイドでは GOOGLE_MAPS_API_KEY を優先、なければ NEXT_PUBLIC_ にフォールバック
   const apiKey = process.env.GOOGLE_MAPS_API_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  console.log('[Shops] apiKey present:', !!apiKey)
+  console.log('[Shops] API key exists (GOOGLE_MAPS_API_KEY):', !!process.env.GOOGLE_MAPS_API_KEY)
+  console.log('[Shops] API key exists (NEXT_PUBLIC_):', !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
+  console.log('[Shops] API key prefix:', apiKey?.slice(0, 8))
   if (!apiKey) {
     console.error('[Shops] No Maps API key found (tried GOOGLE_MAPS_API_KEY and NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)')
     return NextResponse.json({ error: 'Maps API key not configured' }, { status: 500 })
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
   })
 
   const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params}`
-  console.log('[Shops] Request URL:', url.replace(apiKey, 'REDACTED'))
+  console.log('[Shops] Request URL (full):', url)
 
   try {
     // キャッシュなし（デバッグ用）
