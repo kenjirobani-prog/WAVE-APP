@@ -22,9 +22,15 @@ export default function MyPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-          <div className="flex items-center px-4 py-4">
-            <span className="text-[#8899aa] font-medium text-sm">Coming soon...</span>
-          </div>
+          <button
+            onClick={() => router.push('/glossary')}
+            className="w-full flex items-center justify-between px-4 py-4 active:bg-[#f0f4f8] transition-colors"
+          >
+            <span className="text-[#0a1628] font-medium">用語集</span>
+            <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </main>
 
