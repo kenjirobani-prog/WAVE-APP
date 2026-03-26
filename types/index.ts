@@ -27,6 +27,8 @@ export interface Spot {
   access: string
   liveCameraUrl?: string
   mapUrl?: string
+  mapPlaceName?: string
+  mapCenter?: { lat: number; lng: number }
   waveHeightMultiplier?: number  // スポット固有の波高補正係数（デフォルト: 1.0）
   // 詳細情報（スポット詳細画面で表示）
   description?: string
