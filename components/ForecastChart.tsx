@@ -19,11 +19,21 @@ const PREFERRED_SIZE_M: Record<UserProfile['preferredSize'], number> = {
 }
 
 function waveHeightLabel(h: number): string {
-  if (h >= 2.0) return 'OH'
-  if (h >= 1.5) return '頭'
-  if (h >= 0.8) return '胸肩'
-  if (h >= 0.5) return '腰'
-  return 'ヒザ'
+  if (h >= 2.0)  return 'OH'
+  if (h >= 1.8)  return '頭〜OH'
+  if (h >= 1.6)  return '頭'
+  if (h >= 1.5)  return '肩〜頭'
+  if (h >= 1.35) return '肩'
+  if (h >= 1.2)  return '胸'
+  if (h >= 1.0)  return '腹〜胸'
+  if (h >= 0.8)  return '腹'
+  if (h >= 0.65) return '腰〜腹'
+  if (h >= 0.5)  return '腰'
+  if (h >= 0.4)  return 'モモ〜腰'
+  if (h >= 0.3)  return 'モモ'
+  if (h >= 0.2)  return 'ヒザ〜モモ'
+  if (h >= 0.1)  return 'ヒザ'
+  return 'スネ'
 }
 
 function getBarColor(waveHeight: number, preferred: number): string {
