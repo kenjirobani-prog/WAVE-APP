@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 
-export type NavTab = 'forecast' | 'surflog' | 'glossary' | 'mypage'
+export type NavTab = 'forecast' | 'surflog' | 'glossary' | 'howto' | 'mypage'
 
 function IconEye() {
   return (
@@ -50,13 +50,12 @@ function IconUser() {
 }
 
 type LinkItem = { type: 'link'; id: NavTab; label: string; href: string; icon: React.ReactNode }
-type DisabledItem = { type: 'disabled'; label: string; icon: React.ReactNode }
 
-const NAV_ITEMS: Array<LinkItem | DisabledItem> = [
+const NAV_ITEMS: LinkItem[] = [
   { type: 'link', id: 'forecast', label: '波予報',   href: '/',          icon: <IconEye /> },
   { type: 'link', id: 'surflog',  label: 'Surf Log', href: '/surf-log',  icon: <IconCalendar /> },
   { type: 'link', id: 'glossary', label: '用語集',   href: '/glossary',  icon: <IconLayers /> },
-  { type: 'disabled',             label: 'How to',   icon: <IconClock /> },
+  { type: 'link', id: 'howto',    label: 'How to',   href: '/howto',     icon: <IconClock /> },
   { type: 'link', id: 'mypage',   label: 'My Page',  href: '/my-page',   icon: <IconUser /> },
 ]
 
@@ -70,30 +69,7 @@ export default function BottomNav({ current }: { current: NavTab }) {
       <nav style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 448, zIndex: 40 }}>
         {/* ナビ本体 */}
         <div style={{ background: '#0c4a6e', padding: '.45rem .3rem', display: 'flex', gap: '.15rem' }}>
-          {NAV_ITEMS.map((item, i) => {
-            if (item.type === 'disabled') {
-              return (
-                <div
-                  key="howto"
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 3,
-                    borderRadius: 8,
-                    padding: '.45rem .1rem',
-                    opacity: 1,
-                  }}
-                >
-                  <span style={{ opacity: 0.2 }}>{item.icon}</span>
-                  <span style={{ fontSize: 9, fontWeight: 500, color: 'rgba(255,255,255,0.2)', lineHeight: 1 }}>
-                    {item.label}
-                  </span>
-                </div>
-              )
-            }
+          {NAV_ITEMS.map((item) => {
             const isActive = current === item.id
             return (
               <button
