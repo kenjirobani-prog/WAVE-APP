@@ -199,7 +199,12 @@ export default function TopPage() {
           const bFav = profile!.favoriteSpots.includes(b.spotId)
           if (aFav && !bFav) return -1
           if (!aFav && bFav) return 1
-          return b.score - a.score
+          // よく行くスポット同士はスコア順
+          if (aFav && bFav) return b.score - a.score
+          // それ以外は defaultOrder 固定順
+          const aOrder = SPOTS.find(s => s.id === a.spotId)?.defaultOrder ?? 99
+          const bOrder = SPOTS.find(s => s.id === b.spotId)?.defaultOrder ?? 99
+          return aOrder - bOrder
         })
       setScores(newScores)
 

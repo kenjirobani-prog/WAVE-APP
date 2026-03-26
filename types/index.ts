@@ -39,6 +39,7 @@ export interface Spot {
   beginnerNote?: string
   isActive: boolean
   order: number
+  defaultOrder?: number
   createdAt: string
   updatedAt: string
 }
