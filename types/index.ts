@@ -73,6 +73,7 @@ export interface ScoreBreakdown {
   wind: number
   swellDir: number
   tide: number
+  waveQuality: number
   weatherBonus: number
   levelCorrection: number
 }

@@ -35,7 +35,7 @@ export function compassLabel(dir: number): string {
   return labels[Math.round(dir / 45) % 8]
 }
 
-// 波高スコア（40点満点）
+// 波高スコア（25点満点）
 function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferredSize']): number {
   const sizeThresholds: Record<UserProfile['preferredSize'], number> = {
     'ankle': 0.3,
@@ -45,38 +45,34 @@ function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferr
   }
   const preferred = sizeThresholds[preferredSize]
   if (waveHeight <= 0.15) return 0               // フラット
-  if (waveHeight >= preferred) return 40         // 好みサイズ以上
-  if (waveHeight >= preferred - 0.2) return 24  // −20cm以内
-  if (waveHeight >= preferred - 0.4) return 11  // −20〜40cm
-  return 3                                        // −40cm超
+  if (waveHeight >= preferred) return 25         // 好みサイズ以上
+  if (waveHeight >= preferred - 0.2) return 18  // −20cm以内
+  if (waveHeight >= preferred - 0.4) return 8   // −20〜40cm
+  return 2                                        // −40cm超
 }
 
-// 風スコア（25点満点）
-// 無風: 25, オフショア≤5: 23, オフショア5〜10: 15, オフショア>10: 7
-// サイドオフ≤5: 12, サイドオフ>5: 7
-// サイドオン: 5, オンショア≤8: 2, オンショア>8: 0
+// 風スコア（22点満点）
 function scoreWind(windSpeed: number, windDir: number): number {
   const type = classifyWind(windDir, windSpeed)
-  if (type === 'calm') return 25
+  if (type === 'calm') return 22
   if (type === 'offshore') {
-    if (windSpeed <= 5) return 23
-    if (windSpeed <= 10) return 15
+    if (windSpeed <= 5) return 21
+    if (windSpeed <= 10) return 16
     return 7
   }
   if (type === 'side-offshore') return windSpeed <= 5 ? 12 : 7
-  if (type === 'side-onshore') return 5
+  if (type === 'side-onshore') return 6
   // onshore
   if (windSpeed <= 8) return 2
   return 0
 }
 
-// うねり方向スコア（20点満点）
-// 固定しきい値: ±20°→20, ±20〜45°→12, ±45〜70°→5, それ以外→0
+// うねり方向スコア（18点満点）
 function scoreSwellDir(swellDir: number, bestSwellDir: number): number {
   const diff = Math.abs(((swellDir - bestSwellDir + 540) % 360) - 180)
-  if (diff <= 20) return 20
-  if (diff <= 45) return 12
-  if (diff <= 70) return 5
+  if (diff <= 20) return 18
+  if (diff <= 45) return 11
+  if (diff <= 70) return 4
   return 0
 }
 
@@ -93,6 +89,37 @@ function scoreTide(
   return 1
 }
 
+// 波質スコア（周期ベース・20点満点）
+function scoreWaveQuality(
+  wavePeriod: number,
+  windDir: number,
+  windSpeed: number,
+  swellDir: number,
+  bestSwellDir: number,
+  tideHeight: number,
+): number {
+  const windType = classifyWind(windDir, windSpeed)
+  const swellDiff = Math.abs(((swellDir - bestSwellDir + 540) % 360) - 180)
+  const isFrontal = swellDiff <= 20
+  const isOffshore = windType === 'offshore'
+  const isOnshore = windType === 'onshore'
+
+  // マイナス評価（ワイド・ダンパー）
+  if (wavePeriod <= 5) {
+    if (isOnshore && tideHeight > 150) return 0
+    if (isOnshore) return 1
+    return 3
+  }
+
+  // プラス評価（キレた波）
+  if (wavePeriod >= 10 && isOffshore) return 20
+  if (wavePeriod >= 8 && isOffshore) return 17
+  if (wavePeriod >= 8 && isFrontal) return 15
+  if (wavePeriod >= 8) return 12
+  if (wavePeriod >= 6) return 8
+  return 5 // 周期5秒台
+}
+
 // 天気ボーナス（+5点）
 function scoreWeather(weather: WaveCondition['weather']): number {
   if (weather === 'sunny') return 5
@@ -101,8 +128,6 @@ function scoreWeather(weather: WaveCondition['weather']): number {
 }
 
 // ボードタイプ補正（±5点）
-// ロング: 小さい波でも浮力で乗れるため +5
-// ショート: 小さい波では不利なため −5
 function boardCorrection(condition: WaveCondition, profile: UserProfile): number {
   const sizeThresholds: Record<UserProfile['preferredSize'], number> = {
     'ankle': 0.3,
@@ -133,16 +158,25 @@ export function calculateScore(
   const wind = scoreWind(condition.windSpeed, condition.windDir)
   const swellDir = scoreSwellDir(condition.swellDir, spot.bestSwellDir)
   const tide = scoreTide(condition.tideHeight, condition.tideMovement)
+  const waveQuality = scoreWaveQuality(
+    condition.wavePeriod,
+    condition.windDir,
+    condition.windSpeed,
+    condition.swellDir,
+    spot.bestSwellDir,
+    condition.tideHeight,
+  )
   const weatherBonus = scoreWeather(condition.weather)
   const correction = boardCorrection(effCondition, profile)
 
-  const total = Math.max(0, Math.min(100, waveHeight + wind + swellDir + tide + weatherBonus + correction))
+  const total = Math.max(0, Math.min(100, waveHeight + wind + swellDir + tide + waveQuality + weatherBonus + correction))
 
   const breakdown: ScoreBreakdown = {
     waveHeight,
     wind,
     swellDir,
     tide,
+    waveQuality,
     weatherBonus,
     levelCorrection: correction,
   }
@@ -171,8 +205,8 @@ function buildReasonTags(
 ): string[] {
   const tags: string[] = []
 
-  if (breakdown.waveHeight >= 40) tags.push('波サイズぴったり')
-  else if (breakdown.waveHeight >= 24) tags.push('波やや小さめ')
+  if (breakdown.waveHeight >= 25) tags.push('波サイズぴったり')
+  else if (breakdown.waveHeight >= 18) tags.push('波やや小さめ')
   else tags.push('波が小さい')
 
   const windType = classifyWind(condition.windDir, condition.windSpeed)
@@ -181,6 +215,9 @@ function buildReasonTags(
   else if (windType === 'side-offshore') tags.push('サイドオフ')
   else if (windType === 'side-onshore') tags.push('サイドオン')
   else tags.push('オンショア')
+
+  if (breakdown.waveQuality >= 15) tags.push('周期◎')
+  else if (breakdown.waveQuality <= 3) tags.push('波質注意')
 
   if (breakdown.tide >= 10) tags.push('潮位◎')
   else if (breakdown.tide <= 2) tags.push('潮位注意')
