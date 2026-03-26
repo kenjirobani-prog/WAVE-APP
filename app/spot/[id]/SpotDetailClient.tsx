@@ -425,7 +425,10 @@ export default function SpotDetailContent({ id }: { id: string }) {
               <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">ポイントマップ</h2>
               <div className="relative" style={{ borderRadius: 12, overflow: 'hidden', height: 200 }}>
                 <iframe
-                  src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${spot.lat},${spot.lng}&zoom=15`}
+                  src={spot.mapUrl
+                    ? `https://maps.google.com/maps?q=${encodeURIComponent(spot.mapUrl)}&output=embed`
+                    : `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${spot.lat},${spot.lng}&zoom=15`
+                  }
                   width="100%"
                   height="200"
                   style={{ border: 'none' }}
@@ -434,7 +437,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 />
               </div>
               <a
-                href={`https://www.google.com/maps?q=${spot.lat},${spot.lng}`}
+                href={spot.mapUrl ?? `https://www.google.com/maps?q=${spot.lat},${spot.lng}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-end gap-1 mt-2 text-xs font-semibold text-sky-700"
