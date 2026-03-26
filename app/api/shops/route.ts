@@ -9,25 +9,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'lat and lng are required' }, { status: 400 })
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  // サーバーサイドでは GOOGLE_MAPS_API_KEY を優先、なければ NEXT_PUBLIC_ にフォールバック
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  console.log('[Shops] apiKey present:', !!apiKey)
   if (!apiKey) {
-    console.error('[Shops] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set')
+    console.error('[Shops] No Maps API key found (tried GOOGLE_MAPS_API_KEY and NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)')
     return NextResponse.json({ error: 'Maps API key not configured' }, { status: 500 })
   }
 
   const params = new URLSearchParams({
     location: `${lat},${lng}`,
-    radius: '3000',
-    keyword: 'surf shop',
+    radius: '5000',
+    keyword: 'surf',
+    type: 'store',
     language: 'ja',
     key: apiKey,
   })
 
   const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params}`
-  console.log('[Shops] Request URL:', url.replace(apiKey, 'API_KEY_REDACTED'))
+  console.log('[Shops] Request URL:', url.replace(apiKey, 'REDACTED'))
 
   try {
-    const res = await fetch(url, { next: { revalidate: 86400 } } as RequestInit)
+    // キャッシュなし（デバッグ用）
+    const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) {
       console.error('[Shops] HTTP error:', res.status, res.statusText)
       throw new Error(`Places API HTTP error: ${res.status}`)
@@ -35,8 +39,11 @@ export async function GET(req: NextRequest) {
     const data = await res.json()
     console.log('[Shops] status:', data.status)
     console.log('[Shops] results count:', data.results?.length ?? 0)
+    if (data.error_message) {
+      console.error('[Shops] error_message:', data.error_message)
+    }
     if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error('[Shops] API error status:', data.status, data.error_message ?? '')
+      console.error('[Shops] Unexpected status:', data.status)
     }
 
     const shops = (data.results ?? []).slice(0, 5).map((p: {
