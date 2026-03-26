@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   const params = new URLSearchParams({
     location: `${lat},${lng}`,
-    radius: '5000',
+    radius: '1000',
     keyword: 'surf',
     type: 'store',
     language: 'ja',
