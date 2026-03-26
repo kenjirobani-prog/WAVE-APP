@@ -89,35 +89,80 @@ function scoreTide(
   return 1
 }
 
-// 波質スコア（周期ベース・20点満点）
+// 波質スコア（3ステップ設計・20点満点）
+
+function getBaseWaveQuality(period: number, windType: WindType): number {
+  if (period >= 10) {
+    if (windType === 'offshore')      return 20
+    if (windType === 'calm')          return 18
+    if (windType === 'side-offshore') return 16
+    if (windType === 'side-onshore')  return 10
+    return 5 // onshore
+  }
+  if (period >= 8) {
+    if (windType === 'offshore')      return 17
+    if (windType === 'calm')          return 15
+    if (windType === 'side-offshore') return 13
+    if (windType === 'side-onshore')  return 8
+    return 3 // onshore
+  }
+  if (period >= 6) {
+    if (windType === 'offshore')      return 10
+    if (windType === 'calm')          return 9
+    if (windType === 'side-offshore') return 8
+    if (windType === 'side-onshore')  return 5
+    return 2 // onshore
+  }
+  if (period >= 5) {
+    if (windType === 'offshore')      return 5
+    if (windType === 'calm')          return 4
+    if (windType === 'side-offshore') return 4
+    if (windType === 'side-onshore')  return 2
+    return 1 // onshore
+  }
+  // 4秒以下
+  if (windType === 'onshore') return 0
+  return 2
+}
+
+function getSwellTideBonus(waveHeight: number, tideLevel: number): number {
+  // 干潮ペナルティ
+  if (waveHeight >= 1.2 && tideLevel <= 40) return -6
+  if (waveHeight >= 1.2 && tideLevel <= 60) return -4
+  if (waveHeight >= 1.0 && tideLevel <= 40) return -4
+  if (waveHeight >= 1.0 && tideLevel <= 60) return -2
+  if (waveHeight >= 0.8 && tideLevel <= 40) return -1
+  // 中潮ボーナス
+  if (waveHeight >= 1.2 && tideLevel >= 80 && tideLevel <= 120) return 3
+  if (waveHeight >= 1.0 && tideLevel >= 80 && tideLevel <= 120) return 2
+  // 満潮ペナルティ
+  if (waveHeight >= 1.2 && tideLevel >= 150) return -4
+  if (waveHeight >= 0.8 && tideLevel >= 150) return -3
+  if (waveHeight <  0.6 && tideLevel >= 150) return -2
+  return 0
+}
+
+function getPeriodTideBonus(period: number, tideLevel: number): number {
+  if (period >= 10 && tideLevel >= 80 && tideLevel <= 120) return 2
+  if (period >= 10 && tideLevel >= 40 && tideLevel <  80)  return 1
+  if (period >= 10 && tideLevel <  40)                     return -1
+  if (period <= 6  && tideLevel <= 60)                     return -2
+  if (period <= 6  && tideLevel >= 150)                    return -1
+  return 0
+}
+
 function scoreWaveQuality(
   wavePeriod: number,
   windDir: number,
   windSpeed: number,
-  swellDir: number,
-  bestSwellDir: number,
+  waveHeight: number,
   tideHeight: number,
 ): number {
   const windType = classifyWind(windDir, windSpeed)
-  const swellDiff = Math.abs(((swellDir - bestSwellDir + 540) % 360) - 180)
-  const isFrontal = swellDiff <= 20
-  const isOffshore = windType === 'offshore'
-  const isOnshore = windType === 'onshore'
-
-  // マイナス評価（ワイド・ダンパー）
-  if (wavePeriod <= 5) {
-    if (isOnshore && tideHeight > 150) return 0
-    if (isOnshore) return 1
-    return 3
-  }
-
-  // プラス評価（キレた波）
-  if (wavePeriod >= 10 && isOffshore) return 20
-  if (wavePeriod >= 8 && isOffshore) return 17
-  if (wavePeriod >= 8 && isFrontal) return 15
-  if (wavePeriod >= 8) return 12
-  if (wavePeriod >= 6) return 8
-  return 5 // 周期5秒台
+  const base = getBaseWaveQuality(wavePeriod, windType)
+  const swellTide = getSwellTideBonus(waveHeight, tideHeight)
+  const periodTide = getPeriodTideBonus(wavePeriod, tideHeight)
+  return Math.min(20, Math.max(0, base + swellTide + periodTide))
 }
 
 // 天気ボーナス（+5点）
@@ -162,8 +207,7 @@ export function calculateScore(
     condition.wavePeriod,
     condition.windDir,
     condition.windSpeed,
-    condition.swellDir,
-    spot.bestSwellDir,
+    effCondition.waveHeight,
     condition.tideHeight,
   )
   const weatherBonus = scoreWeather(condition.weather)
