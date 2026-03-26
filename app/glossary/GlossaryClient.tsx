@@ -140,7 +140,7 @@ export default function GlossaryClient() {
         )}
       </main>
 
-      <BottomNav current="mypage" />
+      <BottomNav current="glossary" />
     </div>
   )
 }
