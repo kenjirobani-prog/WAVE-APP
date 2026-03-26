@@ -126,12 +126,14 @@ function getBaseWaveQuality(period: number, windType: WindType): number {
 }
 
 function getSwellTideBonus(waveHeight: number, tideLevel: number): number {
-  // 干潮ペナルティ
-  if (waveHeight >= 1.2 && tideLevel <= 40) return -6
-  if (waveHeight >= 1.2 && tideLevel <= 60) return -4
-  if (waveHeight >= 1.0 && tideLevel <= 40) return -4
-  if (waveHeight >= 1.0 && tideLevel <= 60) return -2
-  if (waveHeight >= 0.8 && tideLevel <= 40) return -1
+  // 干潮ペナルティ（強化）
+  if (waveHeight >= 1.5 && tideLevel <= 40) return -10
+  if (waveHeight >= 1.5 && tideLevel <= 60) return -8
+  if (waveHeight >= 1.2 && tideLevel <= 40) return -9
+  if (waveHeight >= 1.2 && tideLevel <= 60) return -7
+  if (waveHeight >= 1.0 && tideLevel <= 40) return -6
+  if (waveHeight >= 1.0 && tideLevel <= 60) return -4
+  if (waveHeight >= 0.8 && tideLevel <= 40) return -2
   // 中潮ボーナス
   if (waveHeight >= 1.2 && tideLevel >= 80 && tideLevel <= 120) return 3
   if (waveHeight >= 1.0 && tideLevel >= 80 && tideLevel <= 120) return 2
