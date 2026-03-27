@@ -42,7 +42,7 @@ export function saveLocalSurfLog(log: Omit<SurfLog, 'id'>): SurfLog {
 // ---- Firestore ユーティリティ ----
 
 function surfLogCol(uid: string) {
-  return collection(getDb(), `users/${uid}/surfLogs`)
+  return collection(getDb(), 'surfLogs', uid, 'entries')
 }
 
 // Firestoreに保存
@@ -88,7 +88,7 @@ export async function subscribeSurfLogs(
 // Firestoreから削除
 export async function deleteSurfLog(id: string): Promise<void> {
   const uid = await ensureAnonymousAuth()
-  await deleteDoc(doc(getDb(), `users/${uid}/surfLogs/${id}`))
+  await deleteDoc(doc(getDb(), 'surfLogs', uid, 'entries', id))
 }
 
 // ---- localStorage → Firestore 移行 ----
