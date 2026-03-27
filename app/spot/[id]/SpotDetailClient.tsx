@@ -49,25 +49,25 @@ function getSurfDateOptions() {
 
 export function SpotDetailSkeleton() {
   return (
-    <div className="animate-pulse bg-[#f0f4f8]">
+    <div className="animate-pulse bg-[#f0f9ff]">
       <section className="bg-white p-6 border-b border-[#eef1f4]">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-14 h-14 bg-[#f0f4f8] rounded-xl" />
+          <div className="w-14 h-14 bg-[#f0f9ff] rounded-xl" />
           <div className="space-y-2">
-            <div className="h-5 bg-[#f0f4f8] rounded w-24" />
-            <div className="h-3 bg-[#f0f4f8] rounded w-20" />
+            <div className="h-5 bg-[#f0f9ff] rounded w-24" />
+            <div className="h-3 bg-[#f0f9ff] rounded w-20" />
           </div>
         </div>
         <div className="flex gap-2">
-          <div className="h-6 bg-[#f0f4f8] rounded-full w-20" />
-          <div className="h-6 bg-[#f0f4f8] rounded-full w-16" />
+          <div className="h-6 bg-[#f0f9ff] rounded-full w-20" />
+          <div className="h-6 bg-[#f0f9ff] rounded-full w-16" />
         </div>
       </section>
       <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-        <div className="h-3 bg-[#f0f4f8] rounded w-20 mb-3" />
+        <div className="h-3 bg-[#f0f9ff] rounded w-20 mb-3" />
         <div className="grid grid-cols-2 gap-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-[#f0f4f8] rounded-xl p-3 space-y-2">
+            <div key={i} className="bg-[#f0f9ff] rounded-xl p-3 space-y-2">
               <div className="h-3 bg-white rounded w-16" />
               <div className="h-6 bg-white rounded w-12" />
             </div>
@@ -75,8 +75,8 @@ export function SpotDetailSkeleton() {
         </div>
       </section>
       <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-        <div className="h-3 bg-[#f0f4f8] rounded w-28 mb-3" />
-        <div className="h-24 bg-[#f0f4f8] rounded" />
+        <div className="h-3 bg-[#f0f9ff] rounded w-28 mb-3" />
+        <div className="h-24 bg-[#f0f9ff] rounded" />
       </section>
     </div>
   )
@@ -84,7 +84,7 @@ export function SpotDetailSkeleton() {
 
 function ConditionCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="bg-[#f0f4f8] rounded-xl p-3">
+    <div className="bg-[#f0f9ff] rounded-xl p-3">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">{label}</p>
       <p className="text-xl font-bold text-[#0a1628]">{value}</p>
       <p className="text-xs text-[#8899aa] mt-0.5">{sub}</p>
@@ -295,24 +295,24 @@ export default function SpotDetailContent({ id }: { id: string }) {
 
   if (!spot) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#f0f4f8]">
+      <div className="flex-1 flex items-center justify-center bg-[#f0f9ff]">
         <p className="text-[#8899aa]">スポットが見つかりません</p>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
+    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
-      <header className="bg-white border-b border-[#eef1f4] px-4 py-4 flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 text-[#8899aa]">
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)', padding: '1rem 1rem 1rem', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={() => router.back()} className="p-2 -ml-2" style={{ color: 'rgba(255,255,255,0.85)' }}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-[#0a1628]">{spot.name}</h1>
-          <p className="text-xs text-[#8899aa]">{spot.nameEn}</p>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{spot.name}</h1>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{spot.nameEn}</p>
         </div>
       </header>
 
@@ -324,7 +324,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
             <p className="text-[#8899aa] text-sm text-center px-4">{error}</p>
             <button
               onClick={loadData}
-              className="px-6 py-2 bg-sky-900 text-white rounded-full text-sm font-semibold"
+              className="px-6 py-2 bg-[#0284c7] text-white rounded-full text-sm font-semibold"
             >
               再試行
             </button>
@@ -347,7 +347,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
               {score && (
                 <div className="flex flex-wrap gap-2">
                   {score.reasonTags.map(tag => (
-                    <span key={tag} className="text-xs font-medium bg-[#f0f4f8] text-[#8899aa] px-3 py-1 rounded-full">
+                    <span key={tag} className="text-xs font-medium bg-[#f0f9ff] text-[#8899aa] px-3 py-1 rounded-full">
                       {tag}
                     </span>
                   ))}
@@ -365,7 +365,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#f0f4f8] rounded-xl p-3">
+                  <div className="bg-[#f0f9ff] rounded-xl p-3">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波の高さ</p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-xl font-bold text-[#0a1628]">{current.waveHeight.toFixed(1)}m</p>
@@ -395,7 +395,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                       : { label: 'うねりなし', bg: '#f1f5f9', color: '#64748b' }
                     const energy = calcWaveEnergy(current.waveHeight, current.wavePeriod)
                     return (
-                      <div className="bg-[#f0f4f8] rounded-xl p-3">
+                      <div className="bg-[#f0f9ff] rounded-xl p-3">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">周期</p>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xl font-bold text-[#0a1628]">{current.wavePeriod.toFixed(0)}秒</span>
@@ -427,7 +427,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                     const windType = classifyWind(current.windDir, current.windSpeed)
                     const qualitySub = waveQualitySub(qScore, current.wavePeriod, windType)
                     return (
-                      <div className="bg-[#f0f4f8] rounded-xl p-3" style={{ gridColumn: '1 / -1', background: bg }}>
+                      <div className="bg-[#f0f9ff] rounded-xl p-3" style={{ gridColumn: '1 / -1', background: bg }}>
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波質</p>
                         <p style={{ fontSize: 20, fontWeight: 700, color: text }}>{waveQualityLabel(qScore)}</p>
                         {difficultyBadge && (
@@ -462,7 +462,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   }}
                 />
                 <div className="flex gap-4 mt-3 text-xs text-[#8899aa]">
-                  <span><span className="inline-block w-3 h-3 bg-sky-900 rounded-sm mr-1" />好みサイズ</span>
+                  <span><span className="inline-block w-3 h-3 bg-[#0284c7] rounded-sm mr-1" />好みサイズ</span>
                   <span><span className="inline-block w-3 h-3 bg-sky-500 rounded-sm mr-1" />やや小さめ</span>
                   <span><span className="inline-block w-3 h-3 bg-[#eef1f4] rounded-sm mr-1" />小さい</span>
                 </div>
@@ -509,7 +509,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
               <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">風・波のマップ</h2>
               <div className="relative" style={{ borderRadius: 12, overflow: 'hidden', height: 300 }}>
                 {!windyLoaded && (
-                  <div className="absolute inset-0 bg-[#f0f4f8] animate-pulse" />
+                  <div className="absolute inset-0 bg-[#f0f9ff] animate-pulse" />
                 )}
                 <iframe
                   src={`https://embed.windy.com/embed2.html?lat=${spot.lat}&lon=${spot.lng}&detailLat=${spot.lat}&detailLon=${spot.lng}&zoom=12&level=surface&overlay=waves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default`}
@@ -558,10 +558,10 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="animate-pulse flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#f0f4f8] rounded-full shrink-0" />
+                      <div className="w-6 h-6 bg-[#f0f9ff] rounded-full shrink-0" />
                       <div className="flex-1 space-y-1.5">
-                        <div className="h-3 bg-[#f0f4f8] rounded w-1/2" />
-                        <div className="h-2.5 bg-[#f0f4f8] rounded w-3/4" />
+                        <div className="h-3 bg-[#f0f9ff] rounded w-1/2" />
+                        <div className="h-2.5 bg-[#f0f9ff] rounded w-3/4" />
                       </div>
                     </div>
                   ))}
@@ -619,7 +619,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                       <span
                         key={s}
                         className={`flex-1 text-center text-xs font-semibold py-1.5 rounded-full ${
-                          isBest ? 'bg-sky-900 text-white' : 'bg-[#f0f4f8] text-[#c0ccd8]'
+                          isBest ? 'bg-[#0284c7] text-white' : 'bg-[#f0f9ff] text-[#c0ccd8]'
                         }`}
                       >
                         {seasonLabel(s)}
@@ -641,7 +641,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">波のタイプ</p>
                   <div className="flex flex-wrap gap-2">
                     {spot.waveTypeTags.map(tag => (
-                      <span key={tag} className="text-xs font-medium bg-[#f0f4f8] text-[#0a1628] px-3 py-1 rounded-full">
+                      <span key={tag} className="text-xs font-medium bg-[#f0f9ff] text-[#0a1628] px-3 py-1 rounded-full">
                         {tag}
                       </span>
                     ))}
@@ -654,7 +654,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">周辺施設</p>
                   <div className="flex flex-wrap gap-2">
                     {spot.facilities.map(f => (
-                      <span key={f} className="text-xs font-medium bg-[#f0f4f8] text-[#0a1628] px-3 py-1 rounded-full">
+                      <span key={f} className="text-xs font-medium bg-[#f0f9ff] text-[#0a1628] px-3 py-1 rounded-full">
                         {f}
                       </span>
                     ))}
@@ -694,7 +694,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
                 <button
                   onClick={() => { try { navigator.vibrate(20) } catch {}; setSelectedSurfGrade(null); setShowSurfLogSheet(true) }}
-                  className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
+                  className="w-full py-4 bg-[#0284c7] text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
                 >
                   今日サーフィンした！
                 </button>
@@ -721,7 +721,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   onClick={() => setSelectedDateStr(opt.dateStr)}
                   className={`p-3 rounded-xl border-2 text-center font-semibold transition-colors ${
                     selectedDateStr === opt.dateStr
-                      ? 'border-sky-900 bg-sky-50 text-sky-900'
+                      ? 'border-[#0284c7] bg-sky-50 text-[#0284c7]'
                       : 'border-[#eef1f4] text-[#8899aa]'
                   }`}
                 >
@@ -738,12 +738,12 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   onClick={() => setSelectedSurfGrade(g)}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-colors text-left ${
                     selectedSurfGrade === g
-                      ? 'border-sky-900 bg-sky-50'
+                      ? 'border-[#0284c7] bg-sky-50'
                       : 'border-[#eef1f4] bg-white'
                   }`}
                 >
                   <ScoreGrade grade={g} size="sm" />
-                  <span className={`font-semibold text-sm ${selectedSurfGrade === g ? 'text-sky-900' : 'text-[#8899aa]'}`}>
+                  <span className={`font-semibold text-sm ${selectedSurfGrade === g ? 'text-[#0284c7]' : 'text-[#8899aa]'}`}>
                     {gradeLabel(g)}
                   </span>
                 </button>
@@ -755,7 +755,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
               disabled={!selectedSurfGrade}
               className={`w-full py-4 rounded-xl font-bold text-base transition-colors ${
                 selectedSurfGrade
-                  ? 'bg-sky-900 text-white'
+                  ? 'bg-[#0284c7] text-white'
                   : 'bg-[#eef1f4] text-[#8899aa] cursor-not-allowed'
               }`}
             >

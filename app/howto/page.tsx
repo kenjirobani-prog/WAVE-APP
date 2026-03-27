@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function HowToPage() {
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
+    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       <header className="bg-white border-b border-[#eef1f4] px-4 pt-10 pb-5">
         <p style={{ fontSize: 11, fontWeight: 600, color: '#0369a1', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
           How to Surfing

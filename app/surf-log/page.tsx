@@ -18,14 +18,14 @@ import type { Spot } from '@/types'
 import BottomNav from '@/components/BottomNav'
 
 const GRADE_BG: Record<Grade, string> = {
-  '◎': 'bg-sky-900 text-white',
+  '◎': 'bg-[#0284c7] text-white',
   '○': 'bg-sky-700 text-white',
   '△': 'bg-slate-200 text-slate-600',
   '×': 'bg-red-100 text-red-400',
 }
 
 const GRADE_DOT: Record<Grade, string> = {
-  '◎': 'bg-sky-900',
+  '◎': 'bg-[#0284c7]',
   '○': 'bg-sky-700',
   '△': 'bg-slate-300',
   '×': 'bg-red-200',
@@ -120,7 +120,7 @@ function SpotSelectDialog({
               onClick={() => handleSpotSelect(spot)}
               className={`w-full text-left p-3 rounded-xl border-2 transition-colors ${
                 selectedSpot?.id === spot.id
-                  ? 'border-sky-900 bg-sky-50'
+                  ? 'border-[#0284c7] bg-sky-50'
                   : 'border-[#eef1f4] bg-white'
               }`}
             >
@@ -146,7 +146,7 @@ function SpotSelectDialog({
                   key={g}
                   onClick={() => setSelectedGrade(g)}
                   className={`flex-1 py-2 rounded-xl text-lg font-bold transition-colors ${
-                    selectedGrade === g ? GRADE_BG[g] : 'bg-[#f0f4f8] text-[#8899aa]'
+                    selectedGrade === g ? GRADE_BG[g] : 'bg-[#f0f9ff] text-[#8899aa]'
                   }`}
                 >
                   {g}
@@ -155,7 +155,7 @@ function SpotSelectDialog({
             </div>
             <button
               onClick={() => { try { navigator.vibrate(20) } catch {}; handleConfirm() }}
-              className="w-full py-3 bg-sky-900 text-white rounded-xl font-bold text-base"
+              className="w-full py-3 bg-[#0284c7] text-white rounded-xl font-bold text-base"
             >
               記録する
             </button>
@@ -338,7 +338,7 @@ export default function SurfLogPage() {
   const recentLogs = logs.slice(0, 20)
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
+    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
       <header className="bg-white px-4 pt-10 pb-5 border-b border-[#eef1f4]">
         <h1 className="text-xl font-bold tracking-tight text-[#0a1628] mb-4">Surf Log</h1>
@@ -377,7 +377,7 @@ export default function SurfLogPage() {
         <div className="px-4 pt-4">
           <button
             onClick={() => { try { navigator.vibrate(20) } catch {}; setShowDialog(true) }}
-            className="w-full py-4 bg-sky-900 text-white rounded-xl text-base font-bold active:scale-[0.98] transition-transform"
+            className="w-full py-4 bg-[#0284c7] text-white rounded-xl text-base font-bold active:scale-[0.98] transition-transform"
           >
             今日サーフィンした！
           </button>
@@ -414,7 +414,7 @@ export default function SurfLogPage() {
               <p className="text-[#8899aa] text-sm mb-5">サーフィン後に記録して、自分のサーフ履歴を作ろう！</p>
               <button
                 onClick={() => { try { navigator.vibrate(20) } catch {}; setShowDialog(true) }}
-                className="px-6 py-3 bg-sky-900 text-white rounded-xl font-bold text-sm active:scale-[0.98] transition-transform"
+                className="px-6 py-3 bg-[#0284c7] text-white rounded-xl font-bold text-sm active:scale-[0.98] transition-transform"
               >
                 今日のサーフを記録する
               </button>

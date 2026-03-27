@@ -6,7 +6,7 @@ interface Props {
 }
 
 const gradeConfig: Record<Grade, { label: string; className: string }> = {
-  '◎': { label: '◎', className: 'bg-sky-900 text-white' },
+  '◎': { label: '◎', className: 'bg-[#0284c7] text-white' },
   '○': { label: '○', className: 'bg-sky-700 text-white' },
   '△': { label: '△', className: 'bg-slate-200 text-slate-600' },
   '×': { label: '×', className: 'bg-red-100 text-red-400' },

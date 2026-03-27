@@ -112,7 +112,7 @@ function MarkdownBody({ content }: { content: string }) {
           case 'h2':
             return (
               <h2 key={idx} style={{
-                fontSize: 18, fontWeight: 700, color: '#0c4a6e',
+                fontSize: 18, fontWeight: 700, color: '#0284c7',
                 marginTop: 36, marginBottom: 12,
                 paddingBottom: 8, borderBottom: '2px solid #e0f2fe',
               }}>
@@ -157,7 +157,7 @@ function MarkdownBody({ content }: { content: string }) {
                       {block.headers.map((h, j) => (
                         <th key={j} style={{
                           padding: '8px 12px', textAlign: 'left',
-                          fontWeight: 700, color: '#0c4a6e',
+                          fontWeight: 700, color: '#0284c7',
                           borderBottom: '0.5px solid #bae6fd',
                           whiteSpace: 'nowrap',
                         }}>
@@ -200,13 +200,13 @@ export default function ArticleClient({ article }: { article: HowToArticle }) {
   const router = useRouter()
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
+    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
       <header className="bg-white border-b border-[#eef1f4] px-4 pt-10 pb-5">
         <button
           onClick={() => router.push('/howto')}
           className="flex items-center gap-1.5 mb-4"
-          style={{ color: '#0369a1', fontSize: 13, fontWeight: 600 }}
+          style={{ color: '#0284c7', fontSize: 13, fontWeight: 600 }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />

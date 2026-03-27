@@ -21,7 +21,7 @@ export default function TideCardStrip({ events }: Props) {
           <div
             key={i}
             style={{
-              background: '#f0f4f8',
+              background: '#f0f9ff',
               borderRadius: 8,
               padding: '6px 8px',
               textAlign: 'center',

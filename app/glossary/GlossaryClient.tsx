@@ -37,14 +37,14 @@ export default function GlossaryClient() {
       : (glossaryData.find(c => c.id === activeCategory)?.terms.length ?? 0)
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
+    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
       <header className="bg-white border-b border-[#eef1f4] px-4 pt-10 pb-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
             className="flex items-center justify-center w-8 h-8 rounded-full"
-            style={{ background: '#f0f4f8' }}
+            style={{ background: '#f0f9ff' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a1628" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6" />
@@ -74,7 +74,7 @@ export default function GlossaryClient() {
             onChange={e => setQuery(e.target.value)}
             placeholder="用語を検索..."
             className="w-full pl-9 pr-4 py-2 rounded-lg text-sm text-[#0a1628] placeholder-[#8899aa] outline-none"
-            style={{ background: '#f0f4f8', border: '0.5px solid #eef1f4' }}
+            style={{ background: '#f0f9ff', border: '0.5px solid #eef1f4' }}
           />
           {query && (
             <button
@@ -158,8 +158,8 @@ function CategoryTab({
       onClick={onClick}
       className="shrink-0 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors"
       style={active
-        ? { background: '#0c4a6e', color: '#fff' }
-        : { background: '#f0f4f8', color: '#8899aa' }
+        ? { background: '#0284c7', color: '#fff' }
+        : { background: '#f0f9ff', color: '#8899aa' }
       }
     >
       {label}

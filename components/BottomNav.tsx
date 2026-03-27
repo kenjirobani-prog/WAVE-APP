@@ -64,11 +64,11 @@ export default function BottomNav({ current }: { current: NavTab }) {
   return (
     <>
       {/* ホームインジケーター背景 */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 34, background: '#0c4a6e', zIndex: 39 }} />
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 34, background: '#0284c7', zIndex: 39 }} />
 
       <nav style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 448, zIndex: 40 }}>
         {/* ナビ本体 */}
-        <div style={{ background: '#0c4a6e', padding: '.45rem .3rem', display: 'flex', gap: '.15rem' }}>
+        <div style={{ background: '#0284c7', padding: '.45rem .3rem', display: 'flex', gap: '.15rem' }}>
           {NAV_ITEMS.map((item) => {
             const isActive = current === item.id
             return (
@@ -103,7 +103,7 @@ export default function BottomNav({ current }: { current: NavTab }) {
           })}
         </div>
         {/* ホームインジケーターバー */}
-        <div style={{ background: '#0c4a6e', display: 'flex', justifyContent: 'center', paddingBottom: 8, paddingTop: 4 }}>
+        <div style={{ background: '#0284c7', display: 'flex', justifyContent: 'center', paddingBottom: 8, paddingTop: 4 }}>
           <div style={{ width: 134, height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.3)' }} />
         </div>
       </nav>

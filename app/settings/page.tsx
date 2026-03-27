@@ -41,10 +41,10 @@ export default function SettingsPage() {
   }
 
   const selectClass = (active: boolean) =>
-    `border-2 transition-colors ${active ? 'border-sky-900 bg-sky-50' : 'border-[#eef1f4] bg-white'}`
+    `border-2 transition-colors ${active ? 'border-[#0284c7] bg-sky-50' : 'border-[#eef1f4] bg-white'}`
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
+    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       <header className="bg-white border-b border-[#eef1f4] px-4 py-4 flex items-center gap-3">
         <button onClick={() => router.back()} className="p-2 -ml-2 text-[#8899aa]">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +117,7 @@ export default function SettingsPage() {
               >
                 <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                   profile.favoriteSpots.includes(spot.id)
-                    ? 'border-sky-900 bg-sky-900'
+                    ? 'border-[#0284c7] bg-[#0284c7]'
                     : 'border-[#dde3ea]'
                 }`}>
                   {profile.favoriteSpots.includes(spot.id) && (
@@ -139,7 +139,7 @@ export default function SettingsPage() {
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md p-4 bg-white border-t border-[#eef1f4]">
         <button
           onClick={handleSave}
-          className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
+          className="w-full py-4 bg-[#0284c7] text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
         >
           保存する
         </button>

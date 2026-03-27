@@ -41,7 +41,7 @@ function toDateString(d: Date): string {
 }
 
 function scoreBarColor(s: number): string {
-  if (s >= 80) return 'bg-sky-900'
+  if (s >= 80) return 'bg-[#0284c7]'
   if (s >= 60) return 'bg-sky-700'
   if (s >= 40) return 'bg-sky-500'
   return 'bg-slate-300'
@@ -78,7 +78,7 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
     <Link href={href}>
       <div className={`rounded-xl border p-4 active:scale-[0.98] transition-all ${
         isTop
-          ? 'bg-sky-50 border-sky-200'
+          ? 'bg-[#f0f9ff] border-[#7dd3fc]'
           : 'bg-white border-[#eef1f4] hover:border-sky-200 hover:bg-[#f8feff]'
       }`}>
         <div className="flex items-center gap-3 mb-3">

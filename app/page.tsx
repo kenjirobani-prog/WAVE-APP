@@ -281,9 +281,9 @@ export default function TopPage() {
     tab === 'today' ? '今日' : tab === 'tomorrow' ? '明日' : '週間'
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f4f8]">
+    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
-      <header className="bg-white px-4 pt-10 pb-4 border-b border-[#eef1f4]">
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '2.5rem 1rem 1rem', color: '#fff' }}>
         <div className="flex items-center justify-between">
           <img src="/images/header.png" alt="Shonan Wave Forecast" style={{ height: 32, width: 'auto' }} />
           <div className="text-right flex flex-col items-end gap-1">
@@ -294,11 +294,11 @@ export default function TopPage() {
                 setDraftSize(profile.preferredSize)
                 setShowSettingsSheet(true)
               }}
-              style={{ background: '#f0f9ff', border: '0.5px solid #bae6fd', borderRadius: 99, padding: '4px 10px', fontSize: 10, fontWeight: 600, color: '#0369a1' }}
+              style={{ background: 'rgba(255,255,255,0.2)', border: '0.5px solid rgba(255,255,255,0.4)', borderRadius: 99, padding: '4px 10px', fontSize: 10, fontWeight: 600, color: '#fff' }}
             >
               ⚙ {levelLabel(profile.level)}・{boardLabel(profile.boardType)}・{sizeLabel(profile.preferredSize)}
             </button>
-            <span className="text-[11px] font-semibold text-sky-700 bg-sky-50 border border-sky-100 px-3 py-1 rounded-full tracking-widest uppercase">
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.85)', background: 'rgba(255,255,255,0.15)', border: '0.5px solid rgba(255,255,255,0.3)', padding: '4px 12px', borderRadius: 99, letterSpacing: '0.08em' }}>
               {DOW_ENG[today.getDay()]} · {today.getMonth() + 1}/{today.getDate()}
             </span>
             {lastUpdated && (
@@ -312,7 +312,7 @@ export default function TopPage() {
                   animation: 'livePulse 2s ease-in-out infinite',
                 }} />
                 <span style={{ fontSize: 10, fontWeight: 600, color: '#22c55e' }}>LIVE</span>
-                <span style={{ fontSize: 11, color: '#0a1628' }}>{formatTime(lastUpdated)}</span>
+                <span style={{ fontSize: 11, color: '#fff' }}>{formatTime(lastUpdated)}</span>
               </div>
             )}
           </div>
@@ -324,7 +324,7 @@ export default function TopPage() {
         <button
           onClick={() => setTab('today')}
           className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            tab === 'today' ? 'bg-sky-900 text-white' : 'text-[#8899aa]'
+            tab === 'today' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'
           }`}
         >
           今日 {formatMD(today)}
@@ -332,7 +332,7 @@ export default function TopPage() {
         <button
           onClick={() => setTab('tomorrow')}
           className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            tab === 'tomorrow' ? 'bg-sky-900 text-white' : 'text-[#8899aa]'
+            tab === 'tomorrow' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'
           }`}
         >
           明日 {formatMD(tomorrow)}
@@ -340,7 +340,7 @@ export default function TopPage() {
         <button
           onClick={() => setTab('weekly')}
           className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            tab === 'weekly' ? 'bg-sky-900 text-white' : 'text-[#8899aa]'
+            tab === 'weekly' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'
           }`}
         >
           週間
@@ -365,7 +365,7 @@ export default function TopPage() {
               const dowColor = day.date.getDay() === 0 ? '#ef4444' : day.date.getDay() === 6 ? '#3b82f6' : '#0a1628'
               const dayWeather = weather?.daily.find(w => w.date === day.dateStr)
               const { type: wType } = weatherInfo(dayWeather?.weatherCode ?? 3)
-              const scoreColor = day.avgScore >= 85 ? '#0c4a6e' : day.avgScore >= 65 ? '#0369a1' : '#94a3b8'
+              const scoreColor = day.avgScore >= 85 ? '#0284c7' : day.avgScore >= 65 ? '#0ea5e9' : '#94a3b8'
               return (
                 <div
                   key={day.dateStr}
@@ -412,7 +412,7 @@ export default function TopPage() {
                 <p className="text-[#8899aa] text-sm text-center px-4">{error}</p>
                 <button
                   onClick={() => loadForecast(targetDate)}
-                  className="px-6 py-2 bg-sky-900 text-white rounded-full text-sm font-semibold"
+                  className="px-6 py-2 bg-[#0284c7] text-white rounded-full text-sm font-semibold"
                 >
                   再試行
                 </button>
@@ -467,8 +467,8 @@ export default function TopPage() {
                   onClick={() => setDraftLevel(l.value)}
                   className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
                   style={draftLevel === l.value
-                    ? { background: '#0c4a6e', color: '#fff' }
-                    : { background: '#f0f4f8', color: '#8899aa' }
+                    ? { background: '#0284c7', color: '#fff' }
+                    : { background: '#f0f9ff', color: '#8899aa' }
                   }
                 >
                   {l.label}
@@ -484,8 +484,8 @@ export default function TopPage() {
                   onClick={() => setDraftBoard(b.value)}
                   className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
                   style={draftBoard === b.value
-                    ? { background: '#0c4a6e', color: '#fff' }
-                    : { background: '#f0f4f8', color: '#8899aa' }
+                    ? { background: '#0284c7', color: '#fff' }
+                    : { background: '#f0f9ff', color: '#8899aa' }
                   }
                 >
                   {b.label}
@@ -501,8 +501,8 @@ export default function TopPage() {
                   onClick={() => setDraftSize(s.value)}
                   className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
                   style={draftSize === s.value
-                    ? { background: '#0c4a6e', color: '#fff' }
-                    : { background: '#f0f4f8', color: '#8899aa' }
+                    ? { background: '#0284c7', color: '#fff' }
+                    : { background: '#f0f9ff', color: '#8899aa' }
                   }
                 >
                   {s.label}
@@ -522,7 +522,7 @@ export default function TopPage() {
                 setProfile(updated)
                 setShowSettingsSheet(false)
               }}
-              className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
+              className="w-full py-4 bg-[#0284c7] text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
             >
               保存して再計算
             </button>
@@ -536,8 +536,8 @@ export default function TopPage() {
 }
 
 function barColor(s: number): string {
-  if (s >= 80) return '#0c4a6e'
-  if (s >= 50) return '#0ea5e9'
+  if (s >= 80) return '#0284c7'
+  if (s >= 50) return '#38bdf8'
   return '#94a3b8'
 }
 
@@ -551,7 +551,7 @@ function AvgScoreHero({ scores }: { scores: SpotScore[] }) {
         <p className="font-semibold uppercase tracking-widest text-[#94a3b8] mb-1" style={{ fontSize: 10 }}>
           Shonan avg score
         </p>
-        <p style={{ fontSize: 52, fontWeight: 700, color: '#0c4a6e', lineHeight: 1 }}>{avg}</p>
+        <p style={{ fontSize: 52, fontWeight: 700, color: '#0284c7', lineHeight: 1 }}>{avg}</p>
       </div>
       <div className="flex-1 flex flex-col justify-center gap-1.5 min-w-0">
         {scores.map(sc => {
@@ -671,12 +671,12 @@ function SpotListSkeleton() {
     <>
       {[...Array(5)].map((_, i) => (
         <div key={i} className="bg-white rounded-xl border border-[#eef1f4] p-4 flex items-center gap-4 animate-pulse">
-          <div className="w-14 h-14 bg-[#f0f4f8] rounded-xl shrink-0" />
+          <div className="w-14 h-14 bg-[#f0f9ff] rounded-xl shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 bg-[#f0f4f8] rounded w-1/3" />
-            <div className="h-3 bg-[#f0f4f8] rounded w-2/3" />
+            <div className="h-4 bg-[#f0f9ff] rounded w-1/3" />
+            <div className="h-3 bg-[#f0f9ff] rounded w-2/3" />
           </div>
-          <div className="w-10 h-8 bg-[#f0f4f8] rounded shrink-0" />
+          <div className="w-10 h-8 bg-[#f0f9ff] rounded shrink-0" />
         </div>
       ))}
     </>
@@ -688,11 +688,11 @@ function WeeklyListSkeleton() {
     <>
       {[...Array(7)].map((_, i) => (
         <div key={i} className="bg-white rounded-xl border border-[#eef1f4] p-4 flex items-center gap-4 animate-pulse">
-          <div className="w-12 h-10 bg-[#f0f4f8] rounded shrink-0" />
+          <div className="w-12 h-10 bg-[#f0f9ff] rounded shrink-0" />
           <div className="flex-1 flex justify-center">
-            <div className="w-16 h-6 bg-[#f0f4f8] rounded" />
+            <div className="w-16 h-6 bg-[#f0f9ff] rounded" />
           </div>
-          <div className="w-16 h-8 bg-[#f0f4f8] rounded shrink-0" />
+          <div className="w-16 h-8 bg-[#f0f9ff] rounded shrink-0" />
         </div>
       ))}
     </>

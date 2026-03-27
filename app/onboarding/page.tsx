@@ -40,10 +40,10 @@ export default function OnboardingPage() {
   }
 
   const selectClass = (active: boolean) =>
-    `border-2 transition-colors ${active ? 'border-sky-900 bg-sky-50' : 'border-[#eef1f4] bg-white'}`
+    `border-2 transition-colors ${active ? 'border-[#0284c7] bg-sky-50' : 'border-[#eef1f4] bg-white'}`
 
   return (
-    <div className="flex-1 flex flex-col p-6 bg-[#f0f4f8]">
+    <div className="flex-1 flex flex-col p-6 bg-[#f0f9ff]">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#0a1628]">Shonan Wave Forecast</h1>
@@ -58,7 +58,7 @@ export default function OnboardingPage() {
         {[1, 2].map(s => (
           <div
             key={s}
-            className={`h-1 flex-1 rounded-full transition-colors ${s <= step ? 'bg-sky-900' : 'bg-[#dde3ea]'}`}
+            className={`h-1 flex-1 rounded-full transition-colors ${s <= step ? 'bg-[#0284c7]' : 'bg-[#dde3ea]'}`}
           />
         ))}
       </div>
@@ -100,7 +100,7 @@ export default function OnboardingPage() {
 
           <button
             onClick={() => setStep(2)}
-            className="w-full py-4 bg-sky-900 text-white rounded-xl font-bold text-base mt-6 active:scale-[0.98] transition-transform"
+            className="w-full py-4 bg-[#0284c7] text-white rounded-xl font-bold text-base mt-6 active:scale-[0.98] transition-transform"
           >
             次へ
           </button>
@@ -143,7 +143,7 @@ export default function OnboardingPage() {
                 >
                   <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                     profile.favoriteSpots.includes(spot.id)
-                      ? 'border-sky-900 bg-sky-900'
+                      ? 'border-[#0284c7] bg-[#0284c7]'
                       : 'border-[#dde3ea]'
                   }`}>
                     {profile.favoriteSpots.includes(spot.id) && (
@@ -170,7 +170,7 @@ export default function OnboardingPage() {
             </button>
             <button
               onClick={handleComplete}
-              className="flex-1 py-4 bg-sky-900 text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
+              className="flex-1 py-4 bg-[#0284c7] text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
             >
               診断開始
             </button>
