@@ -98,8 +98,12 @@ function defaultTide(): number[] {
 }
 
 async function fetchKAihoTideHourly(date: Date): Promise<number[]> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
   const res = await fetch(KAIHO_GAUGE_URL, {
     headers: { Accept: 'text/html,application/xhtml+xml' },
+    signal: controller.signal,
     next: { revalidate: 1800 },
   } as RequestInit)
   if (!res.ok) throw new Error(`KAiho gauge API error: ${res.status}`)
@@ -122,9 +126,23 @@ async function fetchKAihoTideHourly(date: Date): Promise<number[]> {
   console.log('[KAiho] result       (0-23h):', result)
 
   return result
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 // ---- Open-Meteo 海象・気象データ ----
+
+async function fetchWithTimeout(url: string, timeoutMs = 15000): Promise<Response> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(url, { signal: controller.signal })
+    return res
+  } finally {
+    clearTimeout(timeout)
+  }
+}
 
 async function fetchMarineData(lat: number, lng: number, startDate: string, endDate: string) {
   const params = new URLSearchParams({
@@ -136,7 +154,7 @@ async function fetchMarineData(lat: number, lng: number, startDate: string, endD
     start_date: startDate,
     end_date: endDate,
   })
-  const res = await fetch(`${OPEN_METEO_MARINE_URL}?${params}`)
+  const res = await fetchWithTimeout(`${OPEN_METEO_MARINE_URL}?${params}`)
   if (!res.ok) throw new Error(`Open-Meteo marine API error: ${res.status}`)
   return res.json()
 }
@@ -151,7 +169,7 @@ async function fetchWeatherData(lat: number, lng: number, startDate: string, end
     start_date: startDate,
     end_date: endDate,
   })
-  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
+  const res = await fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?${params}`)
   if (!res.ok) throw new Error(`Open-Meteo forecast API error: ${res.status}`)
   return res.json()
 }

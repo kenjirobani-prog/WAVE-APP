@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+export const maxDuration = 30
+
 function todayStr(): string {
   const now = new Date()
   const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000)

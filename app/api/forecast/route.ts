@@ -4,6 +4,8 @@ import { detectTideEvents } from '@/lib/wave/types'
 import { calcWaveEnergy, predictBreakType, getSwellRatio } from '@/lib/wave/scoring'
 import { SPOTS } from '@/data/spots'
 
+export const maxDuration = 30
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const spotId = searchParams.get('spotId')
@@ -54,9 +56,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ conditions: conditionsWithMeta, tideEvents })
     }
   } catch (error) {
-    console.error('Forecast API error:', error)
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('Forecast API error:', message, error)
     return NextResponse.json(
-      { error: 'Failed to fetch forecast data' },
+      { error: 'Failed to fetch forecast data', detail: message },
       { status: 500 }
     )
   }
