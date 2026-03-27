@@ -285,7 +285,20 @@ export default function TopPage() {
       {/* ヘッダー */}
       <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '2.5rem 1rem 1rem', color: '#fff' }}>
         <div className="flex items-center justify-between">
-          <img src="/images/header.png" alt="Shonan Wave Forecast" style={{ height: 32, width: 'auto' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.35)',
+              borderRadius: 8,
+              padding: '4px 8px',
+            }}>
+              <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>S/W</span>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Shonan Wave</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 1 }}>FORECAST</div>
+            </div>
+          </div>
           <div className="text-right flex flex-col items-end gap-1">
             <button
               onClick={() => {
