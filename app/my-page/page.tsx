@@ -32,6 +32,24 @@ export default function MyPage() {
             </svg>
           </button>
         </div>
+
+        {/* About S/W */}
+        <div style={{ margin: '32px 16px 16px', padding: 24, background: '#f0f9ff', borderRadius: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.1em', marginBottom: 16 }}>ABOUT S/W</div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0284c7', marginBottom: 16, lineHeight: 1.3 }}>波を、データで読む時代。</h2>
+          <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
+            S/Wは、AIが湘南の波をリアルタイムに分析する波予報アプリです。
+          </p>
+          <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
+            波の高さ、風向き、うねりの方向、潮位、周期——これらをAIが瞬時に計算し、あなたのレベルとボードに合わせたスコアに変換します。熟練サーファーが長年かけて身につける「コンディションの読み方」を、デジタルの力で誰でも使えるかたちに。
+          </p>
+          <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
+            数字の裏にあるもの。スコアの背後には、波エネルギー（kJ）、グランドスウェル判定、クロスうねり干渉、潮の動き方向など、複数のロジックが走っています。「今日は行くべきか」という問いに、AIが正直に答えます。
+          </p>
+          <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
+            サーフィンとテクノロジーは、相性がいい。海は毎日変わる。だからこそ、リアルタイムのデータとアルゴリズムが力を発揮します。S/Wはその可能性を、湘南のビーチから試しています。
+          </p>
+        </div>
       </main>
 
       <BottomNav current="mypage" />
