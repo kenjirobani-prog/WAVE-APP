@@ -299,7 +299,7 @@ export default function TopPage() {
               <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 1 }}>FORECAST</div>
             </div>
           </div>
-          <div className="text-right flex flex-col items-end gap-1">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
             <button
               onClick={() => {
                 setDraftLevel(profile.level)
@@ -307,13 +307,26 @@ export default function TopPage() {
                 setDraftSize(profile.preferredSize)
                 setShowSettingsSheet(true)
               }}
-              style={{ background: 'rgba(255,255,255,0.2)', border: '0.5px solid rgba(255,255,255,0.4)', borderRadius: 99, padding: '4px 10px', fontSize: 10, fontWeight: 600, color: '#fff' }}
+              style={{
+                background: '#fff',
+                borderRadius: 10,
+                padding: '8px 16px',
+                fontSize: 12,
+                fontWeight: 800,
+                color: '#0284c7',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
-              ⚙ {levelLabel(profile.level)}・{boardLabel(profile.boardType)}・{sizeLabel(profile.preferredSize)}
+              <span style={{ fontSize: 14 }}>⚙</span> マイ設定
             </button>
-            <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.85)', background: 'rgba(255,255,255,0.15)', border: '0.5px solid rgba(255,255,255,0.3)', padding: '4px 12px', borderRadius: 99, letterSpacing: '0.08em' }}>
-              {DOW_ENG[today.getDay()]} · {today.getMonth() + 1}/{today.getDate()}
-            </span>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', textAlign: 'right' }}>
+              {levelLabel(profile.level)}・{boardLabel(profile.boardType)}・{sizeLabel(profile.preferredSize)}
+            </div>
             {lastUpdated && (
               <div className="flex items-center gap-1">
                 <span style={{
