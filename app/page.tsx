@@ -285,7 +285,7 @@ export default function TopPage() {
       {/* ヘッダー */}
       <header className="bg-white px-4 pt-10 pb-4 border-b border-[#eef1f4]">
         <div className="flex items-center justify-between">
-          <img src="/images/header.png" alt="Shonan Wave Forecast" style={{ height: 32, width: 'auto' }} />
+          <span className="text-lg font-bold tracking-tight text-[#0a1628]">Shonan Wave</span>
           <div className="text-right flex flex-col items-end gap-1">
             <button
               onClick={() => {

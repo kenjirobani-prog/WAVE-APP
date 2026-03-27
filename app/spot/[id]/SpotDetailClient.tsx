@@ -387,24 +387,24 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   {(() => {
                     const r = getSwellRatio(current.swellWaveHeight, current.waveHeight)
                     const swellBadge = r >= 0.7
-                      ? { label: '🌊 グランドスウェル', bg: '#dcfce7', color: '#166534' }
+                      ? { label: 'グランドスウェル', bg: '#dcfce7', color: '#166534' }
                       : r >= 0.5
-                      ? { label: '〜 うねり混在', bg: '#fef9c3', color: '#854d0e' }
+                      ? { label: 'うねり混在', bg: '#fef9c3', color: '#854d0e' }
                       : r >= 0.3
-                      ? { label: '💨 風波優勢', bg: '#ffedd5', color: '#9a3412' }
-                      : { label: '💨 うねりなし', bg: '#f1f5f9', color: '#64748b' }
+                      ? { label: '風波優勢', bg: '#ffedd5', color: '#9a3412' }
+                      : { label: 'うねりなし', bg: '#f1f5f9', color: '#64748b' }
                     const energy = calcWaveEnergy(current.waveHeight, current.wavePeriod)
                     return (
                       <div className="bg-[#f0f4f8] rounded-xl p-3">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">周期</p>
-                        <div className="flex items-baseline gap-2">
-                          <p className="text-xl font-bold text-[#0a1628]">{current.wavePeriod.toFixed(0)}秒</p>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: swellBadge.bg, color: swellBadge.color, flexShrink: 0 }}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xl font-bold text-[#0a1628]">{current.wavePeriod.toFixed(0)}秒</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: swellBadge.bg, color: swellBadge.color, flexShrink: 0, whiteSpace: 'nowrap' }}>
                             {swellBadge.label}
                           </span>
                         </div>
                         <p className="text-xs text-[#8899aa] mt-1">
-                          セット間隔 {calcSetInterval(current.wavePeriod)} / エネルギー {energy.toFixed(1)}kJ
+                          {calcSetInterval(current.wavePeriod)}/set・{energy.toFixed(1)}kJ
                         </p>
                       </div>
                     )
