@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getUserProfile, saveUserProfile } from '@/lib/userProfile'
+import { getDb } from '@/lib/firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { SPOTS } from '@/data/spots'
-import { calculateScore, scoreToGrade } from '@/lib/wave/scoring'
+import { calculateScore, scoreToGrade, classifyWind, windTypeLabel, waveQualityLabel } from '@/lib/wave/scoring'
 import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
@@ -130,6 +132,9 @@ export default function TopPage() {
   const [draftSize, setDraftSize] = useState<UserProfile['preferredSize']>('waist-chest')
   const [weeklyData, setWeeklyData] = useState<WeeklyDayData[]>([])
   const [weeklyLoading, setWeeklyLoading] = useState(false)
+  const [weeklyComment, setWeeklyComment] = useState<string | null>(null)
+  const [weeklyCommentAt, setWeeklyCommentAt] = useState<string | null>(null)
+  const [weeklyCommentLoading, setWeeklyCommentLoading] = useState(false)
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
@@ -236,6 +241,7 @@ export default function TopPage() {
 
     const activeSpots = SPOTS.filter(s => s.isActive)
     const result: WeeklyDayData[] = []
+    const commentData: Array<{ date: string; avgScore: number; waveHeight?: number; windType?: string; swellDirection?: string; period?: number; waveQualityLabel?: string }> = []
 
     for (const day of days) {
       const dateStr = toDateStr(day)
@@ -266,10 +272,67 @@ export default function TopPage() {
         : 0
 
       result.push({ date: day, dateStr, avgScore, grade: scoreToGrade(avgScore) })
+
+      // AI週間コメント用データ収集（代表スポットの代表条件）
+      const repCond = condResults.find(c => c !== null) ?? null
+      const repScore = dayScores[0] ?? null
+      const COMPASS_8 = ['北', '北東', '東', '南東', '南', '南西', '西', '北西']
+      commentData.push({
+        date: dateStr,
+        avgScore,
+        waveHeight: repCond ? Math.round(repCond.waveHeight * 10) / 10 : undefined,
+        windType: repCond ? windTypeLabel(classifyWind(repCond.windDir, repCond.windSpeed)) : undefined,
+        swellDirection: repCond ? COMPASS_8[Math.round(repCond.swellDir / 45) % 8] : undefined,
+        period: repCond ? Math.round(repCond.wavePeriod) : undefined,
+        waveQualityLabel: repScore ? waveQualityLabel(repScore.breakdown.waveQuality) : undefined,
+      })
     }
 
     setWeeklyData(result)
     setWeeklyLoading(false)
+
+    // AI週間コメント取得
+    loadWeeklyComment(commentData)
+  }
+
+  async function loadWeeklyComment(data: Array<{ date: string; avgScore: number; waveHeight?: number; windType?: string; swellDirection?: string; period?: number; waveQualityLabel?: string }>) {
+    setWeeklyCommentLoading(true)
+    try {
+      const dateKey = toDateStr(new Date())
+      const db = getDb()
+      const docRef = doc(db, 'weeklyComment', dateKey)
+
+      // Firestoreキャッシュ確認
+      const cached = await getDoc(docRef)
+      if (cached.exists()) {
+        const d = cached.data()
+        setWeeklyComment(d.comment)
+        const ts = d.generatedAt?.toDate?.() ?? new Date()
+        setWeeklyCommentAt(`${ts.getMonth() + 1}/${ts.getDate()} ${String(ts.getHours()).padStart(2, '0')}:${String(ts.getMinutes()).padStart(2, '0')}`)
+        setWeeklyCommentLoading(false)
+        return
+      }
+
+      // Claude APIで生成
+      const res = await fetch('/api/weekly-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weeklyData: data }),
+      })
+      if (res.ok) {
+        const { comment, generatedAt } = await res.json()
+        setWeeklyComment(comment)
+        const d = new Date(generatedAt)
+        setWeeklyCommentAt(`${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+
+        // Firestoreにキャッシュ保存
+        await setDoc(docRef, { comment, generatedAt: new Date() })
+      }
+    } catch {
+      // コメント取得失敗は無視
+    } finally {
+      setWeeklyCommentLoading(false)
+    }
   }
 
   if (!profile) return null
@@ -385,7 +448,23 @@ export default function TopPage() {
           weeklyLoading ? (
             <WeeklyListSkeleton />
           ) : (
-            weeklyData.map(day => {
+            <>
+            {/* AI週間予報コメント */}
+            {weeklyCommentLoading ? (
+              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI週間予報</div>
+                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>AIが今週の波を分析中...</p>
+              </div>
+            ) : weeklyComment ? (
+              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI週間予報</div>
+                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0 }}>{weeklyComment}</p>
+                {weeklyCommentAt && (
+                  <div style={{ fontSize: 10, color: '#a0bac8', marginTop: 8, textAlign: 'right' }}>{weeklyCommentAt} 生成</div>
+                )}
+              </div>
+            ) : null}
+            {weeklyData.map(day => {
               const dow = DOW_JA[day.date.getDay()]
               const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6
               const dowColor = day.date.getDay() === 0 ? '#ef4444' : day.date.getDay() === 6 ? '#3b82f6' : '#0a1628'
@@ -424,7 +503,8 @@ export default function TopPage() {
                   </div>
                 </div>
               )
-            })
+            })}
+            </>
           )
         ) : (
           <>
