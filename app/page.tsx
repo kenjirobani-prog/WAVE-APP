@@ -353,6 +353,7 @@ export default function TopPage() {
       if (!res.ok) {
         const errBody = await res.text()
         console.error('[WeeklyComment] API error:', res.status, errBody)
+        setWeeklyComment('AI予報コメントを取得できませんでした。')
         return
       }
       const { comment, generatedAt } = await res.json()
@@ -368,6 +369,7 @@ export default function TopPage() {
       }
     } catch (err) {
       console.error('[WeeklyComment] error:', err)
+      setWeeklyComment('AI予報コメントを取得できませんでした。')
     } finally {
       setWeeklyCommentLoading(false)
     }

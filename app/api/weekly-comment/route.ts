@@ -41,29 +41,45 @@ export async function POST(request: Request) {
       `${d.date}: スコア${d.avgScore}, 波高${d.waveHeight ?? '?'}m, 風${d.windType ?? '?'}, うねり${d.swellDirection ?? '?'}, 周期${d.period ?? '?'}秒, 波質${d.waveQualityLabel ?? '?'}`
     ).join('\n')
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        system: 'あなたは湘南のサーフィン予報AIです。7日分のデータを見て、今週のコンディションを2〜3文で要約してください。ベストな日を明示し、サーファー向けのカジュアルな日本語で書いてください。余計な前置きや説明は不要です。コメントのみ返してください。',
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
+    console.log('[weekly-comment] Prompt:', prompt.substring(0, 200))
+
+    const controller = new AbortController()
+    const fetchTimeout = setTimeout(() => controller.abort(), 25000)
+
+    let res: Response
+    try {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 200,
+          system: 'あなたは湘南のサーフィン予報AIです。7日分のデータを見て、今週のコンディションを2〜3文で要約してください。ベストな日を明示し、サーファー向けのカジュアルな日本語で書いてください。余計な前置きや説明は不要です。コメントのみ返してください。',
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
+      console.error('[weekly-comment] Claude API fetch error:', msg)
+      return NextResponse.json({ error: `Claude API fetch failed: ${msg}` }, { status: 502 })
+    } finally {
+      clearTimeout(fetchTimeout)
+    }
 
     if (!res.ok) {
       const errText = await res.text()
       console.error('[weekly-comment] Claude API error:', res.status, errText)
-      return NextResponse.json({ error: 'Claude API error' }, { status: 502 })
+      return NextResponse.json({ error: `Claude API error: ${res.status}`, detail: errText }, { status: 502 })
     }
 
     const result = await res.json()
     const comment = result.content?.[0]?.text ?? ''
+    console.log('[weekly-comment] Generated comment:', comment.substring(0, 100))
 
     return NextResponse.json({
       comment,
