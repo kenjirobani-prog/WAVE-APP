@@ -341,36 +341,32 @@ export default function SurfLogPage() {
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
       <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1, marginBottom: 16 }}>Surf Log</h1>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 text-center">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-1">今年の日数</p>
-            {loading ? (
-              <div className="h-9 flex items-center justify-center">
-                <div className="w-12 h-7 bg-sky-100 rounded animate-pulse" />
-              </div>
-            ) : (
-              <>
-                <p className="text-3xl font-bold text-sky-900">{daysThisYear}</p>
-                <p className="text-xs text-sky-700">日</p>
-              </>
-            )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em' }}>S/W</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Surf Log</span>
           </div>
-          <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 text-center">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-1">通算日数</p>
-            {loading ? (
-              <div className="h-9 flex items-center justify-center">
-                <div className="w-12 h-7 bg-sky-100 rounded animate-pulse" />
-              </div>
-            ) : (
-              <>
-                <p className="text-3xl font-bold text-sky-900">{daysTotal}</p>
-                <p className="text-xs text-sky-700">日</p>
-              </>
-            )}
-          </div>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.05em' }}>サーフィン記録</span>
         </div>
       </header>
+
+      {/* 統計カード */}
+      <div style={{ display: 'flex', gap: 12, padding: '12px 16px', background: '#f0f9ff' }}>
+        <div style={{ flex: 1, background: '#fff', borderRadius: 12, border: '1px solid #e0f2fe', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 12, color: '#8899aa' }}>今年</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+            <span style={{ fontSize: 24, fontWeight: 800, color: '#0284c7' }}>{daysThisYear}</span>
+            <span style={{ fontSize: 11, color: '#8899aa' }}>日</span>
+          </div>
+        </div>
+        <div style={{ flex: 1, background: '#fff', borderRadius: 12, border: '1px solid #e0f2fe', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 12, color: '#8899aa' }}>通算</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+            <span style={{ fontSize: 24, fontWeight: 800, color: '#0284c7' }}>{daysTotal}</span>
+            <span style={{ fontSize: 11, color: '#8899aa' }}>日</span>
+          </div>
+        </div>
+      </div>
 
       <main className="flex-1 overflow-auto pb-28 space-y-4">
         {/* 記録ボタン */}
