@@ -1,7 +1,7 @@
 export interface WaveCondition {
   spotId: string
   timestamp: Date
-  waveHeight: number      // メートル
+  waveHeight: number      // メートル（合成波高）
   wavePeriod: number      // 秒
   swellDir: number        // 度（0-360）
   windSpeed: number       // m/s
@@ -9,6 +9,8 @@ export interface WaveCondition {
   tideHeight: number      // cm
   tideMovement: 'rising' | 'falling' | 'slack'
   weather: 'sunny' | 'cloudy' | 'rainy'
+  swellWaveHeight: number // うねり成分の波高（m）
+  windWaveHeight: number  // 風波成分の波高（m）
 }
 
 export interface TideEvent {

@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
-import { calculateScore, classifyWind, windTypeLabel, compassLabel, waveQualityLabel, waveQualityColor, waveQualitySub } from '@/lib/wave/scoring'
+import { calculateScore, classifyWind, windTypeLabel, compassLabel, waveQualityLabel, waveQualityColor, waveQualitySub, getSwellRatio } from '@/lib/wave/scoring'
 import { saveSurfLog } from '@/lib/surfLog'
 import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
@@ -376,7 +376,13 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   <ConditionCard
                     label="周期"
                     value={`${current.wavePeriod.toFixed(0)}秒`}
-                    sub={current.wavePeriod >= 10 ? 'うねりあり' : 'うねりなし'}
+                    sub={(() => {
+                      const r = getSwellRatio(current.swellWaveHeight, current.waveHeight)
+                      if (r >= 0.7) return 'グランドスウェル'
+                      if (r >= 0.5) return 'うねり混在'
+                      if (r >= 0.3) return '風波優勢'
+                      return 'うねりなし（風波）'
+                    })()}
                   />
                   {score && (() => {
                     const qScore = score.breakdown.waveQuality

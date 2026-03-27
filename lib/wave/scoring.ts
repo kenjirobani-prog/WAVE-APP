@@ -147,6 +147,24 @@ function getSwellTideBonus(waveHeight: number, tideLevel: number): number {
   return 0
 }
 
+// swell比率の計算（0〜1）
+// 1.0に近いほどグランドスウェル、0に近いほど風波
+export function getSwellRatio(swellWaveHeight: number, waveHeight: number): number {
+  if (waveHeight <= 0) return 0
+  return Math.min(1, swellWaveHeight / waveHeight)
+}
+
+// Wind Swellペナルティ（波質スコアから差し引く）
+function getWindSwellPenalty(swellRatio: number, waveHeight: number): number {
+  // 波が小さい場合はペナルティ軽減（小波は風波でも影響が少ない）
+  const heightFactor = waveHeight < 0.5 ? 0.5 : 1.0
+
+  if (swellRatio < 0.3) return Math.round(-8 * heightFactor)  // ほぼ風波・ダンパー必至
+  if (swellRatio < 0.5) return Math.round(-5 * heightFactor)  // 風波優勢・ワイド気味
+  if (swellRatio < 0.7) return Math.round(-2 * heightFactor)  // 混在
+  return 0  // グランドスウェル優勢
+}
+
 function getPeriodTideBonus(period: number, tideLevel: number): number {
   if (period >= 10 && tideLevel >= 80 && tideLevel <= 120) return 2
   if (period >= 10 && tideLevel >= 40 && tideLevel <  80)  return 1
@@ -162,12 +180,15 @@ function scoreWaveQuality(
   windSpeed: number,
   waveHeight: number,
   tideHeight: number,
+  swellWaveHeight: number,
 ): number {
   const windType = classifyWind(windDir, windSpeed)
   const base = getBaseWaveQuality(wavePeriod, windType)
   const swellTide = getSwellTideBonus(waveHeight, tideHeight)
   const periodTide = getPeriodTideBonus(wavePeriod, tideHeight)
-  return Math.min(20, Math.max(0, base + swellTide + periodTide))
+  const swellRatio = getSwellRatio(swellWaveHeight, waveHeight)
+  const windSwellPenalty = getWindSwellPenalty(swellRatio, waveHeight)
+  return Math.min(20, Math.max(0, base + swellTide + periodTide + windSwellPenalty))
 }
 
 // 天気ボーナス（+5点）
@@ -214,6 +235,7 @@ export function calculateScore(
     condition.windSpeed,
     effCondition.waveHeight,
     condition.tideHeight,
+    condition.swellWaveHeight,
   )
   const weatherBonus = scoreWeather(condition.weather)
   const correction = boardCorrection(effCondition, profile)
