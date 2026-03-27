@@ -76,17 +76,29 @@ function scoreSwellDir(swellDir: number, bestSwellDir: number): number {
   return 0
 }
 
-// 潮スコア（10点満点）
+// 【役割】潮位の絶対的な良し悪しを評価（波高に依存しない）
+// 　　　　ミドルタイドを最高評価とし、潮の動き方向ボーナスを加算
+// 【配点】0〜10点（メインスコアの10点枠）
 // 潮位基準: 最低水面（横浜 平均水面=115cm, 大潮干潮≈20cm, 大潮高潮≈185cm）
-function scoreTide(
-  tideHeight: number,
-  tideMovement: WaveCondition['tideMovement'],
-): number {
-  if (tideHeight >= 80 && tideHeight <= 120) {
-    return tideMovement === 'rising' ? 10 : 5
-  }
-  if ((tideHeight >= 60 && tideHeight < 80) || (tideHeight > 120 && tideHeight <= 150)) return 3
-  return 1
+function scoreTide(tideLevel: number, tideTrend: number): number {
+  // ベーススコア（潮位の絶対値）
+  let base = 0
+  if (tideLevel >= 80 && tideLevel <= 120)       base = 10  // ミドルタイド：最高
+  else if (tideLevel >= 60 && tideLevel < 80)    base = 8   // やや引き気味：良い
+  else if (tideLevel > 120 && tideLevel <= 150)  base = 6   // やや満潮気味：普通
+  else if (tideLevel >= 40 && tideLevel < 60)    base = 4   // 干潮気味：やや悪い
+  else if (tideLevel > 150)                      base = 3   // 満潮すぎ：悪い
+  else                                           base = 2   // 超干潮：悪い
+
+  // 潮の動き方向ボーナス
+  // 「上げ三分・下げ七分」の日本格言 + BCM湘南レポートに基づく
+  let trendBonus = 0
+  if (tideTrend >= 3 && tideTrend <= 8)        trendBonus = 2   // 上げ潮中盤：最良
+  else if (tideTrend < -2 && tideTrend >= -8)  trendBonus = 1   // 引き潮中盤：良い
+  else if (Math.abs(tideTrend) < 2)            trendBonus = -1  // 停滞（満干潮ピーク）
+  else if (Math.abs(tideTrend) > 10)           trendBonus = -1  // 急激な変化
+
+  return Math.min(10, Math.max(0, base + trendBonus))
 }
 
 // 波質スコア（3ステップ設計・20点満点）
@@ -125,8 +137,11 @@ function getBaseWaveQuality(period: number, windType: WindType): number {
   return 2
 }
 
+// 【役割】波高×潮位の組み合わせ特性を評価（湘南ビーチブレイク特有）
+// 　　　　強うねり×干潮のワイド化、強うねり×中潮のボーナスなど
+// 【配点】-10〜+3点（波質スコアの補正値）
 function getSwellTideBonus(waveHeight: number, tideLevel: number): number {
-  // 干潮ペナルティ（強化）
+  // 干潮×強うねり → ワイド・ダンパー（湘南ビーチブレイク特性）
   if (waveHeight >= 1.5 && tideLevel <= 40) return -10
   if (waveHeight >= 1.5 && tideLevel <= 60) return -8
   if (waveHeight >= 1.2 && tideLevel <= 40) return -9
@@ -134,14 +149,14 @@ function getSwellTideBonus(waveHeight: number, tideLevel: number): number {
   if (waveHeight >= 1.0 && tideLevel <= 40) return -6
   if (waveHeight >= 1.0 && tideLevel <= 60) return -4
   if (waveHeight >= 0.8 && tideLevel <= 40) return -2
-  // 中潮ボーナス
+  // 中潮×強うねり → ボーナス（最高のコンディション）
   if (waveHeight >= 1.2 && tideLevel >= 80 && tideLevel <= 120) return 3
   if (waveHeight >= 1.0 && tideLevel >= 80 && tideLevel <= 120) return 2
-  // 満潮ペナルティ（強化・湘南ビーチブレイク特性に合わせて120cmから段階適用）
+  // 満潮×強うねり → 波が崩れにくい
+  // ※ 満潮×弱うねりのペナルティは scoreTide 側に移管済み
   if (waveHeight >= 1.2 && tideLevel >= 150) return -5
   if (waveHeight >= 0.8 && tideLevel >= 150) return -4
-  if (waveHeight <  0.6 && tideLevel >= 150) return -3
-  // 新規追加：120〜150cmの中満潮ペナルティ
+  // 中満潮ペナルティ（120〜150cm）
   if (waveHeight >= 0.8 && tideLevel >= 120 && tideLevel < 150) return -2
   if (waveHeight >= 0.5 && tideLevel >= 120 && tideLevel < 150) return -1
   return 0
@@ -275,7 +290,7 @@ export function calculateScore(
   const waveHeight = scoreWaveHeight(effCondition.waveHeight, profile.preferredSize)
   const wind = scoreWind(condition.windSpeed, condition.windDir)
   const swellDir = scoreSwellDir(condition.swellDir, spot.bestSwellDir)
-  const tide = scoreTide(condition.tideHeight, condition.tideMovement)
+  const tide = scoreTide(condition.tideHeight, condition.tideTrend)
   const waveQuality = scoreWaveQuality(
     condition.wavePeriod,
     condition.windDir,

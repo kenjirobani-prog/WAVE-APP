@@ -7,7 +7,7 @@ export interface WaveCondition {
   windSpeed: number       // m/s
   windDir: number         // 度
   tideHeight: number      // cm
-  tideMovement: 'rising' | 'falling' | 'slack'
+  tideTrend: number       // 前1時間との潮位差（cm）。+なら上げ潮、-なら引き潮
   weather: 'sunny' | 'cloudy' | 'rainy'
   swellWaveHeight: number    // うねり成分の波高（m）
   windWaveHeight: number     // 風波成分の波高（m）

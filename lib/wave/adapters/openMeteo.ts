@@ -26,16 +26,6 @@ function classifyWeather(code: number): WaveCondition['weather'] {
   return 'rainy'
 }
 
-function classifyTideMovement(
-  current: number,
-  prev: number | undefined
-): WaveCondition['tideMovement'] {
-  if (prev === undefined) return 'slack'
-  const diff = current - prev
-  if (diff > 2) return 'rising'
-  if (diff < -2) return 'falling'
-  return 'slack'
-}
 
 // ---- KAiho 験潮データ パーサー ----
 
@@ -197,7 +187,7 @@ function buildConditions(
       windSpeed: windSpeeds[i] ?? 0,
       windDir: windDirs[i] ?? 180,
       tideHeight,
-      tideMovement: classifyTideMovement(tideHeight, prevTide),
+      tideTrend: prevTide !== undefined ? tideHeight - prevTide : 0,
       weather: classifyWeather(weatherCodes[i] ?? 0),
       swellWaveHeight: swellWaveHeights[i] ?? 0,
       windWaveHeight: windWaveHeights[i] ?? 0,
@@ -275,7 +265,7 @@ export const openMeteoAdapter: WaveAdapter = {
         windSpeed: weather.hourly.wind_speed_10m[i] ?? 0,
         windDir: weather.hourly.wind_direction_10m[i] ?? 180,
         tideHeight,
-        tideMovement: classifyTideMovement(tideHeight, prevTide),
+        tideTrend: prevTide !== undefined ? tideHeight - prevTide : 0,
         weather: classifyWeather(weather.hourly.weather_code[i] ?? 0),
         swellWaveHeight: marine.hourly.swell_wave_height[i] ?? 0,
         windWaveHeight: marine.hourly.wind_wave_height[i] ?? 0,
