@@ -424,21 +424,18 @@ export default function SpotDetailContent({ id }: { id: string }) {
                         ? { label: '中級者向き', bg: '#dbeafe', color: '#1e40af' }
                         : { label: '上級者向き', bg: '#ffedd5', color: '#9a3412' }
                       : null
+                    const windType = classifyWind(current.windDir, current.windSpeed)
+                    const qualitySub = waveQualitySub(qScore, current.wavePeriod, windType)
                     return (
                       <div className="bg-[#f0f4f8] rounded-xl p-3" style={{ gridColumn: '1 / -1', background: bg }}>
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波質</p>
                         <p style={{ fontSize: 20, fontWeight: 700, color: text }}>{waveQualityLabel(qScore)}</p>
-                        {breakInfo && difficultyBadge && (
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <span className="text-xs text-[#8899aa]">{breakInfo.labelJa}</span>
-                            <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: difficultyBadge.bg, color: difficultyBadge.color, flexShrink: 0 }}>
-                              {difficultyBadge.label}
-                            </span>
-                          </div>
+                        {difficultyBadge && (
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: difficultyBadge.bg, color: difficultyBadge.color, display: 'inline-block', marginTop: 4 }}>
+                            {difficultyBadge.label}
+                          </span>
                         )}
-                        {breakInfo && (
-                          <p className="text-[11px] text-[#8899aa] mt-0.5">{breakInfo.description}</p>
-                        )}
+                        <p className="text-[11px] text-[#8899aa] mt-0.5">{qualitySub}</p>
                       </div>
                     )
                   })()}

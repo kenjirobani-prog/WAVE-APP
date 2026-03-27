@@ -145,7 +145,7 @@ async function fetchWeatherData(lat: number, lng: number, startDate: string, end
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lng.toString(),
-    hourly: 'weather_code,wind_speed_10m,wind_direction_10m',
+    hourly: 'weather_code,wind_speed_10m,wind_direction_10m,temperature_2m,uv_index',
     wind_speed_unit: 'ms',
     timezone: 'Asia/Tokyo',
     start_date: startDate,
@@ -169,6 +169,8 @@ function buildConditions(
   swellWaveHeights: number[],
   windWaveHeights: number[],
   windWaveDirections: number[],
+  temperatures: number[],
+  uvIndexes: number[],
 ): WaveCondition[] {
   return times.map((time, i) => {
     // Open-Meteo returns JST local time strings like "2026-03-21T04:00" (no timezone suffix).
@@ -189,6 +191,8 @@ function buildConditions(
       tideHeight,
       tideTrend: prevTide !== undefined ? tideHeight - prevTide : 0,
       weather: classifyWeather(weatherCodes[i] ?? 0),
+      temperature: temperatures[i] ?? 20,
+      uvIndex: uvIndexes[i] ?? 0,
       swellWaveHeight: swellWaveHeights[i] ?? 0,
       windWaveHeight: windWaveHeights[i] ?? 0,
       windWaveDirection: windWaveDirections[i] ?? 180,
@@ -224,6 +228,8 @@ export const openMeteoAdapter: WaveAdapter = {
       marine.hourly.swell_wave_height,
       marine.hourly.wind_wave_height,
       marine.hourly.wind_wave_direction,
+      weather.hourly.temperature_2m,
+      weather.hourly.uv_index,
     )
   },
 
@@ -267,6 +273,8 @@ export const openMeteoAdapter: WaveAdapter = {
         tideHeight,
         tideTrend: prevTide !== undefined ? tideHeight - prevTide : 0,
         weather: classifyWeather(weather.hourly.weather_code[i] ?? 0),
+        temperature: weather.hourly.temperature_2m[i] ?? 20,
+        uvIndex: weather.hourly.uv_index[i] ?? 0,
         swellWaveHeight: marine.hourly.swell_wave_height[i] ?? 0,
         windWaveHeight: marine.hourly.wind_wave_height[i] ?? 0,
         windWaveDirection: marine.hourly.wind_wave_direction[i] ?? 180,

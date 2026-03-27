@@ -333,11 +333,15 @@ function scoreWaveQuality(
   return Math.min(20, Math.max(0, base + swellTide + periodTide + windSwellPenalty + crossSwellPenalty + energyBonus))
 }
 
-// 天気ボーナス（+5点）
-function scoreWeather(weather: WaveCondition['weather']): number {
-  if (weather === 'sunny') return 5
-  if (weather === 'cloudy') return 2
-  return 0
+// 体感コンフォートスコア（+5点）
+// 晴れ=5base, 気温15-26℃快適ボーナス+1, UV≥9→-1
+function scoreComfort(weather: WaveCondition['weather'], temperature: number, uvIndex: number): number {
+  let base = 0
+  if (weather === 'sunny') base = 5
+  else if (weather === 'cloudy') base = 2
+  const tempBonus = temperature >= 15 && temperature <= 26 ? 1 : 0
+  const uvPenalty = uvIndex >= 9 ? -1 : 0
+  return Math.max(0, base + tempBonus + uvPenalty)
 }
 
 // ボードタイプ補正（±5点）
@@ -383,7 +387,7 @@ export function calculateScore(
     condition.windWaveHeight,
     condition.windWaveDirection,
   )
-  const weatherBonus = scoreWeather(condition.weather)
+  const weatherBonus = scoreComfort(condition.weather, condition.temperature, condition.uvIndex)
   const correction = boardCorrection(effCondition, profile)
 
   const total = Math.max(0, Math.min(100, waveHeight + wind + swellDir + tide + waveQuality + weatherBonus + correction))
