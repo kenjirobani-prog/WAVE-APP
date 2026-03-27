@@ -304,12 +304,20 @@ export default function TopPage() {
       const docRef = doc(db, 'weeklyComment', dateKey)
 
       // Firestoreキャッシュ確認
-      const cached = await getDoc(docRef)
-      if (cached.exists()) {
-        const d = cached.data()
-        setWeeklyComment(d.comment)
-        const ts = d.generatedAt?.toDate?.() ?? new Date()
-        setWeeklyCommentAt(`${ts.getMonth() + 1}/${ts.getDate()} ${String(ts.getHours()).padStart(2, '0')}:${String(ts.getMinutes()).padStart(2, '0')}`)
+      let cachedHit = false
+      try {
+        const cached = await getDoc(docRef)
+        if (cached.exists()) {
+          const d = cached.data()
+          setWeeklyComment(d.comment)
+          const ts = d.generatedAt?.toDate?.() ?? new Date()
+          setWeeklyCommentAt(`${ts.getMonth() + 1}/${ts.getDate()} ${String(ts.getHours()).padStart(2, '0')}:${String(ts.getMinutes()).padStart(2, '0')}`)
+          cachedHit = true
+        }
+      } catch (cacheErr) {
+        console.error('[WeeklyComment] Firestore cache read error:', cacheErr)
+      }
+      if (cachedHit) {
         setWeeklyCommentLoading(false)
         return
       }
@@ -320,14 +328,21 @@ export default function TopPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weeklyData: data }),
       })
-      if (res.ok) {
-        const { comment, generatedAt } = await res.json()
-        setWeeklyComment(comment)
-        const d = new Date(generatedAt)
-        setWeeklyCommentAt(`${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+      if (!res.ok) {
+        const errBody = await res.text()
+        console.error('[WeeklyComment] API error:', res.status, errBody)
+        return
+      }
+      const { comment, generatedAt } = await res.json()
+      setWeeklyComment(comment)
+      const d = new Date(generatedAt)
+      setWeeklyCommentAt(`${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
 
-        // Firestoreにキャッシュ保存
+      // Firestoreにキャッシュ保存（失敗してもコメント表示には影響しない）
+      try {
         await setDoc(docRef, { comment, generatedAt: new Date() })
+      } catch (writeErr) {
+        console.error('[WeeklyComment] Firestore cache write error:', writeErr)
       }
     } catch (err) {
       console.error('[WeeklyComment] error:', err)

@@ -22,8 +22,10 @@ export async function POST(request: Request) {
     // Claude API呼び出し
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
+      console.error('[weekly-comment] ANTHROPIC_API_KEY is missing from environment variables')
       return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
     }
+    console.log('[weekly-comment] API key found, calling Claude API...')
 
     const prompt = weeklyData.map((d: {
       date: string
