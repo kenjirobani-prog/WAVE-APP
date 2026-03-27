@@ -1,0 +1,167 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { COMMENT_SCHEDULES, padHour, type CommentTarget } from '@/lib/commentSchedules'
+
+export const maxDuration = 30
+
+function toJstDateStr(): string {
+  const now = new Date()
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  return jst.toISOString().split('T')[0]
+}
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const target = searchParams.get('target') as CommentTarget | null
+  const hour = searchParams.get('hour')
+
+  if (!target || !['today', 'tomorrow'].includes(target)) {
+    return NextResponse.json({ error: 'target must be "today" or "tomorrow"' }, { status: 400 })
+  }
+  if (!hour || !/^\d{2}$/.test(hour)) {
+    return NextResponse.json({ error: 'hour must be 2-digit (e.g. "09")' }, { status: 400 })
+  }
+
+  const hourNum = parseInt(hour, 10)
+  if (!(COMMENT_SCHEDULES[target] as readonly number[]).includes(hourNum)) {
+    return NextResponse.json({ error: `hour ${hour} is not in schedule for ${target}` }, { status: 400 })
+  }
+
+  const dateStr = toJstDateStr()
+  const cacheKey = `dailyComment_${target}_${hour}`
+
+  try {
+    // Firestoreキャッシュ確認
+    await ensureAnonymousAuth()
+    const db = getDb()
+    const cacheRef = doc(db, 'dailyComment', `${dateStr}_${cacheKey}`)
+
+    try {
+      const cached = await getDoc(cacheRef)
+      if (cached.exists()) {
+        const data = cached.data()
+        console.log(`[daily-comment] Cache HIT: ${dateStr}_${cacheKey}`)
+        return NextResponse.json({
+          comment: data.comment,
+          generatedAt: data.generatedAt,
+          target,
+          hour,
+          cached: true,
+        })
+      }
+    } catch (cacheErr) {
+      console.error('[daily-comment] Cache read error:', cacheErr)
+    }
+
+    // Claude APIで生成
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) {
+      console.error('[daily-comment] ANTHROPIC_API_KEY missing')
+      return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
+    }
+
+    // forecastCacheから今日/明日のデータを取得してプロンプトに含める
+    const forecastDate = target === 'today' ? dateStr : (() => {
+      const d = new Date()
+      d.setDate(d.getDate() + 1)
+      const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000)
+      return jst.toISOString().split('T')[0]
+    })()
+
+    // 複数スポットのデータを集める
+    const spotIds = ['kugenuma', 'tsujido', 'shichiri', 'chigasaki', 'oiso', 'yuigahama', 'aquarium']
+    let forecastSummary = ''
+    for (const spotId of spotIds) {
+      try {
+        const fRef = doc(db, 'forecastCache', `${spotId}_${forecastDate}`)
+        const fSnap = await getDoc(fRef)
+        if (fSnap.exists()) {
+          const fData = fSnap.data()
+          const conditions = fData.conditions ?? []
+          // 代表的な時間帯のデータを抽出
+          const hours = target === 'today'
+            ? conditions.filter((c: { timestamp: string }) => {
+                const h = new Date(c.timestamp).getUTCHours() + 9
+                return h >= hourNum
+              })
+            : conditions
+          if (hours.length > 0) {
+            const noon = hours.find((c: { timestamp: string }) => {
+              const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+              return h === 12
+            }) ?? hours[Math.floor(hours.length / 2)]
+            forecastSummary += `${spotId}: 波高${noon.waveHeight}m, 周期${noon.wavePeriod}秒, 風速${noon.windSpeed}m/s, 潮位${noon.tideHeight}cm\n`
+          }
+        }
+      } catch {}
+    }
+
+    if (!forecastSummary) {
+      forecastSummary = '予報データが取得できませんでした。一般的なコメントを生成してください。'
+    }
+
+    const targetLabel = target === 'today' ? '今日' : '明日'
+    const timeContext = target === 'today'
+      ? `現在時刻: ${hourNum}時。${hourNum}時以降の今日のサーフィン状況`
+      : `明日一日のサーフィン状況`
+
+    const systemPrompt = `あなたは湘南のサーフィン予報AIです。${timeContext}を2〜3文で要約してください。ベストな時間帯やスポットがあれば明示し、サーファー向けのカジュアルな日本語で書いてください。余計な前置きや説明は不要です。コメントのみ返してください。`
+
+    const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の湘南各スポットデータ:\n${forecastSummary}`
+
+    console.log(`[daily-comment] Generating for ${target} ${hour}h...`)
+
+    const controller = new AbortController()
+    const fetchTimeout = setTimeout(() => controller.abort(), 25000)
+
+    let res: Response
+    try {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 200,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }],
+        }),
+      })
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
+      console.error('[daily-comment] Claude API fetch error:', msg)
+      return NextResponse.json({ error: `Claude API fetch failed: ${msg}` }, { status: 502 })
+    } finally {
+      clearTimeout(fetchTimeout)
+    }
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('[daily-comment] Claude API error:', res.status, errText)
+      return NextResponse.json({ error: `Claude API error: ${res.status}`, detail: errText }, { status: 502 })
+    }
+
+    const result = await res.json()
+    const comment = result.content?.[0]?.text ?? ''
+    const generatedAt = new Date().toISOString()
+    console.log(`[daily-comment] Generated: ${comment.substring(0, 80)}...`)
+
+    // Firestoreにキャッシュ保存
+    try {
+      await setDoc(cacheRef, { comment, generatedAt, date: dateStr, target, hour })
+    } catch (writeErr) {
+      console.error('[daily-comment] Cache write error:', writeErr)
+    }
+
+    return NextResponse.json({ comment, generatedAt, target, hour, cached: false })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[daily-comment] error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}

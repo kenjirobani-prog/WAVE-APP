@@ -4,6 +4,7 @@ import { SPOTS } from '@/data/spots'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, setDoc } from 'firebase/firestore'
 import type { WaveCondition } from '@/lib/wave/types'
+import { COMMENT_SCHEDULES, padHour, type CommentTarget } from '@/lib/commentSchedules'
 
 export const maxDuration = 60
 
@@ -105,9 +106,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 日次AIコメント生成
+    const jstHour = (new Date().getUTCHours() + 9) % 24
+    const commentResults: { target: string; hour: number; status: string }[] = []
+    const baseUrl = request.url.replace(/\/api\/cron\/update-forecast.*$/, '')
+
+    for (const target of ['today', 'tomorrow'] as CommentTarget[]) {
+      if ((COMMENT_SCHEDULES[target] as readonly number[]).includes(jstHour)) {
+        try {
+          const url = `${baseUrl}/api/daily-comment?target=${target}&hour=${padHour(jstHour)}`
+          console.log(`[Cron] Generating ${target} comment for ${jstHour}h...`)
+          const res = await fetch(url)
+          const data = await res.json()
+          commentResults.push({ target, hour: jstHour, status: data.comment ? 'ok' : `error: ${data.error}` })
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          commentResults.push({ target, hour: jstHour, status: `error: ${msg}` })
+        }
+      }
+    }
+
     const elapsed = Date.now() - startTime
     console.log(`[Cron] Complete in ${elapsed}ms`)
-    return NextResponse.json({ ok: true, date: dateStr, elapsed: `${elapsed}ms`, results })
+    return NextResponse.json({ ok: true, date: dateStr, elapsed: `${elapsed}ms`, results, commentResults })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[Cron] Fatal error:', msg)
