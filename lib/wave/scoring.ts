@@ -137,10 +137,13 @@ function getSwellTideBonus(waveHeight: number, tideLevel: number): number {
   // 中潮ボーナス
   if (waveHeight >= 1.2 && tideLevel >= 80 && tideLevel <= 120) return 3
   if (waveHeight >= 1.0 && tideLevel >= 80 && tideLevel <= 120) return 2
-  // 満潮ペナルティ
-  if (waveHeight >= 1.2 && tideLevel >= 150) return -4
-  if (waveHeight >= 0.8 && tideLevel >= 150) return -3
-  if (waveHeight <  0.6 && tideLevel >= 150) return -2
+  // 満潮ペナルティ（強化・湘南ビーチブレイク特性に合わせて120cmから段階適用）
+  if (waveHeight >= 1.2 && tideLevel >= 150) return -5
+  if (waveHeight >= 0.8 && tideLevel >= 150) return -4
+  if (waveHeight <  0.6 && tideLevel >= 150) return -3
+  // 新規追加：120〜150cmの中満潮ペナルティ
+  if (waveHeight >= 0.8 && tideLevel >= 120 && tideLevel < 150) return -2
+  if (waveHeight >= 0.5 && tideLevel >= 120 && tideLevel < 150) return -1
   return 0
 }
 
