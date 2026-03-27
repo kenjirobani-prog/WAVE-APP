@@ -7,6 +7,17 @@ export interface UserProfile {
   onboardingDone: boolean
 }
 
+// スポット固有の海底地形プロファイル
+export interface BathymetryProfile {
+  type: 'gradual' | 'moderate' | 'steep'
+  // gradual: 遠浅・スピリング傾向（鵠沼・辻堂・由比ヶ浜）
+  // moderate: 中間（茅ヶ崎・大磯）
+  // steep: 急傾斜・プランジング傾向（七里ヶ浜）
+  optimalTideRange: [number, number]   // 最適潮位帯（cm）
+  swellSensitivity: 'high' | 'medium' | 'low'  // うねりの拾いやすさ
+  closeoutRisk: 'high' | 'medium' | 'low'      // クローズアウトリスク
+}
+
 // スポット
 export interface Spot {
   id: string
@@ -29,7 +40,8 @@ export interface Spot {
   mapUrl?: string
   mapPlaceName?: string
   mapCenter?: { lat: number; lng: number }
-  waveHeightMultiplier?: number  // スポット固有の波高補正係数（デフォルト: 1.0）
+  waveHeightMultiplier?: number   // スポット固有の波高補正係数（デフォルト: 1.0）
+  bathymetryProfile?: BathymetryProfile
   // 詳細情報（スポット詳細画面で表示）
   description?: string
   bestSeasons?: ('spring' | 'summer' | 'autumn' | 'winter')[]

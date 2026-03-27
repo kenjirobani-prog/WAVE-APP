@@ -1,6 +1,74 @@
 import type { WaveCondition } from './types'
-import type { Spot, Grade, SpotScore, ScoreBreakdown, WindType } from '@/types'
+import type { Spot, Grade, SpotScore, ScoreBreakdown, WindType, BathymetryProfile } from '@/types'
 import type { UserProfile } from '@/types'
+
+// ブレイクタイプ
+export type BreakType = 'plunging' | 'spilling' | 'closeout' | 'surging'
+
+export type BreakTypeInfo = {
+  type: BreakType
+  label: string
+  labelJa: string
+  description: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+}
+
+export function predictBreakType(
+  bathymetryType: BathymetryProfile['type'],
+  tideLevel: number,
+  waveHeight: number,
+  swellRatio: number,
+  closeoutRisk: BathymetryProfile['closeoutRisk'],
+): BreakTypeInfo {
+  // クローズアウトリスク高 × 強うねり × 干潮
+  if (closeoutRisk !== 'low' && waveHeight >= 1.0 && tideLevel < 60) {
+    return {
+      type: 'closeout',
+      label: 'Closeout',
+      labelJa: 'クローズアウト',
+      description: '波が一気に崩れて乗れる場所がない状態。見送り推奨。',
+      difficulty: 'advanced',
+    }
+  }
+  // 急傾斜 × グランドスウェル × 適正潮位 → プランジング
+  if (bathymetryType === 'steep' && swellRatio >= 0.6 && tideLevel >= 60 && tideLevel <= 120) {
+    return {
+      type: 'plunging',
+      label: 'Plunging',
+      labelJa: 'ホレた波',
+      description: '波のリップが前に飛び出すパワフルな波。チューブが生まれやすい。中上級者向き。',
+      difficulty: 'advanced',
+    }
+  }
+  // 急傾斜 × 満潮 → サージング
+  if (bathymetryType === 'steep' && tideLevel > 130) {
+    return {
+      type: 'surging',
+      label: 'Surging',
+      labelJa: 'サージング',
+      description: '波が崩れずに砂浜を駆け上がる状態。乗れる波が少ない。',
+      difficulty: 'advanced',
+    }
+  }
+  // 緩傾斜 × 満潮 → スピリング（トロい）
+  if (bathymetryType === 'gradual' && tideLevel > 120) {
+    return {
+      type: 'spilling',
+      label: 'Spilling',
+      labelJa: 'トロい波',
+      description: '波がゆっくり崩れる柔らかい波。初心者の練習に最適。',
+      difficulty: 'beginner',
+    }
+  }
+  // デフォルト：スピリング（緩やか）
+  return {
+    type: 'spilling',
+    label: 'Spilling',
+    labelJa: 'スピリング',
+    description: '波がゆっくり崩れる安定した波。',
+    difficulty: 'beginner',
+  }
+}
 
 /**
  * 風向き種別を判定する（湘南は海岸線が東西方向・海は南側）
@@ -76,19 +144,31 @@ function scoreSwellDir(swellDir: number, bestSwellDir: number): number {
   return 0
 }
 
-// 【役割】潮位の絶対的な良し悪しを評価（波高に依存しない）
-// 　　　　ミドルタイドを最高評価とし、潮の動き方向ボーナスを加算
+// 【役割】潮位の絶対的な良し悪しを評価（スポット固有の最適潮位帯を使用）
+// 　　　　最適潮位帯の中心に近いほど高スコア、帯外はペナルティ
+// 　　　　潮の動き方向ボーナスを加算
 // 【配点】0〜10点（メインスコアの10点枠）
 // 潮位基準: 最低水面（横浜 平均水面=115cm, 大潮干潮≈20cm, 大潮高潮≈185cm）
-function scoreTide(tideLevel: number, tideTrend: number): number {
-  // ベーススコア（潮位の絶対値）
+function scoreTideWithBathymetry(
+  tideLevel: number,
+  tideTrend: number,
+  optimalTideRange: [number, number],
+): number {
+  const [minTide, maxTide] = optimalTideRange
+  const midTide = (minTide + maxTide) / 2
+
+  // ベーススコア（スポット最適潮位帯に基づく）
   let base = 0
-  if (tideLevel >= 80 && tideLevel <= 120)       base = 10  // ミドルタイド：最高
-  else if (tideLevel >= 60 && tideLevel < 80)    base = 8   // やや引き気味：良い
-  else if (tideLevel > 120 && tideLevel <= 150)  base = 6   // やや満潮気味：普通
-  else if (tideLevel >= 40 && tideLevel < 60)    base = 4   // 干潮気味：やや悪い
-  else if (tideLevel > 150)                      base = 3   // 満潮すぎ：悪い
-  else                                           base = 2   // 超干潮：悪い
+  if (tideLevel >= minTide && tideLevel <= maxTide) {
+    // 中心に近いほど高スコア
+    const distFromMid = Math.abs(tideLevel - midTide)
+    const rangeHalf = (maxTide - minTide) / 2
+    base = Math.round(10 * (1 - distFromMid / rangeHalf))
+  } else {
+    // 最適潮位帯外のペナルティ
+    const distFromRange = tideLevel < minTide ? minTide - tideLevel : tideLevel - maxTide
+    base = Math.max(0, 8 - Math.floor(distFromRange / 10))
+  }
 
   // 潮の動き方向ボーナス
   // 「上げ三分・下げ七分」の日本格言 + BCM湘南レポートに基づく
@@ -290,7 +370,8 @@ export function calculateScore(
   const waveHeight = scoreWaveHeight(effCondition.waveHeight, profile.preferredSize)
   const wind = scoreWind(condition.windSpeed, condition.windDir)
   const swellDir = scoreSwellDir(condition.swellDir, spot.bestSwellDir)
-  const tide = scoreTide(condition.tideHeight, condition.tideTrend)
+  const optimalTideRange = spot.bathymetryProfile?.optimalTideRange ?? [80, 120]
+  const tide = scoreTideWithBathymetry(condition.tideHeight, condition.tideTrend, optimalTideRange)
   const waveQuality = scoreWaveQuality(
     condition.wavePeriod,
     condition.windDir,

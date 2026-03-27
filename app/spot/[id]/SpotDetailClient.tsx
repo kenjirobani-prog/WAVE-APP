@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
-import { calculateScore, classifyWind, windTypeLabel, compassLabel, waveQualityLabel, waveQualityColor, waveQualitySub, getSwellRatio, calcWaveEnergy } from '@/lib/wave/scoring'
+import { calculateScore, classifyWind, windTypeLabel, compassLabel, waveQualityLabel, waveQualityColor, waveQualitySub, getSwellRatio, calcWaveEnergy, predictBreakType } from '@/lib/wave/scoring'
 import { saveSurfLog } from '@/lib/surfLog'
 import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
@@ -412,12 +412,33 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   {score && (() => {
                     const qScore = score.breakdown.waveQuality
                     const { text, bg } = waveQualityColor(qScore)
-                    const windType = classifyWind(current.windDir, current.windSpeed)
+                    const swellR = getSwellRatio(current.swellWaveHeight, current.waveHeight)
+                    const bp = spot.bathymetryProfile
+                    const breakInfo = bp
+                      ? predictBreakType(bp.type, current.tideHeight, current.waveHeight, swellR, bp.closeoutRisk)
+                      : null
+                    const difficultyBadge = breakInfo
+                      ? breakInfo.difficulty === 'beginner'
+                        ? { label: '初心者向き', bg: '#dcfce7', color: '#166534' }
+                        : breakInfo.difficulty === 'intermediate'
+                        ? { label: '中級者向き', bg: '#dbeafe', color: '#1e40af' }
+                        : { label: '上級者向き', bg: '#ffedd5', color: '#9a3412' }
+                      : null
                     return (
                       <div className="bg-[#f0f4f8] rounded-xl p-3" style={{ gridColumn: '1 / -1', background: bg }}>
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波質</p>
                         <p style={{ fontSize: 20, fontWeight: 700, color: text }}>{waveQualityLabel(qScore)}</p>
-                        <p className="text-xs text-[#8899aa] mt-0.5">{waveQualitySub(qScore, current.wavePeriod, windType)}</p>
+                        {breakInfo && difficultyBadge && (
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-xs text-[#8899aa]">{breakInfo.labelJa}</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: difficultyBadge.bg, color: difficultyBadge.color, flexShrink: 0 }}>
+                              {difficultyBadge.label}
+                            </span>
+                          </div>
+                        )}
+                        {breakInfo && (
+                          <p className="text-[11px] text-[#8899aa] mt-0.5">{breakInfo.description}</p>
+                        )}
                       </div>
                     )
                   })()}

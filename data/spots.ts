@@ -1,4 +1,4 @@
-import type { Spot } from '@/types'
+import type { Spot, BathymetryProfile } from '@/types'
 
 export const SPOTS: Spot[] = [
   {
@@ -28,6 +28,7 @@ export const SPOTS: Spot[] = [
     waveTypeTags: ['トロ気味', 'ビーチブレイク', 'ロングライド向き'],
     facilities: ['シャワーあり', '駐車場あり（有料）', 'コンビニ近く', 'レンタルショップあり'],
     beginnerNote: 'サイズアップ時は沖へのカレントに注意。波が厚めでロングボードやファンボード向き。混雑時はローカルサーファーへの配慮を忘れずに。',
+    bathymetryProfile: { type: 'gradual', optimalTideRange: [60, 120], swellSensitivity: 'medium', closeoutRisk: 'medium' } as BathymetryProfile,
     isActive: true,
     order: 1,
     defaultOrder: 4,
@@ -61,6 +62,7 @@ export const SPOTS: Spot[] = [
     waveTypeTags: ['ビーチブレイク', '比較的きれい', '初〜中級向き'],
     facilities: ['シャワーあり', '駐車場あり（有料）', '辻堂駅徒歩15分'],
     beginnerNote: '鵠沼より混雑が少なく練習しやすい。テイクオフ練習からカービング練習まで幅広く対応できる環境。サイズが上がったときはカレントに注意。',
+    bathymetryProfile: { type: 'gradual', optimalTideRange: [70, 130], swellSensitivity: 'medium', closeoutRisk: 'low' } as BathymetryProfile,
     isActive: true,
     order: 2,
     defaultOrder: 5,
@@ -94,6 +96,7 @@ export const SPOTS: Spot[] = [
     waveTypeTags: ['穏やか', 'ビーチブレイク', '初〜中級向き'],
     facilities: ['シャワーあり', '駐車場あり（有料）', '片瀬江ノ島駅徒歩5分', '江ノ島観光と便利'],
     beginnerNote: '江ノ島の影響でサイズが落ちやすく、初心者が練習しやすい環境。水族館や江ノ島観光と組み合わせやすい。',
+    bathymetryProfile: { type: 'gradual', optimalTideRange: [60, 120], swellSensitivity: 'low', closeoutRisk: 'low' } as BathymetryProfile,
     isActive: true,
     order: 3,
     defaultOrder: 3,
@@ -127,6 +130,7 @@ export const SPOTS: Spot[] = [
     waveTypeTags: ['パワー系', 'ホレ気味', '中上級向き'],
     facilities: ['シャワーあり', '駐車場あり（有料）', '茅ヶ崎駅徒歩20分', 'サーフショップ多数'],
     beginnerNote: 'サザンビーチ周辺は比較的穏やかで入りやすい。西側エリアはパワーが強く初心者には難しい。烏帽子岩方向への流れに注意。',
+    bathymetryProfile: { type: 'moderate', optimalTideRange: [60, 120], swellSensitivity: 'high', closeoutRisk: 'medium' } as BathymetryProfile,
     isActive: true,
     order: 4,
     defaultOrder: 6,
@@ -160,6 +164,7 @@ export const SPOTS: Spot[] = [
     waveTypeTags: ['ホレ気味', 'パワー系', '中上級向き'],
     facilities: ['駐車場あり（無料あり）', 'シャワーあり（夏季）', '大磯駅徒歩15分'],
     beginnerNote: '砂利混じりのビーチのため転倒時に注意。波のパワーが強く初心者には難しめ。混雑が少ないのでゆっくり練習したい中級者にはおすすめ。',
+    bathymetryProfile: { type: 'moderate', optimalTideRange: [50, 110], swellSensitivity: 'medium', closeoutRisk: 'medium' } as BathymetryProfile,
     isActive: true,
     order: 5,
     defaultOrder: 7,
@@ -193,6 +198,7 @@ export const SPOTS: Spot[] = [
     waveTypeTags: ['ホレ系', 'チューブあり', '上級者向き'],
     facilities: ['駐車場少ない', '江ノ電七里ヶ浜駅近く', 'おしゃれなカフェ多数'],
     beginnerNote: '波のパワーが強く初心者には危険。岩場が近いエリアもあるため要注意。駐車場が少ないため電車利用がおすすめ。',
+    bathymetryProfile: { type: 'steep', optimalTideRange: [60, 110], swellSensitivity: 'high', closeoutRisk: 'medium' } as BathymetryProfile,
     isActive: true,
     order: 6,
     defaultOrder: 2,
@@ -226,6 +232,7 @@ export const SPOTS: Spot[] = [
     waveTypeTags: ['穏やか', 'ビーチブレイク', '初心者向き'],
     facilities: ['シャワーあり', '駐車場あり（有料）', '鎌倉駅徒歩15分', '飲食店多数'],
     beginnerNote: '波が穏やかで初心者に最適。ただし夏の海水浴シーズンは混雑するため注意。鎌倉観光と組み合わせやすい立地。',
+    bathymetryProfile: { type: 'gradual', optimalTideRange: [70, 130], swellSensitivity: 'medium', closeoutRisk: 'low' } as BathymetryProfile,
     isActive: true,
     order: 7,
     defaultOrder: 1,

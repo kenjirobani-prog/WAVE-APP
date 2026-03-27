@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getConditions, getForecast } from '@/lib/wave/waveService'
 import { detectTideEvents } from '@/lib/wave/types'
-import { calcWaveEnergy } from '@/lib/wave/scoring'
+import { calcWaveEnergy, predictBreakType, getSwellRatio } from '@/lib/wave/scoring'
+import { SPOTS } from '@/data/spots'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -33,12 +34,24 @@ export async function GET(request: NextRequest) {
         return c?.tideHeight ?? 0
       })
       const tideEvents = detectTideEvents(tideByHour)
-      // 各時間帯に波エネルギーを付加
-      const conditionsWithEnergy = conditions.map(c => ({
-        ...c,
-        waveEnergy: Math.round(calcWaveEnergy(c.waveHeight, c.wavePeriod) * 10) / 10,
-      }))
-      return NextResponse.json({ conditions: conditionsWithEnergy, tideEvents })
+      const spot = SPOTS.find(s => s.id === spotId)
+      const bp = spot?.bathymetryProfile
+      // 各時間帯に波エネルギー・ブレイクタイプを付加
+      const conditionsWithMeta = conditions.map(c => {
+        const swellRatio = getSwellRatio(c.swellWaveHeight, c.waveHeight)
+        const breakInfo = bp
+          ? predictBreakType(bp.type, c.tideHeight, c.waveHeight, swellRatio, bp.closeoutRisk)
+          : null
+        return {
+          ...c,
+          waveEnergy: Math.round(calcWaveEnergy(c.waveHeight, c.wavePeriod) * 10) / 10,
+          breakType: breakInfo?.type ?? 'spilling',
+          breakTypeLabel: breakInfo?.labelJa ?? 'スピリング',
+          breakTypeDifficulty: breakInfo?.difficulty ?? 'beginner',
+          breakTypeDescription: breakInfo?.description ?? '',
+        }
+      })
+      return NextResponse.json({ conditions: conditionsWithMeta, tideEvents })
     }
   } catch (error) {
     console.error('Forecast API error:', error)
