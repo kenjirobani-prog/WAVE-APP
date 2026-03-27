@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
-import { calculateScore, classifyWind, windTypeLabel, compassLabel, waveQualityLabel, waveQualityColor, waveQualitySub, getSwellRatio } from '@/lib/wave/scoring'
+import { calculateScore, classifyWind, windTypeLabel, compassLabel, waveQualityLabel, waveQualityColor, waveQualitySub, getSwellRatio, calcWaveEnergy } from '@/lib/wave/scoring'
 import { saveSurfLog } from '@/lib/surfLog'
 import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
@@ -112,6 +112,13 @@ function waveHeightLabel(h: number): string {
   if (h >= 0.2)  return 'ヒザ〜モモ'
   if (h >= 0.1)  return 'ヒザ'
   return 'スネ以下'
+}
+
+function calcSetInterval(period: number): string {
+  const minMin = Math.round((period * 5) / 60 * 10) / 10
+  const maxMin = Math.round((period * 7) / 60 * 10) / 10
+  if (minMin < 1) return `約${Math.round(period * 6 / 60 * 10) / 10}分`
+  return `約${Math.floor(minMin)}〜${Math.ceil(maxMin)}分`
 }
 
 const COMPASS_8 = ['北', '北東', '東', '南東', '南', '南西', '西', '北西']
@@ -358,11 +365,15 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <ConditionCard
-                    label="波の高さ"
-                    value={`${current.waveHeight.toFixed(1)}m`}
-                    sub={waveHeightLabel(current.waveHeight)}
-                  />
+                  <div className="bg-[#f0f4f8] rounded-xl p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波の高さ</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-xl font-bold text-[#0a1628]">{current.waveHeight.toFixed(1)}m</p>
+                      <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 10px', borderRadius: 99, background: '#dbeafe', color: '#1d4ed8', flexShrink: 0 }}>
+                        {waveHeightLabel(current.waveHeight)}
+                      </span>
+                    </div>
+                  </div>
                   <ConditionCard
                     label="風"
                     value={`${current.windSpeed.toFixed(1)}m/s`}
@@ -373,17 +384,31 @@ export default function SpotDetailContent({ id }: { id: string }) {
                     value={swellDir8(current.swellDir)}
                     sub={swellDirLabel(current.swellDir, spot.bestSwellDir)}
                   />
-                  <ConditionCard
-                    label="周期"
-                    value={`${current.wavePeriod.toFixed(0)}秒`}
-                    sub={(() => {
-                      const r = getSwellRatio(current.swellWaveHeight, current.waveHeight)
-                      if (r >= 0.7) return 'グランドスウェル'
-                      if (r >= 0.5) return 'うねり混在'
-                      if (r >= 0.3) return '風波優勢'
-                      return 'うねりなし（風波）'
-                    })()}
-                  />
+                  {(() => {
+                    const r = getSwellRatio(current.swellWaveHeight, current.waveHeight)
+                    const swellBadge = r >= 0.7
+                      ? { label: '🌊 グランドスウェル', bg: '#dcfce7', color: '#166534' }
+                      : r >= 0.5
+                      ? { label: '〜 うねり混在', bg: '#fef9c3', color: '#854d0e' }
+                      : r >= 0.3
+                      ? { label: '💨 風波優勢', bg: '#ffedd5', color: '#9a3412' }
+                      : { label: '💨 うねりなし', bg: '#f1f5f9', color: '#64748b' }
+                    const energy = calcWaveEnergy(current.waveHeight, current.wavePeriod)
+                    return (
+                      <div className="bg-[#f0f4f8] rounded-xl p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">周期</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-xl font-bold text-[#0a1628]">{current.wavePeriod.toFixed(0)}秒</p>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: swellBadge.bg, color: swellBadge.color, flexShrink: 0 }}>
+                            {swellBadge.label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#8899aa] mt-1">
+                          セット間隔 {calcSetInterval(current.wavePeriod)} / エネルギー {energy.toFixed(1)}kJ
+                        </p>
+                      </div>
+                    )
+                  })()}
                   {score && (() => {
                     const qScore = score.breakdown.waveQuality
                     const { text, bg } = waveQualityColor(qScore)

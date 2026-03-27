@@ -49,10 +49,17 @@ function scoreBarColor(s: number): string {
 
 function windShortLabel(type: ReturnType<typeof classifyWind>): string {
   if (type === 'calm') return '無風'
-  if (type === 'offshore') return 'OFF'
-  if (type === 'side-offshore') return 'S-OFF'
-  if (type === 'side-onshore') return 'S-ON'
-  return 'ON'
+  if (type === 'offshore') return 'オフショア'
+  if (type === 'side-offshore') return 'サイドオフ'
+  if (type === 'side-onshore') return 'サイドオン'
+  return 'オンショア'
+}
+
+function calcSetInterval(period: number): string {
+  const minMin = Math.round((period * 5) / 60 * 10) / 10
+  const maxMin = Math.round((period * 7) / 60 * 10) / 10
+  if (minMin < 1) return `約${Math.round(period * 6 / 60 * 10) / 10}分`
+  return `約${Math.floor(minMin)}〜${Math.ceil(maxMin)}分`
 }
 
 const COMPASS_8 = ['北', '北東', '東', '南東', '南', '南西', '西', '北西']
@@ -61,11 +68,6 @@ function swellDir8(deg: number): string {
   return COMPASS_8[Math.round(deg / 45) % 8]
 }
 
-function periodLabel(s: number): string {
-  if (s >= 8) return 'うねりあり'
-  if (s >= 6) return '普通'
-  return '短め'
-}
 
 export default function SpotCard({ spot, score, isFavorite, condition, date, isTop }: Props) {
   const href = date ? `/spot/${spot.id}?date=${toDateString(date)}` : `/spot/${spot.id}`
@@ -105,7 +107,9 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
             <div style={{ background: cellBg, borderRadius: 7 }} className="p-2 text-center">
               <p style={{ fontSize: 8 }} className="text-[#94a3b8] mb-0.5">波高</p>
               <p style={{ fontSize: 11, fontWeight: 600 }} className="text-[#0a1628] leading-tight">{condition.waveHeight.toFixed(1)}m</p>
-              <p style={{ fontSize: 8 }} className="text-[#64748b] leading-tight">{waveHeightLabel(condition.waveHeight)}</p>
+              <span style={{ fontSize: 9, fontWeight: 600, padding: '1px 6px', borderRadius: 99, background: '#dbeafe', color: '#1d4ed8', display: 'inline-block', marginTop: 2 }}>
+                {waveHeightLabel(condition.waveHeight)}
+              </span>
             </div>
             <div style={{ background: cellBg, borderRadius: 7 }} className="p-2 text-center">
               <p style={{ fontSize: 8 }} className="text-[#94a3b8] mb-0.5">風</p>
@@ -118,8 +122,8 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
             </div>
             <div style={{ background: cellBg, borderRadius: 7 }} className="p-2 text-center">
               <p style={{ fontSize: 8 }} className="text-[#94a3b8] mb-0.5">周期</p>
-              <p style={{ fontSize: 11, fontWeight: 600 }} className="text-[#0a1628] leading-tight">{condition.wavePeriod}s</p>
-              <p style={{ fontSize: 8 }} className="text-[#64748b] leading-tight">{periodLabel(condition.wavePeriod)}</p>
+              <p style={{ fontSize: 11, fontWeight: 600 }} className="text-[#0a1628] leading-tight">{Math.round(condition.wavePeriod)}秒</p>
+              <p style={{ fontSize: 8 }} className="text-[#64748b] leading-tight">{calcSetInterval(condition.wavePeriod)}/set</p>
             </div>
             {(() => {
               const qScore = score.breakdown.waveQuality
