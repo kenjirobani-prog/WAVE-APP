@@ -10,21 +10,21 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Shonan Wave Forecast | 湘南 波予報',
-  description: '湘南エリア（鵠沼・辻堂・茅ヶ崎・大磯・七里ヶ浜・由比ヶ浜・水族館前）の波予報アプリ。あなたのレベルとボードに合わせた最適なスポットをおすすめします。',
-  keywords: '湘南, 波予報, サーフィン, 鵠沼, 辻堂, 茅ヶ崎, 七里ヶ浜, 由比ヶ浜, 波情報, サーフ',
+  title: 'S/W Shonan Wave Forecast — 湘南の波予報アプリ',
+  description: 'AIが湘南の波をリアルタイム分析。あなたのレベル・ボードに合わせたパーソナライズスコアで「今日行くべきか」を即判断。由比ヶ浜・鵠沼・七里ヶ浜など7スポット対応。',
   openGraph: {
-    title: 'Shonan Wave Forecast | 湘南 波予報',
-    description: '湘南エリアの波予報アプリ。あなたに合ったスポットをおすすめします。',
+    title: 'S/W Shonan Wave Forecast',
+    description: 'AIが湘南の波を読む。あなたに合った波予報。',
     url: 'https://wave-app-nu.vercel.app',
-    siteName: 'Shonan Wave Forecast',
+    siteName: 'S/W Shonan Wave Forecast',
     locale: 'ja_JP',
     type: 'website',
   },
+  keywords: '湘南, 波予報, サーフィン, 鵠沼, 辻堂, 茅ヶ崎, 七里ヶ浜, 由比ヶ浜, 波情報, サーフ',
   twitter: {
     card: 'summary',
-    title: 'Shonan Wave Forecast | 湘南 波予報',
-    description: '湘南エリアの波予報アプリ。あなたに合ったスポットをおすすめします。',
+    title: 'S/W Shonan Wave Forecast',
+    description: 'AIが湘南の波を読む。あなたに合った波予報。',
   },
   robots: {
     index: true,
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Shonan Wave',
+    title: 'S/W Shonan Wave',
   },
 }
 
