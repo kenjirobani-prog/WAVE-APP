@@ -12,21 +12,36 @@ export default function MyPage() {
       </header>
 
       <main className="flex-1 overflow-auto pb-28">
+        {/* 設定 */}
         <div className="mt-4 mx-4 bg-white rounded-xl border border-[#eef1f4] overflow-hidden">
           <button
             onClick={() => router.push('/settings')}
-            className="w-full flex items-center justify-between px-4 py-4 border-b border-[#eef1f4] active:bg-[#f0f9ff] transition-colors"
+            className="w-full flex items-center justify-between px-4 py-4 active:bg-[#f0f9ff] transition-colors"
           >
             <span className="text-[#0a1628] font-medium">設定変更</span>
             <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+        </div>
+
+        {/* コンテンツ */}
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mt-6 mb-2 mx-4">コンテンツ</p>
+        <div className="mx-4 bg-white rounded-xl border border-[#eef1f4] overflow-hidden">
           <button
             onClick={() => router.push('/glossary')}
-            className="w-full flex items-center justify-between px-4 py-4 active:bg-[#f0f9ff] transition-colors"
+            className="w-full flex items-center justify-between px-4 py-4 border-b border-[#eef1f4] active:bg-[#f0f9ff] transition-colors"
           >
             <span className="text-[#0a1628] font-medium">用語集</span>
+            <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => router.push('/howto')}
+            className="w-full flex items-center justify-between px-4 py-4 active:bg-[#f0f9ff] transition-colors"
+          >
+            <span className="text-[#0a1628] font-medium">How to</span>
             <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

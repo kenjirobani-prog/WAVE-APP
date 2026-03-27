@@ -416,7 +416,7 @@ export default function TopPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
-      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '2.5rem 1rem 1rem', color: '#fff' }}>
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 1rem 1rem', color: '#fff' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

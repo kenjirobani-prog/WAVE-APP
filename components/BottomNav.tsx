@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 
-export type NavTab = 'forecast' | 'surflog' | 'glossary' | 'howto' | 'mypage'
+export type NavTab = 'forecast' | 'surflog' | 'glossary' | 'howto' | 'mypage'  // 全ページ用の型（互換性維持）
 
 function IconEye() {
   return (
@@ -54,8 +54,6 @@ type LinkItem = { type: 'link'; id: NavTab; label: string; href: string; icon: R
 const NAV_ITEMS: LinkItem[] = [
   { type: 'link', id: 'forecast', label: '波予報',   href: '/',          icon: <IconEye /> },
   { type: 'link', id: 'surflog',  label: 'Surf Log', href: '/surf-log',  icon: <IconCalendar /> },
-  { type: 'link', id: 'glossary', label: '用語集',   href: '/glossary',  icon: <IconLayers /> },
-  { type: 'link', id: 'howto',    label: 'How to',   href: '/howto',     icon: <IconClock /> },
   { type: 'link', id: 'mypage',   label: 'My Page',  href: '/my-page',   icon: <IconUser /> },
 ]
 
