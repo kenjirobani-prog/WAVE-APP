@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://wave-app-nu.vercel.app/sitemap.xml',
+    sitemap: 'https://jpwaveforecast.com/sitemap.xml',
   }
 }

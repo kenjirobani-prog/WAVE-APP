@@ -3,49 +3,49 @@ import { MetadataRoute } from 'next'
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: 'https://wave-app-nu.vercel.app',
+      url: 'https://jpwaveforecast.com',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
     },
     {
-      url: 'https://wave-app-nu.vercel.app/spot/kugenuma',
+      url: 'https://jpwaveforecast.com/spot/kugenuma',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: 'https://wave-app-nu.vercel.app/spot/tsujido',
+      url: 'https://jpwaveforecast.com/spot/tsujido',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: 'https://wave-app-nu.vercel.app/spot/chigasaki',
+      url: 'https://jpwaveforecast.com/spot/chigasaki',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: 'https://wave-app-nu.vercel.app/spot/oiso',
+      url: 'https://jpwaveforecast.com/spot/oiso',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: 'https://wave-app-nu.vercel.app/spot/shichiri',
+      url: 'https://jpwaveforecast.com/spot/shichiri',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: 'https://wave-app-nu.vercel.app/spot/yuigahama',
+      url: 'https://jpwaveforecast.com/spot/yuigahama',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: 'https://wave-app-nu.vercel.app/spot/aquarium',
+      url: 'https://jpwaveforecast.com/spot/aquarium',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,

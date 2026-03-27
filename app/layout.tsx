@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'S/W Shonan Wave Forecast',
     description: 'AIが湘南の波を読む。あなたに合った波予報。',
-    url: 'https://wave-app-nu.vercel.app',
+    url: 'https://jpwaveforecast.com',
     siteName: 'S/W Shonan Wave Forecast',
     locale: 'ja_JP',
     type: 'website',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   alternates: {
-    canonical: 'https://wave-app-nu.vercel.app',
+    canonical: 'https://jpwaveforecast.com',
   },
   other: {
     'google-site-verification': 'JZHJ4_W4TnbZrH13d0t3-AqqDss1GUWC_L1Vs9hIoYU',
