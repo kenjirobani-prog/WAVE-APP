@@ -36,7 +36,7 @@ export default function MyPage() {
         {/* About S/W */}
         <div style={{ margin: '32px 16px 16px', padding: 24, background: '#f0f9ff', borderRadius: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.1em', marginBottom: 16 }}>ABOUT S/W</div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0284c7', marginBottom: 16, lineHeight: 1.3 }}>波を、データで読む時代。</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0284c7', marginBottom: 16, lineHeight: 1.3 }}>波を、AIが読む時代。</h2>
           <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
             S/Wは、AIが湘南の波をリアルタイムに分析する波予報アプリです。
           </p>
