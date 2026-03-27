@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getConditions, getForecast } from '@/lib/wave/waveService'
 import { detectTideEvents } from '@/lib/wave/types'
+import { calcWaveEnergy } from '@/lib/wave/scoring'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -32,7 +33,12 @@ export async function GET(request: NextRequest) {
         return c?.tideHeight ?? 0
       })
       const tideEvents = detectTideEvents(tideByHour)
-      return NextResponse.json({ conditions, tideEvents })
+      // 各時間帯に波エネルギーを付加
+      const conditionsWithEnergy = conditions.map(c => ({
+        ...c,
+        waveEnergy: Math.round(calcWaveEnergy(c.waveHeight, c.wavePeriod) * 10) / 10,
+      }))
+      return NextResponse.json({ conditions: conditionsWithEnergy, tideEvents })
     }
   } catch (error) {
     console.error('Forecast API error:', error)

@@ -9,8 +9,9 @@ export interface WaveCondition {
   tideHeight: number      // cm
   tideMovement: 'rising' | 'falling' | 'slack'
   weather: 'sunny' | 'cloudy' | 'rainy'
-  swellWaveHeight: number // うねり成分の波高（m）
-  windWaveHeight: number  // 風波成分の波高（m）
+  swellWaveHeight: number    // うねり成分の波高（m）
+  windWaveHeight: number     // 風波成分の波高（m）
+  windWaveDirection: number  // 風波の方向（度）
 }
 
 export interface TideEvent {
