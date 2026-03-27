@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getUserProfile, saveUserProfile } from '@/lib/userProfile'
-import { getDb } from '@/lib/firebase'
+import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { SPOTS } from '@/data/spots'
 import { calculateScore, scoreToGrade, classifyWind, windTypeLabel, waveQualityLabel } from '@/lib/wave/scoring'
@@ -298,6 +298,7 @@ export default function TopPage() {
   async function loadWeeklyComment(data: Array<{ date: string; avgScore: number; waveHeight?: number; windType?: string; swellDirection?: string; period?: number; waveQualityLabel?: string }>) {
     setWeeklyCommentLoading(true)
     try {
+      await ensureAnonymousAuth()
       const dateKey = toDateStr(new Date())
       const db = getDb()
       const docRef = doc(db, 'weeklyComment', dateKey)
@@ -328,8 +329,8 @@ export default function TopPage() {
         // Firestoreにキャッシュ保存
         await setDoc(docRef, { comment, generatedAt: new Date() })
       }
-    } catch {
-      // コメント取得失敗は無視
+    } catch (err) {
+      console.error('[WeeklyComment] error:', err)
     } finally {
       setWeeklyCommentLoading(false)
     }
