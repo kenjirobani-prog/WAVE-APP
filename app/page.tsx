@@ -135,6 +135,7 @@ export default function TopPage() {
   const [weeklyComment, setWeeklyComment] = useState<string | null>(null)
   const [weeklyCommentAt, setWeeklyCommentAt] = useState<string | null>(null)
   const [weeklyCommentLoading, setWeeklyCommentLoading] = useState(false)
+  const [cacheUpdatedAt, setCacheUpdatedAt] = useState<string | null>(null)
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
@@ -149,6 +150,27 @@ export default function TopPage() {
       .then(r => r.ok ? r.json() : null)
       .then(d => d && !d.error && setWeather(d))
       .catch(() => {})
+  }, [])
+
+  // Firestoreキャッシュの最終更新時刻を取得
+  useEffect(() => {
+    async function fetchCacheTime() {
+      try {
+        await ensureAnonymousAuth()
+        const db = getDb()
+        const dateKey = toDateStr(new Date())
+        const cacheRef = doc(db, 'forecastCache', `kugenuma_${dateKey}`)
+        const snap = await getDoc(cacheRef)
+        if (snap.exists()) {
+          const updatedAt = snap.data().updatedAt
+          if (updatedAt) {
+            const d = new Date(updatedAt)
+            setCacheUpdatedAt(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+          }
+        }
+      } catch {}
+    }
+    fetchCacheTime()
   }, [])
 
   useEffect(() => {
@@ -363,19 +385,36 @@ export default function TopPage() {
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
       <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '2.5rem 1rem 1rem', color: '#fff' }}>
-        <div className="flex items-center justify-between">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: '1px solid rgba(255,255,255,0.35)',
-              borderRadius: 8,
-              padding: '5px 10px',
-            }}>
-              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>S/W</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.35)',
+                borderRadius: 8,
+                padding: '5px 10px',
+              }}>
+                <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>S/W</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Shonan Wave</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 1 }}>FORECAST</div>
+              </div>
             </div>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Shonan Wave</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 1 }}>FORECAST</div>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{
+                background: 'rgba(255,255,255,0.15)',
+                borderRadius: 99,
+                padding: '3px 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}>
+                <div style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }} />
+                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>
+                  {cacheUpdatedAt ? `${cacheUpdatedAt} 更新` : '更新中...'}
+                </span>
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
@@ -406,20 +445,6 @@ export default function TopPage() {
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', textAlign: 'right' }}>
               {levelLabel(profile.level)}・{boardLabel(profile.boardType)}・{sizeLabel(profile.preferredSize)}
             </div>
-            {lastUpdated && (
-              <div className="flex items-center gap-1">
-                <span style={{
-                  display: 'inline-block',
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  background: '#22c55e',
-                  animation: 'livePulse 2s ease-in-out infinite',
-                }} />
-                <span style={{ fontSize: 10, fontWeight: 600, color: '#22c55e' }}>LIVE</span>
-                <span style={{ fontSize: 11, color: '#fff' }}>{formatTime(lastUpdated)}</span>
-              </div>
-            )}
           </div>
         </div>
       </header>
