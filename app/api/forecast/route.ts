@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getConditions, getForecast } from '@/lib/wave/waveService'
+import { detectTideEvents } from '@/lib/wave/types'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -25,7 +26,13 @@ export async function GET(request: NextRequest) {
         date = new Date()
       }
       const conditions = await getConditions(spotId, date)
-      return NextResponse.json({ conditions })
+      // 24時間潮位配列（hour 0-23 の順）を作り、満干潮イベントを検出
+      const tideByHour = Array.from({ length: 24 }, (_, h) => {
+        const c = conditions.find(c => (new Date(c.timestamp).getUTCHours() + 9) % 24 === h)
+        return c?.tideHeight ?? 0
+      })
+      const tideEvents = detectTideEvents(tideByHour)
+      return NextResponse.json({ conditions, tideEvents })
     }
   } catch (error) {
     console.error('Forecast API error:', error)

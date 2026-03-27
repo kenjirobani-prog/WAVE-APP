@@ -10,8 +10,11 @@ import type { WaveCondition } from '@/lib/wave/types'
 import ScoreGrade, { gradeLabel } from '@/components/ScoreGrade'
 import { useCountUp } from '@/hooks/useCountUp'
 import ForecastChart from '@/components/ForecastChart'
-import TideBar from '@/components/TideBar'
+import TideCurve from '@/components/TideCurve'
+import TideCardStrip from '@/components/TideCardStrip'
+import TideStatusBar from '@/components/TideStatusBar'
 import BottomNav from '@/components/BottomNav'
+import type { TideEvent } from '@/lib/wave/types'
 
 interface Shop {
   name: string
@@ -139,6 +142,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const [current, setCurrent] = useState<WaveCondition | null>(null)
   const [hourly, setHourly] = useState<WaveCondition[]>([])
   const [tideSeries, setTideSeries] = useState<{ hour: number; tideHeight: number }[]>([])
+  const [tideEvents, setTideEvents] = useState<TideEvent[]>([])
   const [score, setScore] = useState<SpotScore | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -243,6 +247,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
         tideHeight: c.tideHeight,
       }))
       setTideSeries(series)
+      if (data.tideEvents) setTideEvents(data.tideEvents)
 
       // デバッグ用ログ（ブラウザのDevToolsコンソールで確認）
       const jstHour = (new Date().getUTCHours() + 9) % 24
@@ -415,21 +420,40 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </section>
             )}
 
-            {/* 潮位バー */}
-            {tideSeries.length > 0 && (
-              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">潮位</h2>
-                <TideBar
-                  tideData={tideSeries}
-                  currentHour={(() => {
-                    const jstHour = (new Date().getUTCHours() + 9) % 24
-                    // dateParamが今日と同じ日付なら実際のJST時刻を使う
-                    const todayStr = toDateStr(new Date())
-                    return (!dateParam || dateParam === todayStr) ? jstHour : 12
-                  })()}
-                />
-              </section>
-            )}
+            {/* 潮位グラフ */}
+            {tideSeries.length > 0 && (() => {
+              const jstHour = (new Date().getUTCHours() + 9) % 24
+              const todayStr = toDateStr(new Date())
+              const currentHour = (!dateParam || dateParam === todayStr) ? jstHour : 12
+              // 潮位配列（hour 0-23）を構築
+              const tideArr = Array.from({ length: 24 }, (_, h) => {
+                const p = tideSeries.find(t => t.hour === h)
+                return p?.tideHeight ?? 0
+              })
+              const currentLevel = tideArr[currentHour] ?? 0
+              const prevLevel = tideArr[Math.max(0, currentHour - 1)] ?? currentLevel
+              const trend: 'rising' | 'falling' | 'steady' =
+                currentLevel - prevLevel > 2 ? 'rising' :
+                currentLevel - prevLevel < -2 ? 'falling' : 'steady'
+
+              return (
+                <section className="bg-white mt-2 px-4 pt-4 pb-5 border-b border-[#eef1f4]">
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">潮位</h2>
+                  {/* ① SVG潮位曲線 */}
+                  <TideCurve tideSeries={tideArr} currentHour={currentHour} />
+                  {/* ② 時刻ラベル行 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                    {['0:00', '6:00', '12:00', '18:00', '24:00'].map(t => (
+                      <span key={t} style={{ fontSize: 10, color: '#8899aa', fontWeight: 500 }}>{t}</span>
+                    ))}
+                  </div>
+                  {/* ③ 満干潮カード */}
+                  <TideCardStrip events={tideEvents} />
+                  {/* ④ 現在潮位ステータス */}
+                  <TideStatusBar currentLevel={currentLevel} trend={trend} />
+                </section>
+              )
+            })()}
 
             {/* 風・波のマップ */}
             <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">

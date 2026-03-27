@@ -1,30 +1,17 @@
 'use client'
 
 const W = 280
-const H = 64
-const PAD_Y = 8
+const H = 100
+const PAD_X = 0
+const PAD_Y = 10
 
-interface TidePoint {
-  hour: number
-  tideHeight: number
-}
+// ミドルタイドゾーン（80〜120cm）
+const MIDDLE_MIN = 80
+const MIDDLE_MAX = 120
 
 interface Props {
-  tideData: TidePoint[]
-  currentHour: number
-  currentTideHeight: number
-  currentTideMovement: 'rising' | 'falling' | 'slack'
-}
-
-const movementLabel: Record<Props['currentTideMovement'], string> = {
-  rising: '上げ潮',
-  falling: '引き潮',
-  slack: '止まり',
-}
-const movementIcon: Record<Props['currentTideMovement'], string> = {
-  rising: '↑',
-  falling: '↓',
-  slack: '→',
+  tideSeries: number[]   // 24時間の潮位配列（インデックス=hour）
+  currentHour: number    // 現在時刻（0〜23）
 }
 
 function buildSmoothPath(pts: { x: number; y: number }[]): string {
@@ -35,7 +22,6 @@ function buildSmoothPath(pts: { x: number; y: number }[]): string {
     const p1 = pts[i]
     const p2 = pts[i + 1]
     const p3 = pts[Math.min(pts.length - 1, i + 2)]
-    // Catmull-Rom → cubic Bezier
     const cp1x = p1.x + (p2.x - p0.x) / 6
     const cp1y = p1.y + (p2.y - p0.y) / 6
     const cp2x = p2.x - (p3.x - p1.x) / 6
@@ -45,119 +31,90 @@ function buildSmoothPath(pts: { x: number; y: number }[]): string {
   return d
 }
 
-export default function TideCurve({
-  tideData,
-  currentHour,
-  currentTideHeight,
-  currentTideMovement,
-}: Props) {
-  if (tideData.length === 0) return null
+export default function TideCurve({ tideSeries, currentHour }: Props) {
+  if (tideSeries.length === 0) return null
 
-  const sorted = [...tideData].sort((a, b) => a.hour - b.hour)
-
-  const heights = sorted.map(p => p.tideHeight)
-  const minH = Math.min(...heights)
-  const maxH = Math.max(...heights)
+  const filled = Array.from({ length: 24 }, (_, h) => tideSeries[h] ?? 0)
+  const minH = Math.min(...filled)
+  const maxH = Math.max(...filled)
   const range = maxH - minH || 1
 
-  // hour 0 → x=0, hour 24 → x=W
-  const toX = (hour: number) => (hour / 24) * W
-  // 指定のY座標変換式: 値が大きいほどY座標が小さい（上側）
+  const toX = (hour: number) => PAD_X + (hour / 23) * (W - PAD_X * 2)
   const toY = (value: number) =>
     H - PAD_Y - ((value - minH) / range) * (H - PAD_Y * 2)
 
-  const pts = sorted.map(p => ({ x: toX(p.hour), y: toY(p.tideHeight) }))
+  const pts = filled.map((h, idx) => ({ x: toX(idx), y: toY(h) }))
   const linePath = buildSmoothPath(pts)
   const fillPath =
     linePath +
     ` L ${pts[pts.length - 1].x.toFixed(2)} ${H} L ${pts[0].x.toFixed(2)} ${H} Z`
 
-  // tideDataからcurrentHourのデータポイントを取得（テキスト・マーカー両方に使用）
-  const currentPoint = sorted.find(p => p.hour === currentHour)
-  const actualTideHeight = currentPoint?.tideHeight ?? currentTideHeight
+  const markerX = toX(currentHour)
+  const markerY = toY(filled[currentHour] ?? minH)
 
-  // 破線・マーカーは同じX座標: (currentHour / 24) * W
-  const markerX = (currentHour / 24) * W
-  // マーカーのY座標: actualTideHeightを同じtoY関数でスケーリング（曲線と同一基準）
-  const markerY = toY(actualTideHeight)
-
-  const timeLabels = [0, 6, 12, 18, 24]
+  // ミドルタイドゾーンのY座標
+  const zoneTopY = toY(MIDDLE_MAX)
+  const zoneBotY = toY(MIDDLE_MIN)
+  const zoneH = Math.max(0, zoneBotY - zoneTopY)
 
   return (
-    <div
-      style={{
-        background: '#f8fafc',
-        border: '0.5px solid #eef1f4',
-        borderRadius: 12,
-        padding: '0.75rem 1rem',
-      }}
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      width="100%"
+      style={{ display: 'block', overflow: 'visible' }}
     >
-      <p
-        style={{
-          textAlign: 'center',
-          fontWeight: 600,
-          fontSize: 14,
-          color: '#0a1628',
-          marginBottom: 8,
-        }}
-      >
-        現在 {actualTideHeight}cm {movementIcon[currentTideMovement]}{' '}
-        {movementLabel[currentTideMovement]}
-      </p>
+      <defs>
+        <linearGradient id="tideGradC" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.05" />
+        </linearGradient>
+      </defs>
 
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        style={{ display: 'block', overflow: 'visible' }}
-      >
-        <defs>
-          <linearGradient id="tideGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.05" />
-          </linearGradient>
-        </defs>
-
-        {/* 曲線下の塗り */}
-        <path d={fillPath} fill="url(#tideGrad)" />
-
-        {/* 曲線ライン */}
-        <path
-          d={linePath}
-          fill="none"
-          stroke="#0ea5e9"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      {/* ミドルタイドゾーン帯 */}
+      {zoneH > 0 && (
+        <rect
+          x={0}
+          y={zoneTopY}
+          width={W}
+          height={zoneH}
+          fill="rgba(34,197,94,0.12)"
+          stroke="none"
         />
+      )}
+      {/* ミドルタイドゾーン破線ボーダー（上・下） */}
+      {zoneH > 0 && (
+        <>
+          <line x1={0} y1={zoneTopY} x2={W} y2={zoneTopY}
+            stroke="rgba(34,197,94,0.4)" strokeWidth="0.8" strokeDasharray="4 3" />
+          <line x1={0} y1={zoneBotY} x2={W} y2={zoneBotY}
+            stroke="rgba(34,197,94,0.4)" strokeWidth="0.8" strokeDasharray="4 3" />
+        </>
+      )}
 
-        {/* 現在時刻の破線 */}
-        <line
-          x1={markerX}
-          y1={PAD_Y}
-          x2={markerX}
-          y2={H - PAD_Y}
-          stroke="#0c4a6e"
-          strokeWidth="1"
-          strokeDasharray="3 2"
-        />
+      {/* 曲線下塗り */}
+      <path d={fillPath} fill="url(#tideGradC)" />
 
-        {/* 現在位置マーカー */}
-        <circle cx={markerX} cy={markerY} r="4" fill="#0c4a6e" />
-      </svg>
+      {/* 曲線ライン */}
+      <path
+        d={linePath}
+        fill="none"
+        stroke="#0ea5e9"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginTop: 4,
-        }}
-      >
-        {timeLabels.map(h => (
-          <span key={h} style={{ fontSize: 10, color: '#8899aa', fontWeight: 500 }}>
-            {h}時
-          </span>
-        ))}
-      </div>
-    </div>
+      {/* 現在時刻の縦点線 */}
+      <line
+        x1={markerX} y1={PAD_Y}
+        x2={markerX} y2={H - PAD_Y}
+        stroke="#22c55e"
+        strokeWidth="1"
+        strokeDasharray="3 2"
+      />
+
+      {/* 現在時刻の緑ドット */}
+      <circle cx={markerX} cy={markerY} r="5" fill="#22c55e" />
+    </svg>
   )
 }
