@@ -4,7 +4,7 @@ type AdapterKey = 'open-meteo' | 'stormglass' | 'surfline'
 
 const adapterLoaders: Record<AdapterKey, () => Promise<{ default?: WaveAdapter } & Partial<Record<string, WaveAdapter>>>> = {
   'open-meteo': () => import('./adapters/openMeteo').then(m => ({ openMeteoAdapter: m.openMeteoAdapter })),
-  'stormglass': () => { throw new Error('StormGlass adapter not yet implemented') },
+  'stormglass': () => import('./adapters/stormglass').then(m => ({ stormglassAdapter: m.stormglassAdapter })),
   'surfline':   () => { throw new Error('Surfline adapter not yet implemented') },
 }
 
