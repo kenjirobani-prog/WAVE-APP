@@ -340,8 +340,8 @@ export default function SurfLogPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
-      <header className="bg-white px-4 pt-10 pb-5 border-b border-[#eef1f4]">
-        <h1 className="text-xl font-bold tracking-tight text-[#0a1628] mb-4">Surf Log</h1>
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1, marginBottom: 16 }}>Surf Log</h1>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 text-center">
             <p className="text-[9px] font-semibold uppercase tracking-widest text-sky-700 mb-1">今年の日数</p>

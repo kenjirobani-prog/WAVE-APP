@@ -7,8 +7,8 @@ export default function MyPage() {
 
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      <header className="bg-white border-b border-[#eef1f4] px-4 pt-10 pb-4">
-        <h1 className="text-xl font-bold tracking-tight text-[#0a1628]">My Page</h1>
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1 }}>My Page</h1>
       </header>
 
       <main className="flex-1 overflow-auto pb-28">
@@ -32,7 +32,7 @@ export default function MyPage() {
             onClick={() => router.push('/glossary')}
             className="w-full flex items-center justify-between px-4 py-4 border-b border-[#eef1f4] active:bg-[#f0f9ff] transition-colors"
           >
-            <span className="text-[#0a1628] font-medium">用語集</span>
+            <span className="text-[#0a1628] font-medium">サーフィン用語集</span>
             <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -41,7 +41,7 @@ export default function MyPage() {
             onClick={() => router.push('/howto')}
             className="w-full flex items-center justify-between px-4 py-4 active:bg-[#f0f9ff] transition-colors"
           >
-            <span className="text-[#0a1628] font-medium">How to</span>
+            <span className="text-[#0a1628] font-medium">How to サーフィン</span>
             <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
