@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <rect width="400" height="400" fill="#0284c7"/>
+  <path d="M-20 280 Q50 250 100 270 Q150 290 200 265 Q250 240 300 265 Q350 290 420 270 L420 400 L-20 400Z" fill="#0369a1"/>
+  <path d="M-20 310 Q50 285 100 305 Q150 325 200 300 Q250 275 300 300 Q350 325 420 305 L420 400 L-20 400Z" fill="#075985"/>
+  <path d="M-20 345 Q50 323 100 340 Q150 357 200 337 Q250 317 300 340 Q350 363 420 343 L420 400 L-20 400Z" fill="#0c4a6e" opacity="0.9"/>
+  <text x="200" y="148" text-anchor="middle" font-family="-apple-system,'Hiragino Sans','Yu Gothic',sans-serif" font-size="72" font-weight="900" fill="rgba(255,255,255,0.9)" letter-spacing="6">AI</text>
+  <text x="200" y="240" text-anchor="middle" font-family="-apple-system,'Hiragino Sans','Yu Gothic',sans-serif" font-size="80" font-weight="900" fill="#ffffff" letter-spacing="-2">波予報</text>
+</svg>

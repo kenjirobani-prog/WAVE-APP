@@ -47,8 +47,8 @@ export const metadata: Metadata = {
     'google-site-verification': 'JZHJ4_W4TnbZrH13d0t3-AqqDss1GUWC_L1Vs9hIoYU',
   },
   icons: {
-    icon: '/images/logo.png',
-    apple: '/images/logo.png',
+    icon: '/images/icon.png',
+    apple: '/images/icon.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
@@ -69,7 +69,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#0284c7" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="apple-touch-icon" href="/images/logo.png" />
+        <link rel="apple-touch-icon" href="/images/icon.png" />
         <meta name="apple-mobile-web-app-title" content="AI 波予報" />
         <script
           type="application/ld+json"
