@@ -202,35 +202,29 @@ export default function ArticleClient({ article }: { article: HowToArticle }) {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
-      <header className="bg-white border-b border-[#eef1f4] px-4 pt-10 pb-5">
-        <button
-          onClick={() => router.push('/howto')}
-          className="flex items-center gap-1.5 mb-4"
-          style={{ color: '#0284c7', fontSize: 13, fontWeight: 600 }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          How to 一覧
-        </button>
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>How to</div>
+        </div>
 
         <div className="flex items-center gap-2 mb-3">
           <span style={{
-            fontSize: 10, fontWeight: 700, color: '#0369a1',
-            background: '#e0f2fe', borderRadius: 99, padding: '2px 8px',
+            fontSize: 10, fontWeight: 700, color: '#fff',
+            background: 'rgba(255,255,255,0.2)', borderRadius: 99, padding: '2px 8px',
           }}>
             {article.category}
           </span>
-          <span style={{ fontSize: 11, color: '#94a3b8' }}>{article.readingTime}</span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{article.readingTime}</span>
         </div>
 
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#0a1628', lineHeight: 1.35, marginBottom: 6 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', lineHeight: 1.35, marginBottom: 6 }}>
           {article.title}
         </h1>
-        <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.5, marginBottom: 8 }}>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, marginBottom: 8 }}>
           {article.subtitle}
         </p>
-        <span style={{ fontSize: 11, color: '#94a3b8' }}>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
           {article.publishedAt.replace(/-/g, '/')}
         </span>
       </header>

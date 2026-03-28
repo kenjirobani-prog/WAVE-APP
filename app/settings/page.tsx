@@ -45,13 +45,14 @@ export default function SettingsPage() {
 
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      <header className="bg-white border-b border-[#eef1f4] px-4 py-4 flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 text-[#8899aa]">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 className="text-xl font-bold tracking-tight text-[#0a1628]">設定変更</h1>
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>設定変更</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>Settings</div>
+          </div>
+        </div>
       </header>
 
       <main className="flex-1 overflow-auto pb-32 px-4 pt-4 space-y-6">

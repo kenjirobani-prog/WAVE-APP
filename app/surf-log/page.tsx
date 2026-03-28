@@ -344,8 +344,9 @@ export default function SurfLogPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em' }}>AI波予報</div>
               <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>サーフィン記録</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.02em' }}>Surf Log</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>Surf Log</div>
             </div>
             <div style={{ marginTop: 8, visibility: 'hidden', background: 'rgba(255,255,255,0.15)', borderRadius: 99, padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <div style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }} />

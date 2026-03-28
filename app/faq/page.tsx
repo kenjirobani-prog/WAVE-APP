@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import BackButton from '@/components/BackButton'
 
 export const metadata: Metadata = {
   title: 'よくある質問（FAQ） | AI 波予報',
@@ -64,9 +65,12 @@ export default function FaqPage() {
       <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>よくある質問</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>FAQ</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BackButton />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>よくある質問</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>FAQ</div>
+              </div>
             </div>
             <div style={{ marginTop: 8, visibility: 'hidden', background: 'rgba(255,255,255,0.15)', borderRadius: 99, padding: '3px 10px', display: 'inline-flex' }}>
               <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>00:00 更新</span>

@@ -39,20 +39,12 @@ export default function GlossaryClient() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
-      <header className="bg-white border-b border-[#eef1f4] px-4 pt-10 pb-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center justify-center w-8 h-8 rounded-full"
-            style={{ background: '#f0f9ff' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a1628" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight text-[#0a1628]">サーフィン用語集</h1>
-            <p className="text-[11px] text-[#8899aa] mt-0.5">知っておきたいサーフィン用語をカテゴリ別に解説</p>
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>サーフィン用語集</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>Glossary</div>
           </div>
         </div>
       </header>
