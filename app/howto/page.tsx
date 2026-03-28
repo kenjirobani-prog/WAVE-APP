@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { howtoArticles } from '@/data/howto'
+import BackButton from '@/components/BackButton'
 import BottomNav from '@/components/BottomNav'
 
 function FaqCategory({ title, items }: { title: string; items: { q: string; a: string }[] }) {
@@ -31,12 +32,17 @@ export default function HowToPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       <header className="bg-white border-b border-[#eef1f4] px-4 pt-10 pb-5">
-        <p style={{ fontSize: 11, fontWeight: 600, color: '#0369a1', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-          How to Surfing
-        </p>
-        <h1 className="text-xl font-bold text-[#0a1628] leading-snug">
-          湘南サーフィンをもっと<br />楽しむための基礎知識
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <BackButton />
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: '#0369a1', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+              How to Surfing
+            </p>
+            <h1 className="text-xl font-bold text-[#0a1628] leading-snug">
+              湘南サーフィンをもっと<br />楽しむための基礎知識
+            </h1>
+          </div>
+        </div>
       </header>
 
       <main className="flex-1 overflow-auto pb-28 px-4 pt-4 space-y-3">

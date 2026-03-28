@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { HowToArticle } from '@/data/howto'
 import BottomNav from '@/components/BottomNav'
@@ -205,7 +206,7 @@ export default function ArticleClient({ article }: { article: HowToArticle }) {
       <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>How to</div>
+          <Link href="/" style={{ textDecoration: 'none', fontSize: 16, fontWeight: 700, color: '#fff' }}>How to</Link>
         </div>
 
         <div className="flex items-center gap-2 mb-3">
