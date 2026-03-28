@@ -11,6 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://jpwaveforecast.com'),
   title: 'AI 波予報 — 湘南のサーフィン波予報',
   description: 'AIが湘南の波をリアルタイム分析。あなたのレベル・ボードに合わせたパーソナライズスコアで「今日行くべきか」を即判断。由比ヶ浜・鵠沼・七里ヶ浜など7スポット対応。',
   openGraph: {
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: 'https://jpwaveforecast.com/ogp.svg',
+        url: 'https://jpwaveforecast.com/ogp.png',
         width: 1200,
         height: 630,
         alt: 'AI 波予報 — AIが湘南の波をリアルタイム分析',
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'AI 波予報',
     description: 'AIが湘南の波をリアルタイム分析。あなたのレベル・ボードに合わせたパーソナライズスコアで今日行くべきか即判断。',
-    images: ['https://jpwaveforecast.com/ogp.svg'],
+    images: ['https://jpwaveforecast.com/ogp.png'],
   },
   robots: {
     index: true,
