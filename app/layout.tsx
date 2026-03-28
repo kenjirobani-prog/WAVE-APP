@@ -47,8 +47,11 @@ export const metadata: Metadata = {
     'google-site-verification': 'JZHJ4_W4TnbZrH13d0t3-AqqDss1GUWC_L1Vs9hIoYU',
   },
   icons: {
-    icon: '/images/icon.png',
-    apple: '/images/icon.png',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/favicon.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="6" fill="#0284c7"/>
+  <path d="M2 22 Q8 18 11 20 Q14 22 16 20 Q18 18 21 20 Q24 22 30 20 L30 32 L2 32Z" fill="#0369a1"/>
+  <path d="M2 26 Q8 23 11 25 Q14 27 16 25 Q18 23 21 25 Q24 27 30 25 L30 32 L2 32Z" fill="#075985"/>
+  <text x="16" y="17" text-anchor="middle" font-family="-apple-system,'Hiragino Sans','Yu Gothic',sans-serif" font-size="11" font-weight="900" fill="#ffffff" letter-spacing="-0.5">波</text>
+</svg>
