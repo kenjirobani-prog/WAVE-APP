@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
 
 const inter = Inter({
@@ -128,6 +129,7 @@ export default function RootLayout({
         <div className="max-w-md mx-auto min-h-screen flex flex-col">
           {children}
         </div>
+        <Analytics />
       </body>
     </html>
   )

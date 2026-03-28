@@ -416,7 +416,7 @@ export default function TopPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       {/* ヘッダー */}
-      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 1rem 1rem', color: '#fff' }}>
+      <header className="header-gradient" style={{ padding: '16px 1rem 1rem', color: '#fff' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -854,7 +854,7 @@ function SpotListSkeleton() {
   return (
     <>
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="bg-white rounded-xl border border-[#eef1f4] p-4 flex items-center gap-4 animate-pulse">
+        <div key={i} style={{ minHeight: 160 }} className="bg-white rounded-xl border border-[#eef1f4] p-4 flex items-center gap-4 animate-pulse">
           <div className="w-14 h-14 bg-[#f0f9ff] rounded-xl shrink-0" />
           <div className="flex-1 space-y-2">
             <div className="h-4 bg-[#f0f9ff] rounded w-1/3" />

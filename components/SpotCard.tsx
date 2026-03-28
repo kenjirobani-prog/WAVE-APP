@@ -76,7 +76,7 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
 
   return (
     <Link href={href}>
-      <div className={`rounded-xl border p-4 active:scale-[0.98] transition-all ${
+      <div style={{ minHeight: 160 }} className={`rounded-xl border p-4 active:scale-[0.98] transition-all ${
         isTop
           ? 'bg-[#f0f9ff] border-[#7dd3fc]'
           : 'bg-white border-[#eef1f4] hover:border-sky-200 hover:bg-[#f8feff]'
