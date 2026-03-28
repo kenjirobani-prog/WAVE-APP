@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = howtoArticles.find(a => a.slug === slug)
   if (!article) return {}
   return {
-    title: `${article.title} | Shonan Wave Forecast`,
+    title: `${article.title} | AI 波予報`,
     description: article.subtitle,
   }
 }

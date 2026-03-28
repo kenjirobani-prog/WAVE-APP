@@ -8,14 +8,7 @@ export default function MyPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 8, padding: '4px 8px' }}>
-            <span style={{ fontSize: 17, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1, display: 'block' }}>S/W</span>
-          </div>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1.2 }}>My Page</div>
-          </div>
-        </div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>My Page</div>
       </header>
 
       <main className="flex-1 overflow-auto pb-28">
@@ -55,12 +48,12 @@ export default function MyPage() {
           </button>
         </div>
 
-        {/* About S/W */}
+        {/* About AI 波予報 */}
         <div style={{ margin: '32px 16px 16px', padding: 24, background: '#f0f9ff', borderRadius: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.1em', marginBottom: 16 }}>ABOUT S/W</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.1em', marginBottom: 16 }}>ABOUT AI 波予報</div>
           <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0284c7', marginBottom: 16, lineHeight: 1.3 }}>波を、AIが読む時代。</h2>
           <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
-            S/Wは、AIが湘南の波をリアルタイムに分析する波予報アプリです。
+            AI 波予報は、AIが湘南の波をリアルタイムに分析する波予報アプリです。
           </p>
           <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
             波の高さ、風向き、うねりの方向、潮位、周期——これらをAIが瞬時に計算し、あなたのレベルとボードに合わせたスコアに変換します。熟練サーファーが長年かけて身につける「コンディションの読み方」を、デジタルの力で誰でも使えるかたちに。
@@ -69,7 +62,7 @@ export default function MyPage() {
             数字の裏にあるもの。スコアの背後には、波エネルギー（kJ）、グランドスウェル判定、クロスうねり干渉、潮の動き方向など、複数のロジックが走っています。「今日は行くべきか」という問いに、AIが正直に答えます。
           </p>
           <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
-            サーフィンとテクノロジーは、相性がいい。海は毎日変わる。だからこそ、リアルタイムのデータとアルゴリズムが力を発揮します。S/Wはその可能性を、湘南のビーチから試しています。
+            サーフィンとテクノロジーは、相性がいい。海は毎日変わる。だからこそ、リアルタイムのデータとアルゴリズムが力を発揮します。AI 波予報はその可能性を、湘南のビーチから試しています。
           </p>
         </div>
       </main>

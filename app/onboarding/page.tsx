@@ -46,7 +46,7 @@ export default function OnboardingPage() {
     <div className="flex-1 flex flex-col p-6 bg-[#f0f9ff]">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#0a1628]">Shonan Wave Forecast</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#0a1628]">AI 波予報</h1>
           <p className="text-sm text-[#8899aa]">あなたに最適な波を診断します</p>
         </div>
         <button onClick={handleSkip} className="text-sm text-[#8899aa] underline">

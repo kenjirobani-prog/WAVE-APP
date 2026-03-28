@@ -4,7 +4,7 @@ import { howtoArticles } from '@/data/howto'
 import BottomNav from '@/components/BottomNav'
 
 export const metadata: Metadata = {
-  title: 'How to Surfing | Shonan Wave Forecast',
+  title: 'How to Surfing | AI 波予報',
   description: '湘南サーフィンの基礎知識。波予報の読み方・ポイント選び・ボードの選び方を初心者向けにわかりやすく解説。',
 }
 
