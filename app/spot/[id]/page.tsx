@@ -13,11 +13,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!spot) return {}
   return {
     title: `${spot.name}の波予報 | AI 波予報`,
-    description: `${spot.name}（${spot.nameEn}）の今日の波予報。波高・風・うねり・潮位をリアルタイムで確認。${spot.description ?? ''}`,
+    description: `AIが${spot.name}の波をリアルタイム分析。波高・風・うねり・潮位を総合スコア化。今日サーフィンに行くべきか即判断。湘南のAI波予報アプリ。`,
     openGraph: {
       title: `${spot.name}の波予報 | AI 波予報`,
-      description: `${spot.name}の今日の波予報。あなたのレベルに合ったコンディション診断。`,
+      description: `AIが${spot.name}の波をリアルタイム分析。`,
       url: `https://jpwaveforecast.com/spot/${spot.id}`,
+      siteName: 'AI 波予報',
+      locale: 'ja_JP',
+      type: 'website',
     },
   }
 }

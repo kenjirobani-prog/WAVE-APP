@@ -61,6 +61,25 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="AI 波予報" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "AI 波予報",
+            "url": "https://jpwaveforecast.com",
+            "description": "AIが湘南の波をリアルタイム分析。サーファーのレベルとボードに合わせたパーソナライズスコアで今日行くべきか即判断。",
+            "applicationCategory": "SportsApplication",
+            "operatingSystem": "Web",
+            "inLanguage": "ja",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "JPY"
+            },
+            "keywords": "AI 波予報, 湘南 波予報, サーフィン 波予報, AI サーフィン, 鵠沼 波, 由比ヶ浜 波, 七里ヶ浜 波"
+          })}}
+        />
       </head>
       <body className={`${inter.className} min-h-screen bg-[#f0f9ff]`}>
         <div className="max-w-md mx-auto min-h-screen flex flex-col">
