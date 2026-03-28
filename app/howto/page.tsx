@@ -31,16 +31,14 @@ export const metadata: Metadata = {
 export default function HowToPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      <header className="bg-white border-b border-[#eef1f4] px-4 pt-10 pb-5">
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <BackButton />
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: '#0369a1', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-              How to Surfing
-            </p>
-            <h1 className="text-xl font-bold text-[#0a1628] leading-snug">
-              湘南サーフィンをもっと<br />楽しむための基礎知識
-            </h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <Link href="/" style={{ textDecoration: 'none' }}><span style={{ fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</span></Link>
+              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>How to Surfing</span>
+            </div>
           </div>
         </div>
       </header>

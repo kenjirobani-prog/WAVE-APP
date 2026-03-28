@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import BackButton from '@/components/BackButton'
 
 export const metadata: Metadata = {
@@ -63,22 +64,14 @@ export default function FaqPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <BackButton />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>よくある質問</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>FAQ</div>
-              </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <BackButton />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <Link href="/" style={{ textDecoration: 'none' }}><span style={{ fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</span></Link>
+              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>よくある質問</span>
             </div>
-            <div style={{ marginTop: 8, visibility: 'hidden', background: 'rgba(255,255,255,0.15)', borderRadius: 99, padding: '3px 10px', display: 'inline-flex' }}>
-              <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>00:00 更新</span>
-            </div>
-          </div>
-          <div style={{ visibility: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
-            <div style={{ background: '#fff', borderRadius: 10, padding: '8px 16px', fontSize: 12, fontWeight: 800, color: '#0284c7' }}>⚙ マイ設定</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)' }}>中級・ミッド・腰</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>FAQ</div>
           </div>
         </div>
       </header>
