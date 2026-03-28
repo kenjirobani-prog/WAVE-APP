@@ -13,7 +13,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!article) return {}
   return {
     title: `${article.title} | AI 波予報`,
-    description: article.subtitle,
+    description: `${article.subtitle}。湘南のサーフィン情報とAI波予報の使い方を解説。`,
+    openGraph: {
+      title: `${article.title} | AI 波予報`,
+      description: `${article.subtitle}。`,
+      url: `https://jpwaveforecast.com/howto/${slug}`,
+      siteName: 'AI 波予報',
+      locale: 'ja_JP',
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${article.title} | AI 波予報`,
+      description: `${article.subtitle}。`,
+      images: ['https://jpwaveforecast.com/ogp.png'],
+    },
   }
 }
 

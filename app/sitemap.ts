@@ -1,6 +1,14 @@
 import { MetadataRoute } from 'next'
+import { howtoArticles } from '@/data/howto'
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const howtoEntries: MetadataRoute.Sitemap = howtoArticles.map(article => ({
+    url: `https://jpwaveforecast.com/howto/${article.slug}`,
+    lastModified: new Date(article.publishedAt),
+    changeFrequency: 'monthly',
+    priority: 0.7,
+  }))
+
   return [
     {
       url: 'https://jpwaveforecast.com',
@@ -56,5 +64,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.6,
     },
+    ...howtoEntries,
   ]
 }
