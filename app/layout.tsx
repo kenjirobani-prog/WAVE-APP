@@ -49,7 +49,6 @@ export const metadata: Metadata = {
   icons: {
     icon: '/images/logo.png',
     apple: '/images/logo.png',
-    shortcut: '/images/logo.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
@@ -70,6 +69,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#0284c7" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="apple-touch-icon" href="/images/logo.png" />
         <meta name="apple-mobile-web-app-title" content="AI 波予報" />
         <script
           type="application/ld+json"
