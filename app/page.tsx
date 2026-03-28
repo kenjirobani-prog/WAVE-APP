@@ -408,10 +408,7 @@ export default function TopPage() {
   if (!profile) return null
 
   const targetDate = tab !== 'weekly' ? getTargetDate(tab) : today
-  const allBad = !loading && !error && scores.length > 0 && scores.every(s => s.grade === '×')
 
-  const dateLabel =
-    tab === 'today' ? '今日' : tab === 'tomorrow' ? '明日' : '週間'
 
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
@@ -600,23 +597,6 @@ export default function TopPage() {
                 >
                   再試行
                 </button>
-              </div>
-            ) : allBad ? (
-              <div className="flex flex-col items-center justify-center pt-12 pb-4 gap-3 text-center">
-                <p className="text-lg font-bold text-[#0a1628]">{dateLabel}はどこも厳しいです</p>
-                <div className="mt-2 space-y-2.5 w-full">
-                  {scores.map((score, i) => {
-                    const spot = SPOTS.find(s => s.id === score.spotId)!
-                    return (
-                      <SpotCard key={score.spotId} spot={spot} score={score}
-                        isFavorite={profile.favoriteSpots.includes(spot.id)}
-                        condition={conditions[spot.id]}
-                        date={targetDate}
-                        isTop={i === 0}
-                      />
-                    )
-                  })}
-                </div>
               </div>
             ) : (
               scores.map((score, i) => {
