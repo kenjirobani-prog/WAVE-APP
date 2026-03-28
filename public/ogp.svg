@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- 背景 -->
+  <rect width="1200" height="630" fill="#0284c7"/>
+  <rect width="1200" height="630" fill="#0ea5e9" opacity="0.2"/>
+
+  <!-- 波モチーフ（3層） -->
+  <path d="M0 400 Q100 365 200 385 Q300 405 400 378 Q500 351 600 378 Q700 405 800 378 Q900 351 1000 375 Q1100 399 1200 378 L1200 630 L0 630Z" fill="#0369a1"/>
+  <path d="M0 450 Q120 420 240 440 Q360 460 480 435 Q600 410 720 435 Q840 460 960 438 Q1080 416 1200 438 L1200 630 L0 630Z" fill="#075985"/>
+  <path d="M0 500 Q150 475 300 495 Q450 515 600 490 Q750 465 900 490 Q1050 515 1200 492 L1200 630 L0 630Z" fill="#0c4a6e" opacity="0.9"/>
+
+  <!-- メインテキスト -->
+  <text x="600" y="220" text-anchor="middle" font-family="-apple-system,'Hiragino Sans','Yu Gothic',sans-serif" font-size="96" font-weight="900" fill="rgba(255,255,255,0.85)" letter-spacing="12">AI</text>
+  <text x="600" y="360" text-anchor="middle" font-family="-apple-system,'Hiragino Sans','Yu Gothic',sans-serif" font-size="130" font-weight="900" fill="#ffffff" letter-spacing="-3">波予報</text>
+
+  <!-- サブテキスト -->
+  <text x="600" y="415" text-anchor="middle" font-family="-apple-system,'Hiragino Sans','Yu Gothic',sans-serif" font-size="28" font-weight="500" fill="rgba(255,255,255,0.65)" letter-spacing="2">jpwaveforecast.com</text>
+
+  <!-- タグライン -->
+  <text x="600" y="560" text-anchor="middle" font-family="-apple-system,'Hiragino Sans','Yu Gothic',sans-serif" font-size="24" font-weight="500" fill="rgba(255,255,255,0.5)" letter-spacing="1">AIが湘南の波をリアルタイム分析</text>
+</svg>

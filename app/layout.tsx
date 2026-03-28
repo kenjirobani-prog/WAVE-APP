@@ -19,12 +19,21 @@ export const metadata: Metadata = {
     siteName: 'AI 波予報',
     locale: 'ja_JP',
     type: 'website',
+    images: [
+      {
+        url: 'https://jpwaveforecast.com/ogp.svg',
+        width: 1200,
+        height: 630,
+        alt: 'AI 波予報 — AIが湘南の波をリアルタイム分析',
+      },
+    ],
   },
   keywords: '湘南, 波予報, サーフィン, 鵠沼, 辻堂, 茅ヶ崎, 七里ヶ浜, 由比ヶ浜, 波情報, サーフ',
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'AI 波予報',
-    description: 'AIが湘南の波を読む。あなたに合った波予報。',
+    description: 'AIが湘南の波をリアルタイム分析。あなたのレベル・ボードに合わせたパーソナライズスコアで今日行くべきか即判断。',
+    images: ['https://jpwaveforecast.com/ogp.svg'],
   },
   robots: {
     index: true,
