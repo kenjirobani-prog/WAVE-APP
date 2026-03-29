@@ -218,7 +218,14 @@ function extractModelKey(handle: string): string {
     .replace(/-+$/, '');
 }
 
-function extractModelName(title: string): string {
+function extractModelName(title: string, product?: any): string {
+  // Channel Islands: タグから "Board Model: ..." を取得
+  if (product?.tags) {
+    const tags: string[] = Array.isArray(product.tags) ? product.tags : (product.tags ?? '').split(', ');
+    const modelTag = tags.find((t: string) => t.startsWith('Board Model:'));
+    if (modelTag) return modelTag.replace('Board Model:', '').trim();
+  }
+
   return title
     // サイズ表記以降を除去
     .replace(/\s*\d+[''′]\d+[""″]?.*/, '')
@@ -234,6 +241,24 @@ function extractModelName(title: string): string {
     .replace(/\s*[-–]\s*(?:Futures?|FCSII?|FCS\s*II)\s*$/i, '')
     .replace(/\s*-\s*ID:.*/, '')
     .trim();
+}
+
+/** Channel Islands: body_htmlから幅・厚みを抽出 */
+function parseCISpecsFromHtml(bodyHtml: string): { widthInch: number | null; thicknessInch: number | null } {
+  // body_html先頭行: "10'0 x 23 1/4\" x 3 3/16\""
+  const text = bodyHtml.replace(/<[^>]+>/g, ' ').trim();
+  const m = text.match(/\d+[''′]\d+[""″]?\s*[xX×]\s*([\d\s/]+)[""″]?\s*[xX×]\s*([\d\s/]+)[""″]?/);
+  if (m) {
+    return { widthInch: parseFraction(m[1]), thicknessInch: parseFraction(m[2]) };
+  }
+  return { widthInch: null, thicknessInch: null };
+}
+
+/** Channel Islands: タグからボリュームを抽出 */
+function parseCIVolume(tags: string[]): number | null {
+  const volTag = tags.find((t: string) => /^\d+(\.\d+)?L$/i.test(t.trim()));
+  if (volTag) return parseFloat(volTag.replace(/[Ll]$/, ''));
+  return null;
 }
 
 // =============================
@@ -432,7 +457,7 @@ async function main() {
     const modelMap = new Map<string, { products: any[]; specs: { title: string; lengthInch: number | null; price: string }[] }>();
 
     for (const product of boards) {
-      const mName = extractModelName(product.title);
+      const mName = extractModelName(product.title, product);
       if (!mName) continue;
       const key = mName.toLowerCase();
       if (!modelMap.has(key)) {
@@ -443,6 +468,18 @@ async function main() {
 
       const variant = product.variants?.[0];
       const parsed = parseSpecs(product.title, variant?.title);
+
+      // CI: タグからボリューム、body_htmlから幅・厚み
+      if (b.brand === 'Channel Islands') {
+        const tags: string[] = Array.isArray(product.tags) ? product.tags : (product.tags ?? '').split(', ');
+        if (parsed.volumeL === null) parsed.volumeL = parseCIVolume(tags);
+        if (parsed.widthInch === null) {
+          const htmlSpecs = parseCISpecsFromHtml(product.body_html ?? '');
+          parsed.widthInch = htmlSpecs.widthInch;
+          parsed.thicknessInch = htmlSpecs.thicknessInch;
+        }
+      }
+
       group.specs.push({
         title: product.title,
         lengthInch: parsed.lengthInch,
@@ -465,7 +502,18 @@ async function main() {
       const repSpecs = parseSpecs(repTitle, repVariantTitle);
       const repPrice = sorted[0]?.price ?? repProduct.variants?.[0]?.price ?? '0';
 
-      const modelName = extractModelName(repProduct.title);
+      // CI: 代表値にもタグ/HTML補完
+      if (b.brand === 'Channel Islands') {
+        const tags: string[] = Array.isArray(repProduct.tags) ? repProduct.tags : (repProduct.tags ?? '').split(', ');
+        if (repSpecs.volumeL === null) repSpecs.volumeL = parseCIVolume(tags);
+        if (repSpecs.widthInch === null) {
+          const htmlSpecs = parseCISpecsFromHtml(repProduct.body_html ?? '');
+          repSpecs.widthInch = htmlSpecs.widthInch;
+          repSpecs.thicknessInch = htmlSpecs.thicknessInch;
+        }
+      }
+
+      const modelName = extractModelName(repProduct.title, repProduct);
       if (!modelName) continue;
 
       // サイズ展開: 重複除去してソート
