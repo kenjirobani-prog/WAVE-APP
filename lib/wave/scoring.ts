@@ -271,10 +271,20 @@ function getCrossSwellPenalty(
   windWaveDirection: number,
   windWaveHeight: number,
   waveHeight: number,
+  secondarySwellHeight?: number,
+  secondarySwellDirection?: number,
 ): number {
-  // 風波が小さい場合は影響軽微
+  // セカンダリースウェルが存在する場合: primarySwell vs secondarySwell で判定
+  if (secondarySwellHeight != null && secondarySwellHeight >= 0.3 && secondarySwellDirection != null) {
+    const diff = getDirectionDiff(swellDirection, secondarySwellDirection)
+    if (diff < 30)  return 0
+    if (diff < 60)  return -2
+    if (diff <= 90) return -4
+    return -6
+  }
+
+  // フォールバック: primarySwell vs windWave で判定
   if (windWaveHeight < 0.2) return 0
-  // 風波の比率が低い場合は影響軽微
   const windRatio = windWaveHeight / waveHeight
   if (windRatio < 0.3) return 0
 
@@ -320,6 +330,8 @@ function scoreWaveQuality(
   swellDirection: number,
   windWaveHeight: number,
   windWaveDirection: number,
+  secondarySwellHeight?: number,
+  secondarySwellDirection?: number,
 ): number {
   const windType = classifyWind(windDir, windSpeed)
   const base = getBaseWaveQuality(wavePeriod, windType)
@@ -327,7 +339,7 @@ function scoreWaveQuality(
   const periodTide = getPeriodTideBonus(wavePeriod, tideHeight)
   const swellRatio = getSwellRatio(swellWaveHeight, waveHeight)
   const windSwellPenalty = getWindSwellPenalty(swellRatio, waveHeight)
-  const crossSwellPenalty = getCrossSwellPenalty(swellDirection, windWaveDirection, windWaveHeight, waveHeight)
+  const crossSwellPenalty = getCrossSwellPenalty(swellDirection, windWaveDirection, windWaveHeight, waveHeight, secondarySwellHeight, secondarySwellDirection)
   const energy = calcWaveEnergy(waveHeight, wavePeriod)
   const energyBonus = getWaveEnergyBonus(energy)
   return Math.min(20, Math.max(0, base + swellTide + periodTide + windSwellPenalty + crossSwellPenalty + energyBonus))
@@ -386,6 +398,8 @@ export function calculateScore(
     condition.swellDir,
     condition.windWaveHeight,
     condition.windWaveDirection,
+    condition.secondarySwellHeight,
+    condition.secondarySwellDirection,
   )
   const weatherBonus = scoreComfort(condition.weather, condition.temperature, condition.uvIndex)
   const correction = boardCorrection(effCondition, profile)

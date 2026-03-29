@@ -14,6 +14,9 @@ export interface WaveCondition {
   swellWaveHeight: number    // うねり成分の波高（m）
   windWaveHeight: number     // 風波成分の波高（m）
   windWaveDirection: number  // 風波の方向（度）
+  secondarySwellHeight?: number     // セカンダリースウェルの波高（m）
+  secondarySwellDirection?: number  // セカンダリースウェルの方向（度）
+  secondarySwellPeriod?: number     // セカンダリースウェルの周期（秒）
 }
 
 export interface TideEvent {

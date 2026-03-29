@@ -197,6 +197,9 @@ function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateSt
       swellWaveHeight: val(h.swellHeight),
       windWaveHeight: val(h.windWaveHeight),
       windWaveDirection: val(h.windWaveDirection),
+      secondarySwellHeight: val(h.secondarySwellHeight) || undefined,
+      secondarySwellDirection: val(h.secondarySwellDirection) || undefined,
+      secondarySwellPeriod: val(h.swellPeriod) || undefined,
     }
 
     prevTide = tideHeight
