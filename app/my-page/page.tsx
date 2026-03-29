@@ -78,11 +78,8 @@ export default function MyPage() {
             onClick={() => router.push('/surfboards')}
             className="w-full flex items-center justify-between px-4 py-4 active:bg-[#f0f9ff] transition-colors"
           >
-            <div>
-              <span className="text-[#0a1628] font-medium block">サーフボード図鑑</span>
-              <span className="text-[10px] text-[#8899aa]">ブランド横断のサーフボード情報。スペック・価格・特徴を一覧で確認。</span>
-            </div>
-            <svg className="w-4 h-4 text-[#8899aa] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="text-[#0a1628] font-medium">サーフボード図鑑</span>
+            <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
