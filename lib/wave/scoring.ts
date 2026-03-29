@@ -184,37 +184,52 @@ function scoreTideWithBathymetry(
 // 波質スコア（3ステップ設計・20点満点）
 
 function getBaseWaveQuality(period: number, windType: WindType): number {
-  if (period >= 10) {
+  if (period >= 14) {
+    // ピュアグランドスウェル（台風・遠洋低気圧）
     if (windType === 'offshore')      return 20
+    if (windType === 'calm')          return 19
+    if (windType === 'side-offshore') return 17
+    if (windType === 'side-onshore')  return 11
+    return 5 // onshore
+  }
+  if (period >= 12) {
+    // グランドスウェル
+    if (windType === 'offshore')      return 19
     if (windType === 'calm')          return 18
     if (windType === 'side-offshore') return 16
     if (windType === 'side-onshore')  return 10
-    return 5 // onshore
+    return 4 // onshore
   }
-  if (period >= 8) {
+  if (period >= 10) {
+    // 良い周期
     if (windType === 'offshore')      return 17
-    if (windType === 'calm')          return 15
-    if (windType === 'side-offshore') return 13
+    if (windType === 'calm')          return 16
+    if (windType === 'side-offshore') return 14
     if (windType === 'side-onshore')  return 8
     return 3 // onshore
   }
-  if (period >= 6) {
-    if (windType === 'offshore')      return 10
-    if (windType === 'calm')          return 9
-    if (windType === 'side-offshore') return 8
-    if (windType === 'side-onshore')  return 5
+  if (period >= 8) {
+    // 普通
+    if (windType === 'offshore')      return 13
+    if (windType === 'calm')          return 12
+    if (windType === 'side-offshore') return 11
+    if (windType === 'side-onshore')  return 6
     return 2 // onshore
   }
-  if (period >= 5) {
-    if (windType === 'offshore')      return 5
-    if (windType === 'calm')          return 4
-    if (windType === 'side-offshore') return 4
-    if (windType === 'side-onshore')  return 2
+  if (period >= 6) {
+    // やや弱い
+    if (windType === 'offshore')      return 8
+    if (windType === 'calm')          return 7
+    if (windType === 'side-offshore') return 6
+    if (windType === 'side-onshore')  return 4
     return 1 // onshore
   }
-  // 4秒以下
-  if (windType === 'onshore') return 0
-  return 2
+  // 6秒未満（風波・乗れない）
+  if (windType === 'offshore')      return 4
+  if (windType === 'calm')          return 3
+  if (windType === 'side-offshore') return 3
+  if (windType === 'side-onshore')  return 1
+  return 0 // onshore
 }
 
 // 【役割】波高×潮位の組み合わせ特性を評価（湘南ビーチブレイク特有）
