@@ -150,30 +150,51 @@ function inchesToFeetStr(totalInch: number): string {
   return `${feet}'${inchStr}"`;
 }
 
-function parseSpecs(title: string): ParsedSpecs {
+function parseSpecs(title: string, variantTitle?: string): ParsedSpecs {
   const result: ParsedSpecs = { lengthInch: null, widthInch: null, thicknessInch: null, volumeL: null };
 
-  // ボリューム: "30.20L" or "- 30.2L" or "30L"
-  const volMatch = title.match(/(\d+(?:\.\d+)?)\s*[Ll]/);
-  if (volMatch) result.volumeL = parseFloat(volMatch[1]);
+  // 複数のソースを試行（タイトル → バリアント名）
+  const sources = [title, variantTitle ?? ''].filter(Boolean);
 
-  // 長さ: "5'10\"", "5'11", "7'10\""
-  const lengthMatch = title.match(/(\d+)[''′]\s*(\d+(?:\.\d+)?)\s*[""″]?/);
-  if (lengthMatch) {
-    result.lengthInch = parseInt(lengthMatch[1]) * 12 + parseFloat(lengthMatch[2]);
+  for (const src of sources) {
+    // ボリューム: "30.20L" or "- 30.2L" or "30L"
+    if (result.volumeL === null) {
+      const volMatch = src.match(/(\d+(?:\.\d+)?)\s*[Ll](?:\b|$)/);
+      if (volMatch) result.volumeL = parseFloat(volMatch[1]);
+    }
+
+    // 長さ: 標準形式 "5'10\"", "5'11", "7'10\""
+    if (result.lengthInch === null) {
+      const lengthMatch = src.match(/(\d+)[''′]\s*(\d+(?:\.\d+)?)\s*[""″]?/);
+      if (lengthMatch) {
+        result.lengthInch = parseInt(lengthMatch[1]) * 12 + parseFloat(lengthMatch[2]);
+      }
+    }
+
+    // 長さ: タイトル先頭形式 "5'8 Cuttlefish" (Ryan Burch等)
+    if (result.lengthInch === null) {
+      const prefixMatch = src.match(/^(\d+)[''′](\d+(?:\.\d+)?)\s/);
+      if (prefixMatch) {
+        result.lengthInch = parseInt(prefixMatch[1]) * 12 + parseFloat(prefixMatch[2]);
+      }
+    }
+
+    // 幅と厚み: "x 19 1/2" x 2 7/16""
+    if (result.widthInch === null) {
+      const dimsPattern = /(?:\d+[''′]\s*\d+[""″]?\s*)[xX×]\s*([\d\s/]+)[""″]?\s*[xX×]\s*([\d\s/]+)[""″]?/;
+      const dimsMatch = src.match(dimsPattern);
+      if (dimsMatch) {
+        result.widthInch = parseFraction(dimsMatch[1]);
+        result.thicknessInch = parseFraction(dimsMatch[2]);
+      }
+    }
   }
 
-  // 幅と厚み: "x 19 1/2" x 2 7/16"" or "19 3/8\" 2 5/16\""
-  // パターン: 長さの後に x/× で区切られた2つの寸法
-  const dimsPattern = /(?:\d+[''′]\s*\d+[""″]?\s*)[xX×]\s*([\d\s/]+)[""″]?\s*[xX×]\s*([\d\s/]+)[""″]?/;
-  const dimsMatch = title.match(dimsPattern);
-  if (dimsMatch) {
-    result.widthInch = parseFraction(dimsMatch[1]);
-    result.thicknessInch = parseFraction(dimsMatch[2]);
-  } else {
-    // "19 3/8" 2 5/16"" (スペース区切り、長さの後)
+  // 幅・厚みフォールバック（スペース区切りパターン）
+  if (result.widthInch === null) {
+    const allText = sources.join(' ');
     const altPattern = /\d+[''′]\s*\d+[""″]?\s+([\d]+(?:\s+\d+\/\d+)?)[""″]?\s+([\d]+(?:\s+\d+\/\d+)?)[""″]?/;
-    const altMatch = title.match(altPattern);
+    const altMatch = allText.match(altPattern);
     if (altMatch) {
       result.widthInch = parseFraction(altMatch[1]);
       result.thicknessInch = parseFraction(altMatch[2]);
@@ -421,7 +442,7 @@ async function main() {
       group.products.push(product);
 
       const variant = product.variants?.[0];
-      const parsed = parseSpecs(product.title);
+      const parsed = parseSpecs(product.title, variant?.title);
       group.specs.push({
         title: product.title,
         lengthInch: parsed.lengthInch,
@@ -440,7 +461,8 @@ async function main() {
 
       const repProduct = group.products[0];
       const repTitle = sorted[0]?.title ?? repProduct.title;
-      const repSpecs = parseSpecs(repTitle);
+      const repVariantTitle = repProduct.variants?.[0]?.title ?? '';
+      const repSpecs = parseSpecs(repTitle, repVariantTitle);
       const repPrice = sorted[0]?.price ?? repProduct.variants?.[0]?.price ?? '0';
 
       const modelName = extractModelName(repProduct.title);
@@ -583,9 +605,11 @@ async function cleanDatabase() {
 
     let genre: string | null = null;
 
-    // ブランドベース例外: Catch Surf → ソフトボード（長さ不問）
+    // ブランドベース例外
     if (brand === 'Catch Surf') {
       genre = 'ソフトボード';
+    } else if (brand === 'Almond Surfboards') {
+      genre = 'ミッドレングス';
     } else if (!lengthInch || lengthInch === 0) {
       skippedGenre++;
       continue;
