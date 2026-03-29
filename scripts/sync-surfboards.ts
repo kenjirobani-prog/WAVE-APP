@@ -1,16 +1,31 @@
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { Client } from '@notionhq/client';
+
+// .env.local を手動読み込み（dotenv不要）
+const envPath = resolve(import.meta.dirname ?? '.', '..', '.env.local');
+try {
+  const envContent = readFileSync(envPath, 'utf-8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const val = trimmed.slice(eqIdx + 1).trim();
+    if (!process.env[key]) process.env[key] = val;
+  }
+} catch {}
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const notionAny = notion as any;
 const NOTION_DB_ID = process.env.SURFBOARD_DB_ID!;
+const NOTION_DS_ID = process.env.SURFBOARD_DS_ID ?? NOTION_DB_ID;
 const JPY_RATE = 150;
 
-// v5互換: databases.query が dataSources.query に移動
+// v5: dataSources.query を使用（data_source_id が必要）
 async function queryDatabase(args: Record<string, any>) {
-  if (typeof (notionAny.databases?.query) === 'function') {
-    return notionAny.databases.query({ database_id: NOTION_DB_ID, ...args });
-  }
-  return notionAny.dataSources.query({ data_source_id: NOTION_DB_ID, ...args });
+  return notionAny.dataSources.query({ data_source_id: NOTION_DS_ID, ...args });
 }
 
 // =============================
