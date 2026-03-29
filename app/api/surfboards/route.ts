@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server'
-import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
 
 export const maxDuration = 30
 
@@ -59,11 +57,16 @@ export interface SurfboardItem {
   level: string
   waveSize: string
   description: string
+  sizeVariants: string
   fin: string
   sku: string
   dataSource: string
   discontinued: boolean
 }
+
+// メモリキャッシュ（24時間有効）
+let memoryCache: { items: SurfboardItem[]; updatedAt: number } | null = null
+const CACHE_TTL = 24 * 60 * 60 * 1000
 
 async function fetchFromNotion(): Promise<SurfboardItem[]> {
   const notionKey = process.env.NOTION_API_KEY
@@ -71,6 +74,7 @@ async function fetchFromNotion(): Promise<SurfboardItem[]> {
 
   const dbId = process.env.SURFBOARD_DB_ID
   if (!dbId) throw new Error('SURFBOARD_DB_ID is not set')
+
   const items: SurfboardItem[] = []
   let cursor: string | undefined = undefined
 
@@ -106,7 +110,7 @@ async function fetchFromNotion(): Promise<SurfboardItem[]> {
       items.push({
         id: (page.id as string).replace(/-/g, ''),
         name: getText(props['ボード名']),
-        brand: getText(props['ブランド']),
+        brand: getSelect(props['ブランド']),
         model: getText(props['モデル名']),
         genre: getSelect(props['ジャンル']),
         lengthInch: getNumber(props['長さ(inch)']),
@@ -117,9 +121,10 @@ async function fetchFromNotion(): Promise<SurfboardItem[]> {
         level: getSelect(props['おすすめレベル']),
         waveSize: getSelect(props['おすすめ波サイズ']),
         description: getText(props['特徴・コメント']),
-        fin: getText(props['フィン']),
+        sizeVariants: getText(props['サイズ展開']),
+        fin: '',
         sku: getText(props['SKU']),
-        dataSource: getText(props['データ取得方法']),
+        dataSource: getSelect(props['データ取得方法']),
         discontinued: getCheckbox(props['廃番']),
       })
     }
@@ -132,29 +137,16 @@ async function fetchFromNotion(): Promise<SurfboardItem[]> {
 
 export async function GET() {
   try {
-    await ensureAnonymousAuth()
-    const db = getDb()
-    const cacheRef = doc(db, 'surfboardCache', 'surfboards_all')
-
-    // キャッシュ確認（24時間有効）
-    const cached = await getDoc(cacheRef)
-    if (cached.exists()) {
-      const d = cached.data()
-      const age = Date.now() - (d.updatedAt?.toDate?.()?.getTime?.() ?? 0)
-      if (age < 24 * 60 * 60 * 1000) {
-        return NextResponse.json({ items: d.items, fromCache: true })
-      }
+    // メモリキャッシュ確認
+    if (memoryCache && (Date.now() - memoryCache.updatedAt) < CACHE_TTL) {
+      return NextResponse.json({ items: memoryCache.items, fromCache: true })
     }
 
-    // Notion APIから取得
+    // Notion APIから直接取得
     const items = await fetchFromNotion()
 
-    // Firestoreにキャッシュ保存
-    try {
-      await setDoc(cacheRef, { items: JSON.parse(JSON.stringify(items)), updatedAt: new Date() })
-    } catch (writeErr) {
-      console.error('[Surfboards] Firestore cache write error:', writeErr)
-    }
+    // メモリキャッシュに保存
+    memoryCache = { items, updatedAt: Date.now() }
 
     return NextResponse.json({ items, fromCache: false })
   } catch (err) {
