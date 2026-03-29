@@ -150,11 +150,33 @@ function inchesToFeetStr(totalInch: number): string {
   return `${feet}'${inchStr}"`;
 }
 
-function parseSpecs(title: string, variantTitle?: string): ParsedSpecs {
+/** ブランド固有のバリアントからスペック文字列を抽出 */
+function getExtraSources(brand: string, variant: any): string[] {
+  if (!variant) return [];
+  const extras: string[] = [];
+
+  if (brand === 'Firewire') {
+    // "素材 / カラー / 6'6\" x 20 3/4\" x 2 9/16\" x 38.7L"
+    const parts = (variant.title ?? '').split('/').map((s: string) => s.trim());
+    if (parts.length >= 3) extras.push(parts[parts.length - 1]);
+  }
+
+  if (brand === 'Haydenshapes' && variant.option2) {
+    extras.push(variant.option2);
+  }
+
+  if (brand === 'STACEY' && variant.option1) {
+    extras.push(variant.option1);
+  }
+
+  return extras;
+}
+
+function parseSpecs(title: string, variantTitle?: string, extraSources?: string[]): ParsedSpecs {
   const result: ParsedSpecs = { lengthInch: null, widthInch: null, thicknessInch: null, volumeL: null };
 
-  // 複数のソースを試行（タイトル → バリアント名）
-  const sources = [title, variantTitle ?? ''].filter(Boolean);
+  // 複数のソースを試行（タイトル → バリアント名 → ブランド固有ソース）
+  const sources = [title, variantTitle ?? '', ...(extraSources ?? [])].filter(Boolean);
 
   for (const src of sources) {
     // ボリューム: "30.20L" or "- 30.2L" or "30L"
@@ -187,6 +209,17 @@ function parseSpecs(title: string, variantTitle?: string): ParsedSpecs {
         result.widthInch = parseFraction(dimsMatch[1]);
         result.thicknessInch = parseFraction(dimsMatch[2]);
       }
+    }
+  }
+
+  // 幅・厚みフォールバック: "5'6 - 17 5/8 x 2 3/16 - 22.0L" (STACEY等)
+  if (result.widthInch === null) {
+    const allText = sources.join(' ');
+    const staceyPattern = /[-–]\s*([\d]+(?:\s+\d+\/\d+)?)\s*[xX×]\s*([\d]+(?:\s+\d+\/\d+)?)\s*[-–]/;
+    const staceyMatch = allText.match(staceyPattern);
+    if (staceyMatch) {
+      result.widthInch = parseFraction(staceyMatch[1]);
+      result.thicknessInch = parseFraction(staceyMatch[2]);
     }
   }
 
@@ -467,7 +500,8 @@ async function main() {
       group.products.push(product);
 
       const variant = product.variants?.[0];
-      const parsed = parseSpecs(product.title, variant?.title);
+      const extras = getExtraSources(b.brand, variant);
+      const parsed = parseSpecs(product.title, variant?.title, extras);
 
       // CI: タグからボリューム、body_htmlから幅・厚み
       if (b.brand === 'Channel Islands') {
@@ -498,8 +532,10 @@ async function main() {
 
       const repProduct = group.products[0];
       const repTitle = sorted[0]?.title ?? repProduct.title;
-      const repVariantTitle = repProduct.variants?.[0]?.title ?? '';
-      const repSpecs = parseSpecs(repTitle, repVariantTitle);
+      const repVariant = repProduct.variants?.[0];
+      const repVariantTitle = repVariant?.title ?? '';
+      const repExtras = getExtraSources(b.brand, repVariant);
+      const repSpecs = parseSpecs(repTitle, repVariantTitle, repExtras);
       const repPrice = sorted[0]?.price ?? repProduct.variants?.[0]?.price ?? '0';
 
       // CI: 代表値にもタグ/HTML補完
