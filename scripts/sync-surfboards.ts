@@ -273,7 +273,23 @@ async function fetchExistingPageIds(): Promise<string[]> {
 // =============================
 // サーフボードかどうか簡易判定
 // =============================
+const EXCLUDE_KEYWORDS = [
+  'bag', 'wetsuit', 'tee', 't-shirt', 'shirt', 'hat', 'cap',
+  'leash', 'traction pad', 'wax', 'fins', 'fin set', 'fin case',
+  'rack', 'jacket', 'gift card', 'hoodie', 'boardshort', 'board sock',
+  'sticker', 'keychain', 'changing mat', 'tie down', 'plug',
+  'button pack', 'surf wax', 'swim fins',
+];
+
+function isExcludedAccessory(title: string): boolean {
+  const lower = title.toLowerCase();
+  return EXCLUDE_KEYWORDS.some(kw => lower.includes(kw));
+}
+
 function isSurfboard(product: any): boolean {
+  const title = product.title ?? '';
+  if (isExcludedAccessory(title)) return false;
+
   const type = product.product_type?.toLowerCase() ?? '';
   const tags = product.tags?.map((t: string) => t.toLowerCase()) ?? [];
   return (
