@@ -509,6 +509,89 @@ async function main() {
   console.log(`  削除: ${existingIds.length}件`);
   console.log(`  新規登録: ${added}件（モデル単位）`);
   console.log(`  特徴コメント生成: ${commented}件`);
+
+  // =============================
+  // STEP 4: DBクリーニング
+  // =============================
+  await cleanDatabase();
+}
+
+// =============================
+// DBクリーニング処理
+// =============================
+async function cleanDatabase() {
+  console.log('\n🧹 DBクリーニング開始...\n');
+
+  // 全アプローチAレコードを取得
+  const allRecords: any[] = [];
+  let cursor: string | undefined;
+  while (true) {
+    const res = await queryDatabase({
+      filter: {
+        property: 'データ取得方法',
+        select: { equals: 'アプローチA（Shopify自動）' },
+      },
+      start_cursor: cursor,
+      page_size: 100,
+    });
+    allRecords.push(...res.results);
+    if (!res.has_more) break;
+    cursor = res.next_cursor ?? undefined;
+  }
+  console.log(`📋 対象レコード: ${allRecords.length}件`);
+
+  // --- クリーニング①: 価格JPY ≤ 15,000円を削除（アクセサリー除去）---
+  console.log('\n🗑 クリーニング①: 低価格アクセサリーを削除...');
+  let deleted = 0;
+  for (const page of allRecords) {
+    const priceJPY = page.properties['価格JPY']?.number ?? null;
+    if (priceJPY !== null && priceJPY > 0 && priceJPY <= 15000) {
+      await notionAny.pages.update({ page_id: page.id, archived: true });
+      deleted++;
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
+  console.log(`  ✅ ${deleted}件削除`);
+
+  // --- クリーニング②: ジャンル自動分類（長さベース）---
+  console.log('\n📐 クリーニング②: ジャンル自動分類...');
+  let classified = 0;
+  let skippedGenre = 0;
+  for (const page of allRecords) {
+    // 削除済みはスキップ
+    const priceJPY = page.properties['価格JPY']?.number ?? null;
+    if (priceJPY !== null && priceJPY > 0 && priceJPY <= 15000) continue;
+
+    const lengthInch = page.properties['長さ(inch)']?.number ?? null;
+    if (!lengthInch || lengthInch === 0) {
+      skippedGenre++;
+      continue;
+    }
+
+    let genre: string;
+    if (lengthInch >= 96) {
+      genre = 'ロングボード';
+    } else if (lengthInch >= 78) {
+      genre = 'ミッドレングス';
+    } else {
+      genre = 'ショートボード';
+    }
+
+    await notionAny.pages.update({
+      page_id: page.id,
+      properties: {
+        'ジャンル': { select: { name: genre } },
+      },
+    });
+    classified++;
+    if (classified % 50 === 0) console.log(`  📐 ${classified}件分類...`);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  console.log(`  ✅ ${classified}件分類完了（スキップ: ${skippedGenre}件）`);
+
+  console.log('\n🧹 クリーニング完了！');
+  console.log(`  アクセサリー削除: ${deleted}件`);
+  console.log(`  ジャンル分類: ${classified}件`);
 }
 
 main().catch(console.error);
