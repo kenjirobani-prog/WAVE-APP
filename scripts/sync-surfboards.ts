@@ -562,14 +562,18 @@ async function cleanDatabase() {
     const priceJPY = page.properties['価格JPY']?.number ?? null;
     if (priceJPY !== null && priceJPY > 0 && priceJPY <= 15000) continue;
 
+    const brand = page.properties['ブランド']?.select?.name ?? '';
     const lengthInch = page.properties['長さ(inch)']?.number ?? null;
-    if (!lengthInch || lengthInch === 0) {
+
+    let genre: string | null = null;
+
+    // ブランドベース例外: Catch Surf → ソフトボード（長さ不問）
+    if (brand === 'Catch Surf') {
+      genre = 'ソフトボード';
+    } else if (!lengthInch || lengthInch === 0) {
       skippedGenre++;
       continue;
-    }
-
-    let genre: string;
-    if (lengthInch >= 96) {
+    } else if (lengthInch >= 96) {
       genre = 'ロングボード';
     } else if (lengthInch >= 78) {
       genre = 'ミッドレングス';
