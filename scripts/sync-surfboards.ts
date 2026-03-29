@@ -424,7 +424,7 @@ async function main() {
   let added = 0;
 
   for (const model of allModels) {
-    const sizeText = model.sizes.length > 0 ? `サイズ展開: ${model.sizes.join(', ')}` : '';
+    const sizeText = model.sizes.length > 0 ? model.sizes.join(', ') : '';
 
     await notion.pages.create({
       parent: { database_id: NOTION_DB_ID },
@@ -440,7 +440,8 @@ async function main() {
         '価格JPY':          { number: model.priceJPY },
         '価格USD':          { number: model.priceUSD },
         '公式URL':          { url: model.siteUrl },
-        '特徴・コメント':   { rich_text: sizeText ? [{ text: { content: sizeText } }] : [] },
+        'サイズ展開':       { rich_text: sizeText ? [{ text: { content: sizeText } }] : [] },
+        '特徴・コメント':   { rich_text: [] },
         'データ取得方法':   { select: { name: 'アプローチA（Shopify自動）' } },
         '廃番':             { checkbox: false },
         'AI波予報連携':     { checkbox: false },
