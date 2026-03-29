@@ -304,6 +304,49 @@ interface GroupedModel {
   volumeL: number | null;
   // サイズ展開
   sizes: string[];
+  // body_html（Claude APIで特徴コメント生成用）
+  bodyHtml: string;
+}
+
+// =============================
+// Claude APIで特徴コメントを生成（80文字以内）
+// =============================
+async function generateComment(brand: string, model: string, bodyHtml: string): Promise<string | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+
+  // HTMLタグ除去
+  const text = bodyHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (text.length < 100) return null;
+
+  // 入力を1500文字に制限
+  const input = text.slice(0, 1500);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: `以下はサーフボード「${brand} ${model}」の商品説明です。日本語で80文字以内の特徴コメントを1つだけ生成してください。サーファー向けに簡潔に。コメントのみ出力。\n\n${input}`,
+        }],
+      }),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    const comment = data.content?.[0]?.text?.trim() ?? '';
+    return comment.length > 0 && comment.length <= 120 ? comment : null;
+  } catch {
+    return null;
+  }
 }
 
 // =============================
@@ -411,6 +454,7 @@ async function main() {
         thicknessInch: repSpecs.thicknessInch,
         volumeL: repSpecs.volumeL,
         sizes,
+        bodyHtml: repProduct.body_html ?? '',
       });
     }
   }
@@ -420,11 +464,20 @@ async function main() {
   // =============================
   // STEP 3: Notionに登録
   // =============================
-  console.log('\n📝 Notionに登録中...');
+  console.log('\n📝 Notionに登録中（特徴コメント生成含む）...');
   let added = 0;
+  let commented = 0;
 
   for (const model of allModels) {
     const sizeText = model.sizes.length > 0 ? model.sizes.join(', ') : '';
+
+    // Claude APIで特徴コメントを生成
+    let comment: string | null = null;
+    if (model.bodyHtml && model.bodyHtml.replace(/<[^>]+>/g, ' ').trim().length >= 100) {
+      comment = await generateComment(model.brand, model.modelName, model.bodyHtml);
+      if (comment) commented++;
+      await new Promise(r => setTimeout(r, 500));
+    }
 
     await notion.pages.create({
       parent: { database_id: NOTION_DB_ID },
@@ -441,20 +494,21 @@ async function main() {
         '価格USD':          { number: model.priceUSD },
         '公式URL':          { url: model.siteUrl },
         'サイズ展開':       { rich_text: sizeText ? [{ text: { content: sizeText } }] : [] },
-        '特徴・コメント':   { rich_text: [] },
+        '特徴・コメント':   { rich_text: comment ? [{ text: { content: comment } }] : [] },
         'データ取得方法':   { select: { name: 'アプローチA（Shopify自動）' } },
         '廃番':             { checkbox: false },
         'AI波予報連携':     { checkbox: false },
       } as any,
     });
     added++;
-    if (added % 20 === 0) console.log(`  📝 ${added}/${allModels.length}件登録...`);
+    if (added % 20 === 0) console.log(`  📝 ${added}/${allModels.length}件登録（コメント生成: ${commented}件）...`);
     await new Promise(r => setTimeout(r, 300));
   }
 
   console.log('\n✅ 同期完了！');
   console.log(`  削除: ${existingIds.length}件`);
   console.log(`  新規登録: ${added}件（モデル単位）`);
+  console.log(`  特徴コメント生成: ${commented}件`);
 }
 
 main().catch(console.error);
