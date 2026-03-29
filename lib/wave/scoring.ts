@@ -507,5 +507,26 @@ function buildReasonTags(
   if (breakdown.tide >= 10) tags.push('潮位◎')
   else if (breakdown.tide <= 2) tags.push('潮位注意')
 
+  // グランドスウェル / 台風スウェル判定
+  const swellRatio = getSwellRatio(condition.swellWaveHeight, condition.waveHeight)
+  if (swellRatio >= 0.7) {
+    if (condition.wavePeriod >= 14) {
+      tags.push('台風スウェル🌀')
+    } else if (condition.wavePeriod >= 12) {
+      tags.push('グランドスウェル🌊')
+    }
+  }
+
+  // セカンダリースウェル干渉（クロスうねり）
+  if (
+    condition.secondarySwellHeight != null && condition.secondarySwellHeight >= 0.5 &&
+    condition.secondarySwellDirection != null
+  ) {
+    const crossDiff = getDirectionDiff(condition.swellDir, condition.secondarySwellDirection)
+    if (crossDiff >= 60) {
+      tags.push('クロスうねり注意')
+    }
+  }
+
   return tags
 }
