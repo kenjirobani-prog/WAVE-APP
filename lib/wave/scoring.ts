@@ -347,15 +347,17 @@ function scoreWaveQuality(
   windWaveDirection: number,
   secondarySwellHeight?: number,
   secondarySwellDirection?: number,
+  secondarySwellPeriod?: number,
 ): number {
+  const effectivePeriod = Math.max(wavePeriod, secondarySwellPeriod ?? 0)
   const windType = classifyWind(windDir, windSpeed)
-  const base = getBaseWaveQuality(wavePeriod, windType)
+  const base = getBaseWaveQuality(effectivePeriod, windType)
   const swellTide = getSwellTideBonus(waveHeight, tideHeight)
-  const periodTide = getPeriodTideBonus(wavePeriod, tideHeight)
+  const periodTide = getPeriodTideBonus(effectivePeriod, tideHeight)
   const swellRatio = getSwellRatio(swellWaveHeight, waveHeight)
   const windSwellPenalty = getWindSwellPenalty(swellRatio, waveHeight)
   const crossSwellPenalty = getCrossSwellPenalty(swellDirection, windWaveDirection, windWaveHeight, waveHeight, secondarySwellHeight, secondarySwellDirection)
-  const energy = calcWaveEnergy(waveHeight, wavePeriod)
+  const energy = calcWaveEnergy(waveHeight, effectivePeriod)
   const energyBonus = getWaveEnergyBonus(energy)
   return Math.min(20, Math.max(0, base + swellTide + periodTide + windSwellPenalty + crossSwellPenalty + energyBonus))
 }
@@ -415,6 +417,7 @@ export function calculateScore(
     condition.windWaveDirection,
     condition.secondarySwellHeight,
     condition.secondarySwellDirection,
+    condition.secondarySwellPeriod,
   )
   const weatherBonus = scoreComfort(condition.weather, condition.temperature, condition.uvIndex)
   const correction = boardCorrection(effCondition, profile)
