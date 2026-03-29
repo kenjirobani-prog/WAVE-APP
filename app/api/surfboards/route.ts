@@ -69,7 +69,8 @@ async function fetchFromNotion(): Promise<SurfboardItem[]> {
   const notionKey = process.env.NOTION_API_KEY
   if (!notionKey) throw new Error('NOTION_API_KEY is not set')
 
-  const dbId = '2361c846-2f4a-479a-9b26-571c5f288a24'
+  const dbId = process.env.SURFBOARD_DB_ID
+  if (!dbId) throw new Error('SURFBOARD_DB_ID is not set')
   const items: SurfboardItem[] = []
   let cursor: string | undefined = undefined
 
