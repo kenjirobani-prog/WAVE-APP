@@ -348,11 +348,13 @@ async function main() {
     const boards = products.filter(isSurfboard);
     console.log(`  📦 ${boards.length}商品検出`);
 
-    // handleベースでモデルをグルーピング
+    // モデル名ベースでグルーピング（ブランド+モデル名をキーに）
     const modelMap = new Map<string, { products: any[]; specs: { title: string; lengthInch: number | null; price: string }[] }>();
 
     for (const product of boards) {
-      const key = extractModelKey(product.handle);
+      const mName = extractModelName(product.title);
+      if (!mName) continue;
+      const key = mName.toLowerCase();
       if (!modelMap.has(key)) {
         modelMap.set(key, { products: [], specs: [] });
       }
@@ -399,8 +401,8 @@ async function main() {
       allModels.push({
         brand: b.brand,
         modelName,
-        modelKey: key,
-        sku: `${b.brand}::${key}`,
+        modelKey: modelName.toLowerCase(),
+        sku: `${b.brand}::${modelName}`,
         priceJPY: toJPY(repPrice, b.currency),
         priceUSD: b.currency === 'USD' ? parseFloat(repPrice) : null,
         siteUrl: b.site_url,
