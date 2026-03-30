@@ -63,18 +63,9 @@ export default function MyPage() {
           </button>
           <button
             onClick={() => router.push('/faq')}
-            className="w-full flex items-center justify-between px-4 py-4 border-b border-[#eef1f4] active:bg-[#f0f9ff] transition-colors"
-          >
-            <span className="text-[#0a1628] font-medium">よくある質問（FAQ）</span>
-            <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => router.push('/about')}
             className="w-full flex items-center justify-between px-4 py-4 active:bg-[#f0f9ff] transition-colors"
           >
-            <span className="text-[#0a1628] font-medium">About AI 波予報</span>
+            <span className="text-[#0a1628] font-medium">よくある質問（FAQ）</span>
             <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -95,21 +86,73 @@ export default function MyPage() {
         </div>
 
         {/* About AI 波予報 */}
-        <div style={{ margin: '16px 16px 16px', padding: 24, background: '#f0f9ff', borderRadius: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.1em', marginBottom: 16 }}>ABOUT AI 波予報</div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0284c7', marginBottom: 16, lineHeight: 1.3 }}>波を、AIが読む時代。</h2>
-          <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
-            AI 波予報は、AIが湘南の波をリアルタイムに分析する波予報アプリです。
-          </p>
-          <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
-            波の高さ、風向き、うねりの方向、潮位、周期——これらをAIが瞬時に計算し、あなたのレベルとボードに合わせたスコアに変換します。サーファーが長年かけて身につける「コンディションの読み方」を、デジタルの力で誰でも使えるかたちに。
-          </p>
-          <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
-            数字の裏にあるもの。スコアの背後には、波エネルギー（kJ）、グランドスウェル判定、クロスうねり干渉、潮の動き方向など、複数のロジックが走っています。「今日は行くべきか」という問いに、AIが正直に答えます。
-          </p>
-          <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
-            サーフィンとテクノロジーは、相性がいい。海は毎日変わる。だからこそ、リアルタイムのデータとアルゴリズムが力を発揮します。AI 波予報はその可能性を、湘南のビーチから試しています。
-          </p>
+        <div className="mx-4 mt-4 space-y-3">
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.1em' }}>ABOUT AI 波予報</div>
+
+          {/* キャッチコピー */}
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0284c7', lineHeight: 1.3 }}>波を、AIが読む時代。</h2>
+
+          {/* AI 波予報とは */}
+          <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>AI 波予報とは</p>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
+              AI 波予報は、湘南の波をリアルタイムに分析する波予報アプリです。波の高さ、風向き、うねりの方向、潮位、周期——これらをAIが瞬時に計算し、あなたのレベルとボードに合わせたスコアに変換します。サーファーが長年かけて身につける「コンディションの読み方」を、デジタルの力で誰でも使えるかたちに。
+            </p>
+          </div>
+
+          {/* データの源泉 */}
+          <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>データの源泉</p>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
+              波データはStormGlass APIを通じて、NOAA・ECMWF・MeteoFranceなど世界トップの気象機関のモデルを統合して取得しています。潮位は海上保安庁・横浜観測点のリアルタイム検潮データを使用。天気はWMO天気コードから取得し、UV指数も実データで計算します。
+            </p>
+          </div>
+
+          {/* 湘南専用のロジック */}
+          <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>湘南専用のロジック</p>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
+              相模トラフ（沿岸から1kmで水深1,000mの深海溝）がSEうねりを減衰なく届ける地形的優位性、スウェル最適方向（SSE 170度〜SW 212度）、江ノ島の遮蔽効果、スポットごとの海底地形——これらすべてが評価ロジックに組み込まれています。
+            </p>
+          </div>
+
+          {/* 100点満点スコアの内訳 */}
+          <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>100点満点スコアの内訳</p>
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+              {[
+                { label: '波高', score: '25点' },
+                { label: '風', score: '22点' },
+                { label: 'うねり方向', score: '18点' },
+                { label: '波質', score: '20点' },
+                { label: '潮位', score: '10点' },
+                { label: '天気', score: '5点' },
+              ].map(item => (
+                <div key={item.label} style={{ background: '#f0f9ff', borderRadius: 8, padding: '8px 4px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 9, color: '#8899aa' }}>{item.label}</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: '#0284c7' }}>{item.score}</p>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
+              波質スコアは周期（14/12/10/8/6秒の6段階）・セカンダリースウェル・クロスうねり干渉・波エネルギー（kJ）を複合計算。「上げ三分・下げ七分」の日本の格言まで数値化されています。
+            </p>
+          </div>
+
+          {/* お問い合わせ */}
+          <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 12 }}>
+              バグ報告・機能要望などお気軽にどうぞ
+            </p>
+            <a
+              href="https://forms.gle/bR4gctV1d3zHx9w8A"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-5 py-2.5 bg-[#0284c7] text-white rounded-full text-sm font-semibold"
+            >
+              お問い合わせフォーム →
+            </a>
+          </div>
         </div>
       </main>
 
