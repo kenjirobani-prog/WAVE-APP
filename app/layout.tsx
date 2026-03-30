@@ -12,11 +12,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://jpwaveforecast.com'),
-  title: 'AI 波予報 — 湘南のサーフィン波予報',
-  description: 'AIが湘南の波をリアルタイム分析。あなたのレベル・ボードに合わせたパーソナライズスコアで「今日行くべきか」を即判断。由比ヶ浜・鵠沼・七里ヶ浜など7スポット対応。',
+  title: 'AI 波予報 — 日本のサーフィン波予報',
+  description: 'AIが全国のサーフスポットの波をリアルタイム分析。あなたのレベル・ボードに合わせたパーソナライズスコアで「今日行くべきか」を即判断。湘南・千葉・茨城など20スポット対応。',
   openGraph: {
     title: 'AI 波予報',
-    description: 'AIが湘南の波を読む。あなたに合った波予報。',
+    description: 'AIが日本の波を読む。あなたに合った波予報。',
     url: 'https://jpwaveforecast.com',
     siteName: 'AI 波予報',
     locale: 'ja_JP',
@@ -26,15 +26,15 @@ export const metadata: Metadata = {
         url: 'https://jpwaveforecast.com/ogp.png',
         width: 1200,
         height: 630,
-        alt: 'AI 波予報 — AIが湘南の波をリアルタイム分析',
+        alt: 'AI 波予報 — AIが日本の波をリアルタイム分析',
       },
     ],
   },
-  keywords: '湘南, 波予報, サーフィン, 鵠沼, 辻堂, 茅ヶ崎, 七里ヶ浜, 由比ヶ浜, 波情報, サーフ',
+  keywords: '湘南, 波予報, サーフィン, 鵠沼, 辻堂, 茅ヶ崎, 七里ヶ浜, 由比ヶ浜, 千葉, 茨城, 一宮, 波情報, サーフ',
   twitter: {
     card: 'summary_large_image',
     title: 'AI 波予報',
-    description: 'AIが湘南の波をリアルタイム分析。あなたのレベル・ボードに合わせたパーソナライズスコアで今日行くべきか即判断。',
+    description: 'AIが全国の波をリアルタイム分析。あなたのレベル・ボードに合わせたパーソナライズスコアで今日行くべきか即判断。',
     images: ['https://jpwaveforecast.com/ogp.png'],
   },
   robots: {

@@ -41,6 +41,8 @@ export interface Spot {
   mapPlaceName?: string
   mapCenter?: { lat: number; lng: number }
   waveHeightMultiplier?: number   // スポット固有の波高補正係数（デフォルト: 1.0）
+  offshoreWindDir: number         // オフショア風の中心方向（度、真北基準）
+  offshoreWindRange: number       // オフショアとみなす範囲 ±度
   bathymetryProfile?: BathymetryProfile
   // 詳細情報（スポット詳細画面で表示）
   description?: string

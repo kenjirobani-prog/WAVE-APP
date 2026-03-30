@@ -96,7 +96,7 @@ export default function MyPage() {
           <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>AI 波予報とは</p>
             <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
-              AI 波予報は、湘南の波をリアルタイムに分析する波予報アプリです。波の高さ、風向き、うねりの方向、潮位、周期——これらをAIが瞬時に計算し、あなたのレベルとボードに合わせたスコアに変換します。サーファーが長年かけて身につける「コンディションの読み方」を、デジタルの力で誰でも使えるかたちに。
+              AI 波予報は、全国のサーフスポットの波をリアルタイムに分析する波予報アプリです。波の高さ、風向き、うねりの方向、潮位、周期——これらをAIが瞬時に計算し、あなたのレベルとボードに合わせたスコアに変換します。サーファーが長年かけて身につける「コンディションの読み方」を、デジタルの力で誰でも使えるかたちに。
             </p>
           </div>
 
@@ -110,9 +110,9 @@ export default function MyPage() {
 
           {/* 湘南専用のロジック */}
           <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>湘南専用のロジック</p>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>エリア・スポット専用のロジック</p>
             <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
-              相模トラフ（沿岸から1kmで水深1,000mの深海溝）がSEうねりを減衰なく届ける地形的優位性、スウェル最適方向（SSE 170度〜SW 212度）、江ノ島の遮蔽効果、スポットごとの海底地形——これらすべてが評価ロジックに組み込まれています。
+              湘南なら、相模トラフ（沿岸から1kmで水深1,000mの深海溝）がSEうねりを減衰なく届ける地形的優位性、スウェル最適方向（SSE 170度〜SW 212度）、江ノ島の遮蔽効果、スポットごとの海底地形——これらすべてが評価ロジックに組み込まれています。
             </p>
           </div>
 
@@ -155,11 +155,11 @@ export default function MyPage() {
               ターゲットとして想定しているのは、週末サーファーや、これからサーフィンをはじめる人たちです。長年の経験でコンディションを読める上級者には物足りないかもしれません。でも、「今日は行くべきか」を数字で判断したい人や、波のことを少しずつ勉強したい人には、きっと役立てると思っています。
             </p>
             <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
-              今後は湘南以外のエリアや、より多くのポイントにも広げていきたいと考えています。サーフィンとテクノロジーの可能性を、これからも海の近くで試し続けます。
+              今後は湘南や千葉以外のエリアにも、さらに広げていきたいと考えています。サーフィンとテクノロジーの可能性を、これからも海の近くで試し続けます。
             </p>
             <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
-              湘南の波情報はXでも発信しています。<br />
-              <a href="https://x.com/ichinisantaro" target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7', fontWeight: 600, textDecoration: 'none' }}>AI 波予報 / AI Wave Forecast（湘南エリア限定） →</a>
+              波情報はXでも発信しています。<br />
+              <a href="https://x.com/ichinisantaro" target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7', fontWeight: 600, textDecoration: 'none' }}>AI 波予報 / AI Wave Forecast →</a>
             </p>
           </div>
 
