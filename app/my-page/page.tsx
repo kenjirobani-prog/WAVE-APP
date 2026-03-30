@@ -139,6 +139,26 @@ export default function MyPage() {
             </p>
           </div>
 
+          {/* このアプリができた理由 */}
+          <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>このアプリができた理由</p>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
+              AI 波予報は、商用サービスではありません。
+            </p>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
+              きっかけはシンプルで、「AIがどこまでできるか試したかった」のと、「好きなサーフィンの波のことを、もっと自分自身が深く知りたかった」という2つの動機からはじまった個人プロジェクトです。
+            </p>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
+              開発も運用も、99%はAIが担っています。コードを書くのもAI、データを集めるのもAI、このページの文章を整えるのもAI。人間がやっていることは、方向を決めることと、海に入ることだけ。そのことが、AIの可能性をいちばん実感できた部分でもあります。
+            </p>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
+              ターゲットとして想定しているのは、週末サーファーや、これからサーフィンをはじめる人たちです。長年の経験でコンディションを読める上級者には物足りないかもしれません。でも、「今日は行くべきか」を数字で判断したい人や、波のことを少しずつ勉強したい人には、きっと役立てると思っています。
+            </p>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
+              今後は湘南以外のエリアや、より多くのポイントにも広げていきたいと考えています。サーフィンとテクノロジーの可能性を、これからも海の近くで試し続けます。
+            </p>
+          </div>
+
           {/* お問い合わせ */}
           <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
             <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 12 }}>
