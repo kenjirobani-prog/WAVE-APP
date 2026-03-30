@@ -140,17 +140,6 @@ export default function TopPage() {
   const [dailyComment, setDailyComment] = useState<string | null>(null)
   const [dailyCommentAt, setDailyCommentAt] = useState<string | null>(null)
   const [dailyCommentLoading, setDailyCommentLoading] = useState(false)
-  const [selectedArea, setSelectedArea] = useState<string>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('selectedArea') ?? 'shonan'
-    return 'shonan'
-  })
-
-  const AREAS = [
-    { key: 'shonan', label: '湘南' },
-    { key: 'chiba-north', label: '千葉北' },
-    { key: 'chiba-south', label: '千葉南' },
-    { key: 'ibaraki', label: '茨城' },
-  ]
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
@@ -224,7 +213,7 @@ export default function TopPage() {
     if (tab !== 'weekly' || !profile) return
     if (weeklyData.length > 0) return
     loadWeeklyForecast()
-  }, [tab, profile, selectedArea])
+  }, [tab, profile])
 
   async function loadForecast(targetDate: Date) {
     setLoading(true)
@@ -232,7 +221,7 @@ export default function TopPage() {
     const dateStr = toDateStr(targetDate)
 
     try {
-      const activeSpots = SPOTS.filter(s => s.isActive && s.area === selectedArea)
+      const activeSpots = SPOTS.filter(s => s.isActive)
       const condMap: Record<string, WaveCondition | null> = {}
 
       await Promise.all(
@@ -478,32 +467,6 @@ export default function TopPage() {
           </div>
         </div>
       </header>
-
-      {/* エリアタブ */}
-      <div className="bg-white border-b border-[#eef1f4]" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-        <div style={{ display: 'flex', minWidth: 'max-content' }}>
-          {AREAS.map(a => (
-            <button key={a.key}
-              onClick={() => { setSelectedArea(a.key); localStorage.setItem('selectedArea', a.key) }}
-              style={{
-                flex: 1,
-                padding: '10px 16px',
-                fontSize: 13,
-                fontWeight: selectedArea === a.key ? 700 : 500,
-                color: selectedArea === a.key ? '#0284c7' : '#8899aa',
-                background: 'none',
-                border: 'none',
-                borderBottom: selectedArea === a.key ? '2px solid #0284c7' : '2px solid transparent',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.15s',
-              }}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* 日付タブ */}
       <div className="bg-white border-b border-[#eef1f4] px-3 flex items-center gap-1 py-2">

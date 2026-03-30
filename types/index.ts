@@ -19,22 +19,17 @@ export interface BathymetryProfile {
 }
 
 // スポット
-export type AreaKey = 'shonan' | 'chiba-north' | 'chiba-south' | 'ibaraki'
-
 export interface Spot {
   id: string
   name: string
   nameEn: string
   lat: number
   lng: number
-  area: AreaKey
-  areaLabel: string
   bestSwellDir: number
   swellDirRange: number
-  swellDirScoreTable: Array<{ dir: number; score: number }>
   optimalTideMin: number
   optimalTideMax: number
-  bestTideMovement: 'rising' | 'falling' | 'any'
+  bestTideMovement: 'rising' | 'falling' | 'slack'
   beginnerScore: number        // 1-5
   waveType: 'beach' | 'point' | 'reef'
   waveCharacter: string
@@ -45,13 +40,13 @@ export interface Spot {
   mapUrl?: string
   mapPlaceName?: string
   mapCenter?: { lat: number; lng: number }
-  waveHeightMultiplier: number    // スポット固有の波高補正係数
+  waveHeightMultiplier?: number   // スポット固有の波高補正係数（デフォルト: 1.0）
   offshoreWindDir: number         // オフショア風の中心方向（度、真北基準）
   offshoreWindRange: number       // オフショアとみなす範囲 ±度
   bathymetryProfile?: BathymetryProfile
   // 詳細情報（スポット詳細画面で表示）
   description?: string
-  bestSeasons: ('spring' | 'summer' | 'autumn' | 'winter')[]
+  bestSeasons?: ('spring' | 'summer' | 'autumn' | 'winter')[]
   bestTide?: string
   waveTypeTags?: string[]
   facilities?: string[]
@@ -66,7 +61,7 @@ export interface Spot {
 // グレード
 export type Grade = '◎' | '○' | '△' | '×'
 
-// 風向き種別（スポット固有のoffshoreWindDirベースで判定）
+// 風向き種別（湘南は海岸線が東西方向）
 export type WindType = 'calm' | 'offshore' | 'side-offshore' | 'side-onshore' | 'onshore'
 
 // サーフログ
