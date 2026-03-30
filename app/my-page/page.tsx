@@ -158,7 +158,7 @@ export default function MyPage() {
               今後は湘南以外のエリアや、より多くのポイントにも広げていきたいと考えています。サーフィンとテクノロジーの可能性を、これからも海の近くで試し続けます。
             </p>
             <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
-              湘南の波情報はXでも発信しています。{' '}
+              湘南の波情報はXでも発信しています。<br />
               <a href="https://x.com/ichinisantaro" target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7', fontWeight: 600, textDecoration: 'none' }}>AI 波予報 / AI Wave Forecast（湘南エリア限定） →</a>
             </p>
           </div>
