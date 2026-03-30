@@ -75,15 +75,14 @@ export function predictBreakType(
  * windDir: 気象学的風向き（風が吹いてくる方向、0°=北）
  * windSpeed: m/s
  */
-export function classifyWind(windDir: number, windSpeed: number): WindType {
+export function classifyWind(windDir: number, windSpeed: number, spot?: Spot): WindType {
   if (windSpeed <= 2) return 'calm'
-  // 北風 315°〜45° → オフショア（海岸が南向き、北風は海方向へ吹く）
-  if (windDir >= 315 || windDir < 45) return 'offshore'
-  // 北東・北西寄り → サイドオフ
-  if ((windDir >= 45 && windDir < 90) || (windDir >= 270 && windDir < 315)) return 'side-offshore'
-  // 南東・南西寄り → サイドオン
-  if ((windDir >= 90 && windDir < 135) || (windDir >= 225 && windDir < 270)) return 'side-onshore'
-  // 南風 135°〜225° → オンショア
+  const offDir = spot?.offshoreWindDir ?? 0
+  const offRange = spot?.offshoreWindRange ?? 45
+  const diff = Math.abs(((windDir - offDir) + 540) % 360 - 180)
+  if (diff <= offRange) return 'offshore'
+  if (diff <= offRange + 22) return 'side-offshore'
+  if (diff <= offRange + 67) return 'side-onshore'
   return 'onshore'
 }
 
@@ -120,8 +119,8 @@ function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferr
 }
 
 // 風スコア（22点満点）
-function scoreWind(windSpeed: number, windDir: number): number {
-  const type = classifyWind(windDir, windSpeed)
+function scoreWind(windSpeed: number, windDir: number, spot?: Spot): number {
+  const type = classifyWind(windDir, windSpeed, spot)
   if (type === 'calm') return 22
   if (type === 'offshore') {
     if (windSpeed <= 5) return 21
@@ -135,13 +134,28 @@ function scoreWind(windSpeed: number, windDir: number): number {
   return 0
 }
 
-// うねり方向スコア（18点満点）
-function scoreSwellDir(swellDir: number, bestSwellDir: number): number {
-  const diff = Math.abs(((swellDir - bestSwellDir + 540) % 360) - 180)
-  if (diff <= 20) return 18
-  if (diff <= 45) return 11
-  if (diff <= 70) return 4
-  return 0
+// うねり方向スコア（18点満点）— swellDirScoreTable ベースで評価
+function scoreSwellDir(swellDir: number, spot: Spot): number {
+  const table = spot.swellDirScoreTable
+  if (!table || table.length === 0) {
+    // フォールバック: 旧ロジック
+    const diff = Math.abs(((swellDir - spot.bestSwellDir + 540) % 360) - 180)
+    if (diff <= 20) return 18
+    if (diff <= 45) return 11
+    if (diff <= 70) return 4
+    return 0
+  }
+  // テーブル内の最小角度差エントリのスコアを返す
+  let bestScore = 0
+  let minDiff = 360
+  for (const entry of table) {
+    const diff = Math.abs(((swellDir - entry.dir) + 540) % 360 - 180)
+    if (diff < minDiff) {
+      minDiff = diff
+      bestScore = entry.score
+    }
+  }
+  return bestScore
 }
 
 // 【役割】潮位の絶対的な良し悪しを評価（スポット固有の最適潮位帯を使用）
@@ -401,8 +415,8 @@ export function calculateScore(
     : condition
 
   const waveHeight = scoreWaveHeight(effCondition.waveHeight, profile.preferredSize)
-  const wind = scoreWind(condition.windSpeed, condition.windDir)
-  const swellDir = scoreSwellDir(condition.swellDir, spot.bestSwellDir)
+  const wind = scoreWind(condition.windSpeed, condition.windDir, spot)
+  const swellDir = scoreSwellDir(condition.swellDir, spot)
   const optimalTideRange = spot.bathymetryProfile?.optimalTideRange ?? [80, 120]
   const tide = scoreTideWithBathymetry(condition.tideHeight, condition.tideTrend, optimalTideRange)
   const waveQuality = scoreWaveQuality(
@@ -494,7 +508,7 @@ function buildReasonTags(
   else if (breakdown.waveHeight >= 18) tags.push('波やや小さめ')
   else tags.push('波が小さい')
 
-  const windType = classifyWind(condition.windDir, condition.windSpeed)
+  const windType = classifyWind(condition.windDir, condition.windSpeed, spot)
   if (windType === 'calm') tags.push('無風')
   else if (windType === 'offshore') tags.push(condition.windSpeed <= 5 ? 'オフショア良好' : 'オフショア強め')
   else if (windType === 'side-offshore') tags.push('サイドオフ')
