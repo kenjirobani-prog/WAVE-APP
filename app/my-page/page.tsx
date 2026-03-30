@@ -159,7 +159,7 @@ export default function MyPage() {
             </p>
             <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
               湘南の波情報はXでも発信しています。{' '}
-              <a href="https://x.com/ichinisantaro" target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7', fontWeight: 600, textDecoration: 'none' }}>@ichinisantaro →</a>
+              <a href="https://x.com/ichinisantaro" target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7', fontWeight: 600, textDecoration: 'none' }}>AI 波予報 / AI Wave Forecast（湘南エリア限定） →</a>
             </p>
           </div>
 
