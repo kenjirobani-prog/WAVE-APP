@@ -44,7 +44,10 @@ export default function HowToPage() {
       </header>
 
       <main className="flex-1 overflow-auto pb-28 px-4 pt-4 space-y-3">
-        {howtoArticles.map((article, i) => (
+        {(['how-to-start-surfing', 'surfing-gear-guide', 'rules-and-manners', 'point-selection-guide', 'wave-forecast-basics']
+          .map(slug => howtoArticles.find(a => a.slug === slug))
+          .filter((a): a is (typeof howtoArticles)[number] => !!a)
+        ).map((article) => (
           <Link key={article.slug} href={`/howto/${article.slug}`} className="block">
             <div
               className="bg-white rounded-xl border border-[#eef1f4] overflow-hidden active:bg-[#f8fafc] transition-colors"
