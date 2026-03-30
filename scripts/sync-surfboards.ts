@@ -717,9 +717,45 @@ async function cleanDatabase() {
   }
   console.log(`  ✅ ${classified}件分類完了（スキップ: ${skippedGenre}件）`);
 
+  // --- クリーニング③: 長さnullレコードを削除（Almond除外）---
+  console.log('\n🗑 クリーニング③: 長さnullレコードを削除（Almond除外）...');
+  let deletedNull = 0;
+  // allRecordsを再取得（①で一部削除済みのため）
+  const remainingRecords: any[] = [];
+  let cursor3: string | undefined;
+  while (true) {
+    const res = await queryDatabase({
+      filter: {
+        property: 'データ取得方法',
+        select: { equals: 'アプローチA（Shopify自動）' },
+      },
+      start_cursor: cursor3,
+      page_size: 100,
+    });
+    remainingRecords.push(...res.results);
+    if (!res.has_more) break;
+    cursor3 = res.next_cursor ?? undefined;
+  }
+
+  const nullLengthTargets = remainingRecords.filter(page => {
+    const brand = page.properties['ブランド']?.select?.name ?? '';
+    if (brand === 'Almond Surfboards') return false;
+    const lengthInch = page.properties['長さ(inch)']?.number ?? null;
+    return lengthInch === null || lengthInch === 0;
+  });
+  console.log(`  📋 削除対象: ${nullLengthTargets.length}件`);
+
+  for (const page of nullLengthTargets) {
+    await notionAny.pages.update({ page_id: page.id, archived: true });
+    deletedNull++;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  console.log(`  ✅ ${deletedNull}件削除`);
+
   console.log('\n🧹 クリーニング完了！');
   console.log(`  アクセサリー削除: ${deleted}件`);
   console.log(`  ジャンル分類: ${classified}件`);
+  console.log(`  長さnull削除: ${deletedNull}件`);
 }
 
 main().catch(console.error);

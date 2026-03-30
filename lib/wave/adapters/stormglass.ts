@@ -36,12 +36,73 @@ function seaLevelToCm(seaLevelMeters: number): number {
   return Math.round(baseCm + seaLevelMeters * 100)
 }
 
-function classifyWeather(windSpeed: number, temperature: number): WaveCondition['weather'] {
-  // StormGlassにweatherCodeがないため、風速で簡易推定
-  // 将来的にはweatherCodeパラメータ追加を検討
+function classifyWeather(windSpeed: number, _temperature: number): WaveCondition['weather'] {
+  // フォールバック: Open-Meteoデータが取得できなかった場合の簡易推定
   if (windSpeed < 3) return 'sunny'
   if (windSpeed < 8) return 'cloudy'
   return 'rainy'
+}
+
+// =============================
+// Open-Meteo: 天気コード + UVインデックス取得
+// =============================
+interface OpenMeteoWeather {
+  weatherByHour: WaveCondition['weather'][]
+  uvByHour: number[]
+}
+
+function wmoToWeather(code: number): WaveCondition['weather'] {
+  if (code <= 1) return 'sunny'
+  if (code <= 3) return 'cloudy'
+  if (code >= 45 && code <= 67) return 'rainy'
+  if (code >= 71 && code <= 77) return 'rainy'
+  if (code >= 80 && code <= 99) return 'rainy'
+  return 'cloudy'
+}
+
+async function fetchOpenMeteoWeather(lat: number, lng: number, dateStr: string): Promise<OpenMeteoWeather> {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=weather_code,uv_index&timezone=Asia/Tokyo&start_date=${dateStr}&end_date=${dateStr}`
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    const res = await fetch(url, { signal: controller.signal })
+    if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`)
+    const data = await res.json()
+    const codes: number[] = data.hourly?.weather_code ?? []
+    const uvs: number[] = data.hourly?.uv_index ?? []
+    return {
+      weatherByHour: codes.map(wmoToWeather),
+      uvByHour: uvs,
+    }
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+async function fetchOpenMeteoWeatherRange(lat: number, lng: number, startDate: string, endDate: string): Promise<Map<string, OpenMeteoWeather>> {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=weather_code,uv_index&timezone=Asia/Tokyo&start_date=${startDate}&end_date=${endDate}`
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    const res = await fetch(url, { signal: controller.signal })
+    if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`)
+    const data = await res.json()
+    const times: string[] = data.hourly?.time ?? []
+    const codes: number[] = data.hourly?.weather_code ?? []
+    const uvs: number[] = data.hourly?.uv_index ?? []
+
+    const byDate = new Map<string, OpenMeteoWeather>()
+    for (let i = 0; i < times.length; i++) {
+      const dateKey = times[i].split('T')[0]
+      if (!byDate.has(dateKey)) byDate.set(dateKey, { weatherByHour: [], uvByHour: [] })
+      const entry = byDate.get(dateKey)!
+      entry.weatherByHour.push(wmoToWeather(codes[i] ?? 0))
+      entry.uvByHour.push(uvs[i] ?? 0)
+    }
+    return byDate
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function parseJstDate(date: Date): string {
@@ -162,7 +223,7 @@ async function fetchStormGlass(lat: number, lng: number, start: Date, end: Date)
   }
 }
 
-function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateStr?: string, tideHourly?: number[]): WaveCondition[] {
+function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateStr?: string, tideHourly?: number[], openMeteo?: OpenMeteoWeather): WaveCondition[] {
   // 指定日のデータのみフィルタ（targetDateStrがあれば）
   const filtered = targetDateStr
     ? hours.filter(h => {
@@ -191,9 +252,9 @@ function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateSt
       windDir: val(h.windDirection),
       tideHeight,
       tideTrend: prevTide !== undefined ? tideHeight - prevTide : 0,
-      weather: classifyWeather(windSpd, temp),
+      weather: openMeteo?.weatherByHour[jstHour] ?? classifyWeather(windSpd, temp),
       temperature: temp,
-      uvIndex: 0, // StormGlassにはUVIndexなし
+      uvIndex: openMeteo?.uvByHour[jstHour] ?? 0,
       swellWaveHeight: val(h.swellHeight),
       windWaveHeight: val(h.windWaveHeight),
       windWaveDirection: val(h.windWaveDirection),
@@ -220,31 +281,33 @@ export const stormglassAdapter: WaveAdapter = {
     const start = new Date(`${dateStr}T00:00:00+09:00`)
     const end = new Date(`${dateStr}T23:59:59+09:00`)
 
-    // 波データと潮位データを並行取得
-    const [hours, tideHourly] = await Promise.all([
+    // 波データ・潮位データ・天気データを並行取得
+    const [hours, tideHourly, openMeteo] = await Promise.all([
       fetchStormGlass(spot.lat, spot.lng, start, end),
       isToday
         ? fetchKaihoTideHourly(date).catch(() => { console.log('[StormGlass] Kaiho fallback to estimate'); return defaultTide() })
         : Promise.resolve(defaultTide()),
+      fetchOpenMeteoWeather(spot.lat, spot.lng, dateStr).catch(() => undefined),
     ])
-    console.log(`[StormGlass] getConditions ${spotId} ${dateStr}: ${hours.length} hours, tide: ${isToday ? 'kaiho' : 'estimate'}`)
+    console.log(`[StormGlass] getConditions ${spotId} ${dateStr}: ${hours.length} hours, tide: ${isToday ? 'kaiho' : 'estimate'}, weather: ${openMeteo ? 'open-meteo' : 'fallback'}`)
 
-    return hoursToConditions(spotId, hours, dateStr, tideHourly)
+    return hoursToConditions(spotId, hours, dateStr, tideHourly, openMeteo)
   },
 
   async getForecast(spotId: string, days: number): Promise<WaveCondition[]> {
     const spot = getSpotById(spotId)
     const now = new Date()
     const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+    const startDate = parseJstDate(now)
+    const endDate = parseJstDate(end)
 
-    const [hours, tideHourly] = await Promise.all([
+    const [hours, tideHourly, weatherMap] = await Promise.all([
       fetchStormGlass(spot.lat, spot.lng, now, end),
       fetchKaihoTideHourly(now).catch(() => defaultTide()),
+      fetchOpenMeteoWeatherRange(spot.lat, spot.lng, startDate, endDate).catch(() => new Map<string, OpenMeteoWeather>()),
     ])
-    console.log(`[StormGlass] getForecast ${spotId} ${days}days: ${hours.length} hours`)
+    console.log(`[StormGlass] getForecast ${spotId} ${days}days: ${hours.length} hours, weather dates: ${weatherMap.size}`)
 
-    // 今日分のみ海上保安庁潮位を使用（それ以外はサイン推定）
-    // hoursToConditionsにtideHourlyを渡さず、個別にマッピング
     const todayStr = parseJstDate(now)
     const conditions: WaveCondition[] = []
     let prevTide: number | undefined
@@ -257,6 +320,7 @@ export const stormglassAdapter: WaveAdapter = {
       const tideHeight = isToday ? tideHourly[jstHour] : estimateTideHeight(jstHour)
       const windSpd = val(h.windSpeed)
       const temp = val(h.airTemperature)
+      const dayWeather = weatherMap.get(hourDateStr)
 
       conditions.push({
         spotId,
@@ -268,12 +332,15 @@ export const stormglassAdapter: WaveAdapter = {
         windDir: val(h.windDirection),
         tideHeight,
         tideTrend: prevTide !== undefined ? tideHeight - prevTide : 0,
-        weather: classifyWeather(windSpd, temp),
+        weather: dayWeather?.weatherByHour[jstHour] ?? classifyWeather(windSpd, temp),
         temperature: temp,
-        uvIndex: 0,
+        uvIndex: dayWeather?.uvByHour[jstHour] ?? 0,
         swellWaveHeight: val(h.swellHeight),
         windWaveHeight: val(h.windWaveHeight),
         windWaveDirection: val(h.windWaveDirection),
+        secondarySwellHeight: val(h.secondarySwellHeight) || undefined,
+        secondarySwellDirection: val(h.secondarySwellDirection) || undefined,
+        secondarySwellPeriod: val(h.swellPeriod) || undefined,
       })
       prevTide = tideHeight
     }
