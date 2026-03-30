@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const target = searchParams.get('target') as CommentTarget | null
   const hour = searchParams.get('hour')
+  const spotName = searchParams.get('spotName') ?? '各スポット'
+  const areaLabel = searchParams.get('areaLabel') ?? '湘南'
 
   if (!target || !['today', 'tomorrow'].includes(target)) {
     return NextResponse.json({ error: 'target must be "today" or "tomorrow"' }, { status: 400 })
@@ -106,9 +108,9 @@ export async function GET(request: NextRequest) {
       ? `現在時刻: ${hourNum}時。${hourNum}時以降の今日のサーフィン状況`
       : `明日一日のサーフィン状況`
 
-    const systemPrompt = `あなたは湘南のサーフィン予報AIです。${timeContext}を2〜3文で要約してください。ベストな時間帯やスポットがあれば明示し、サーファー向けのカジュアルな日本語で書いてください。余計な前置きや説明は不要です。コメントのみ返してください。`
+    const systemPrompt = `あなたは${areaLabel}のサーフィン予報AIです。${timeContext}を2〜3文で要約してください。ベストな時間帯やスポットがあれば明示し、サーファー向けのカジュアルな日本語で書いてください。余計な前置きや説明は不要です。コメントのみ返してください。`
 
-    const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の湘南各スポットデータ:\n${forecastSummary}`
+    const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の${areaLabel}・${spotName}のデータ:\n${forecastSummary}`
 
     console.log(`[daily-comment] Generating for ${target} ${hour}h...`)
 

@@ -148,7 +148,7 @@ function scoreSwellDir(swellDir: number, bestSwellDir: number): number {
 // 　　　　最適潮位帯の中心に近いほど高スコア、帯外はペナルティ
 // 　　　　潮の動き方向ボーナスを加算
 // 【配点】0〜10点（メインスコアの10点枠）
-// 潮位基準: 最低水面（横浜 平均水面=115cm, 大潮干潮≈20cm, 大潮高潮≈185cm）
+// 潮位基準: StormGlass Tide APIが観測点を自動選択。単位はcm（MSL基準）。フォールバック値115cm
 function scoreTideWithBathymetry(
   tideLevel: number,
   tideTrend: number,

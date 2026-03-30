@@ -4,8 +4,6 @@ import { SPOTS } from '@/data/spots'
 
 const STORMGLASS_URL = 'https://api.stormglass.io/v2/weather/point'
 
-// 海上保安庁 リアルタイム験潮データ（横浜観測点）— 潮位はこちらが正確
-const KAIHO_GAUGE_URL = 'https://www1.kaiho.mlit.go.jp/TIDE/gauge/gauge.php?s=0062'
 
 const PARAMS = [
   'waveHeight', 'wavePeriod', 'waveDirection',
@@ -110,7 +108,7 @@ function parseJstDate(date: Date): string {
   return jst.toISOString().split('T')[0]
 }
 
-// ---- 潮位: 海上保安庁 験潮データ（今日分）/ サイン推定（未来） ----
+// ---- 潮位: StormGlass Tide API / フォールバック推定 ----
 
 function estimateTideHeight(hour: number): number {
   const base = 115
@@ -122,61 +120,31 @@ function defaultTide(): number[] {
   return Array.from({ length: 24 }, (_, h) => estimateTideHeight(h))
 }
 
-function parseObservations(html: string, date: Date): (number | undefined)[] {
-  const hourlyValues: number[][] = Array.from({ length: 24 }, () => [])
-  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-  const yyyy = jst.getUTCFullYear()
-  const mm = String(jst.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(jst.getUTCDate()).padStart(2, '0')
-  const pattern = new RegExp(`${yyyy}\\s+${mm}\\s+${dd}\\s+(\\d{2})\\s+\\d{2}\\s+(\\d+)`, 'g')
-  let match
-  while ((match = pattern.exec(html)) !== null) {
-    const hour = parseInt(match[1])
-    const value = parseInt(match[2])
-    if (value !== 9999 && hour >= 0 && hour < 24) hourlyValues[hour].push(value)
-  }
-  return hourlyValues.map(vals => vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : undefined)
-}
-
-function parsePredictionTable(html: string, date: Date): (number | undefined)[] {
-  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-  const mm = String(jst.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(jst.getUTCDate()).padStart(2, '0')
-  const dateStr = mm + dd
-  const dateCell = `<td[^>]*>\\s*${dateStr}\\s*<\\/td>`
-  const numCell = `(?:<td[^>]*>\\s*(\\d+)\\s*<\\/td>\\s*){1,25}`
-  const rowPattern = new RegExp(`${dateCell}\\s*(${numCell})`, 's')
-  const rowMatch = rowPattern.exec(html)
-  if (!rowMatch) return new Array(24).fill(undefined)
-  const values: number[] = []
-  const tdPattern = /<td[^>]*>\s*(\d+)\s*<\/td>/g
-  let tdMatch
-  while ((tdMatch = tdPattern.exec(rowMatch[1])) !== null) values.push(parseInt(tdMatch[1]))
-  const shifted: (number | undefined)[] = new Array(24).fill(undefined)
-  values.slice(0, 23).forEach((v, i) => { shifted[i + 1] = isNaN(v) ? undefined : v })
-  return shifted
-}
-
-async function fetchKaihoTideHourly(date: Date): Promise<number[]> {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 8000)
+export async function fetchTideFromStormGlass(lat: number, lng: number, date: string): Promise<number[]> {
+  const startISO = new Date(`${date}T00:00:00+09:00`).toISOString()
+  const endISO   = new Date(`${date}T23:59:59+09:00`).toISOString()
+  const url = `https://api.stormglass.io/v2/tide/sea-level/point?lat=${lat}&lng=${lng}&start=${startISO}&end=${endISO}`
+  const hourly = Array(24).fill(115)
   try {
-    const res = await fetch(KAIHO_GAUGE_URL, {
-      headers: { Accept: 'text/html,application/xhtml+xml' },
-      signal: controller.signal,
-    })
-    if (!res.ok) throw new Error(`Kaiho gauge API error: ${res.status}`)
-    const html = await res.text()
-    const observations = parseObservations(html, date)
-    const predictions = parsePredictionTable(html, date)
-    return Array.from({ length: 24 }, (_, h) => {
-      if (observations[h] !== undefined) return observations[h]!
-      if (predictions[h] !== undefined) return predictions[h]!
-      return estimateTideHeight(h)
-    })
-  } finally {
-    clearTimeout(timeout)
+    const apiKey = process.env.STORMGLASS_API_KEY
+    if (!apiKey) throw new Error('STORMGLASS_API_KEY not configured')
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
+    try {
+      const res = await fetch(url, { headers: { Authorization: apiKey }, signal: controller.signal })
+      if (!res.ok) throw new Error(`StormGlass Tide API ${res.status}`)
+      const json = await res.json()
+      json.data?.forEach((d: { time: string; sg: number }) => {
+        const jstHour = (new Date(d.time).getUTCHours() + 9) % 24
+        hourly[jstHour] = Math.round(d.sg * 100)
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
+  } catch (e) {
+    console.error('[fetchTideFromStormGlass] error, using fallback 115cm', e)
   }
+  return hourly
 }
 
 // ---- StormGlass types ----
@@ -284,12 +252,10 @@ export const stormglassAdapter: WaveAdapter = {
     // 波データ・潮位データ・天気データを並行取得
     const [hours, tideHourly, openMeteo] = await Promise.all([
       fetchStormGlass(spot.lat, spot.lng, start, end),
-      isToday
-        ? fetchKaihoTideHourly(date).catch(() => { console.log('[StormGlass] Kaiho fallback to estimate'); return defaultTide() })
-        : Promise.resolve(defaultTide()),
+      fetchTideFromStormGlass(spot.lat, spot.lng, dateStr).catch(() => defaultTide()),
       fetchOpenMeteoWeather(spot.lat, spot.lng, dateStr).catch(() => undefined),
     ])
-    console.log(`[StormGlass] getConditions ${spotId} ${dateStr}: ${hours.length} hours, tide: ${isToday ? 'kaiho' : 'estimate'}, weather: ${openMeteo ? 'open-meteo' : 'fallback'}`)
+    console.log(`[StormGlass] getConditions ${spotId} ${dateStr}: ${hours.length} hours, tide: stormglass, weather: ${openMeteo ? 'open-meteo' : 'fallback'}`)
 
     return hoursToConditions(spotId, hours, dateStr, tideHourly, openMeteo)
   },
@@ -301,14 +267,17 @@ export const stormglassAdapter: WaveAdapter = {
     const startDate = parseJstDate(now)
     const endDate = parseJstDate(end)
 
-    const [hours, tideHourly, weatherMap] = await Promise.all([
+    const [hours, todayTide, weatherMap] = await Promise.all([
       fetchStormGlass(spot.lat, spot.lng, now, end),
-      fetchKaihoTideHourly(now).catch(() => defaultTide()),
+      fetchTideFromStormGlass(spot.lat, spot.lng, startDate).catch(() => defaultTide()),
       fetchOpenMeteoWeatherRange(spot.lat, spot.lng, startDate, endDate).catch(() => new Map<string, OpenMeteoWeather>()),
     ])
     console.log(`[StormGlass] getForecast ${spotId} ${days}days: ${hours.length} hours, weather dates: ${weatherMap.size}`)
 
-    const todayStr = parseJstDate(now)
+    // 日付ごとの潮位をキャッシュ（今日分は既に取得済み、他の日はオンデマンド）
+    const tideCache = new Map<string, number[]>()
+    tideCache.set(startDate, todayTide)
+
     const conditions: WaveCondition[] = []
     let prevTide: number | undefined
 
@@ -316,8 +285,14 @@ export const stormglassAdapter: WaveAdapter = {
       const jstHour = (new Date(h.time).getUTCHours() + 9) % 24
       const jst = new Date(new Date(h.time).getTime() + 9 * 60 * 60 * 1000)
       const hourDateStr = jst.toISOString().split('T')[0]
-      const isToday = hourDateStr === todayStr
-      const tideHeight = isToday ? tideHourly[jstHour] : estimateTideHeight(jstHour)
+
+      // 日付ごとの潮位を取得（キャッシュなければフォールバック）
+      let dayTide = tideCache.get(hourDateStr)
+      if (!dayTide) {
+        dayTide = defaultTide()
+        tideCache.set(hourDateStr, dayTide)
+      }
+      const tideHeight = dayTide[jstHour]
       const windSpd = val(h.windSpeed)
       const temp = val(h.airTemperature)
       const dayWeather = weatherMap.get(hourDateStr)

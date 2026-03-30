@@ -10,7 +10,7 @@ function todayStr(): string {
 
 export async function POST(request: Request) {
   try {
-    const { weeklyData, cachedComment } = await request.json()
+    const { weeklyData, cachedComment, spotName, areaLabel } = await request.json()
 
     // クライアント側でキャッシュ済みならそのまま返す
     if (cachedComment) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 200,
-          system: 'あなたは湘南のサーフィン予報AIです。7日分のデータを見て、今週のコンディションを2〜3文で要約してください。ベストな日を明示し、サーファー向けのカジュアルな日本語で書いてください。余計な前置きや説明は不要です。コメントのみ返してください。',
+          system: `あなたは${areaLabel ?? '湘南'}のサーフィン予報AIです。${spotName ?? '各スポット'}の7日分のデータを見て、今週のコンディションを2〜3文で要約してください。ベストな日を明示し、サーファー向けのカジュアルな日本語で書いてください。余計な前置きや説明は不要です。コメントのみ返してください。`,
           messages: [{ role: 'user', content: prompt }],
         }),
       })
