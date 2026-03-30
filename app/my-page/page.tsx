@@ -154,8 +154,12 @@ export default function MyPage() {
             <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
               ターゲットとして想定しているのは、週末サーファーや、これからサーフィンをはじめる人たちです。長年の経験でコンディションを読める上級者には物足りないかもしれません。でも、「今日は行くべきか」を数字で判断したい人や、波のことを少しずつ勉強したい人には、きっと役立てると思っています。
             </p>
-            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
+            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 14 }}>
               今後は湘南以外のエリアや、より多くのポイントにも広げていきたいと考えています。サーフィンとテクノロジーの可能性を、これからも海の近くで試し続けます。
+            </p>
+            <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
+              湘南の波情報はXでも発信しています。{' '}
+              <a href="https://x.com/ichinisantaro" target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7', fontWeight: 600, textDecoration: 'none' }}>@ichinisantaro →</a>
             </p>
           </div>
 
