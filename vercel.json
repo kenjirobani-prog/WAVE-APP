@@ -12,6 +12,7 @@
     { "path": "/api/cron/update-forecast", "schedule": "0 7 * * *" },
     { "path": "/api/cron/update-forecast", "schedule": "0 9 * * *" },
     { "path": "/api/cron/update-forecast", "schedule": "0 11 * * *" },
-    { "path": "/api/cron/update-forecast", "schedule": "0 12 * * *" }
+    { "path": "/api/cron/update-forecast", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/sync-surfboards", "schedule": "0 0 1 1,4,7,10 *" }
   ]
 }
