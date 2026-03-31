@@ -2,7 +2,7 @@
 import { useRef } from 'react'
 import type { WaveCondition } from '@/lib/wave/types'
 import type { UserProfile, WindType } from '@/types'
-import { classifyWind } from '@/lib/wave/scoring'
+import { classifyWind, isCloseout } from '@/lib/wave/scoring'
 
 interface Props {
   conditions: WaveCondition[]
@@ -36,7 +36,8 @@ function waveHeightLabel(h: number): string {
   return 'スネ'
 }
 
-function getBarColor(waveHeight: number, preferred: number): string {
+function getBarColor(waveHeight: number, preferred: number, windSpeed?: number, windDir?: number): string {
+  if (windSpeed != null && windDir != null && isCloseout(waveHeight, windSpeed, windDir)) return 'bg-red-400'
   if (waveHeight >= preferred) return 'bg-emerald-400'
   if (waveHeight >= preferred - 0.3) return 'bg-blue-400'
   return 'bg-sky-200'
@@ -108,7 +109,7 @@ export default function ForecastChart({ conditions, profile, showNowMarker = tru
               {/* 波高バー */}
               <div className="h-20 flex items-end w-full">
                 <div
-                  className={`w-full rounded-t-sm ${getBarColor(c.waveHeight, preferred)}`}
+                  className={`w-full rounded-t-sm ${getBarColor(c.waveHeight, preferred, c.windSpeed, c.windDir)}`}
                   style={{ height: `${Math.max(barHeight, 4)}px` }}
                 />
               </div>

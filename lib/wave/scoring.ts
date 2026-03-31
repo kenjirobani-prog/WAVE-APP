@@ -2,8 +2,19 @@ import type { WaveCondition } from './types'
 import type { Spot, Grade, SpotScore, ScoreBreakdown, WindType, BathymetryProfile } from '@/types'
 import type { UserProfile } from '@/types'
 
-// クローズアウト閾値（m）— この波高を超えるとクローズアウト判定
-export const CLOSEOUT_WAVE_HEIGHT = 2.5
+// クローズアウト閾値
+export const CLOSEOUT_WAVE_HEIGHT = 2.5       // m：単独でクローズアウト
+export const CLOSEOUT_WAVE_HEIGHT_WIND = 2.0  // m：強風との複合条件
+export const CLOSEOUT_WIND_SPEED = 10         // m/s：複合条件の風速閾値
+
+export function isCloseout(waveHeight: number, windSpeed: number, windDir: number): boolean {
+  if (waveHeight > CLOSEOUT_WAVE_HEIGHT) return true
+  if (waveHeight > CLOSEOUT_WAVE_HEIGHT_WIND && windSpeed > CLOSEOUT_WIND_SPEED) {
+    const windClass = classifyWind(windDir, windSpeed)
+    if (windClass === 'onshore') return true
+  }
+  return false
+}
 
 // ブレイクタイプ
 export type BreakType = 'plunging' | 'spilling' | 'closeout' | 'surging'
@@ -439,8 +450,8 @@ export function calculateScore(
 
   const tags = buildReasonTags(condition, spot, profile, breakdown)
 
-  // クローズアウト判定: 波高が閾値を超えたらグレード×固定
-  if (effCondition.waveHeight > CLOSEOUT_WAVE_HEIGHT) {
+  // クローズアウト判定: 複合条件でグレード×固定
+  if (isCloseout(effCondition.waveHeight, condition.windSpeed, condition.windDir)) {
     tags.unshift('クローズアウト')
     return {
       spotId: spot.id,
