@@ -20,9 +20,57 @@ const REP_SPOT = 'ichinomiya'
 
 type DateTab = 'today' | 'tomorrow' | 'weekly'
 interface WeeklyDayData { date: Date; dateStr: string; avgScore: number; grade: Grade }
+interface WeatherDaily { date: string; weatherCode: number; temperatureMax: number; uvIndex: number }
 
 function toDateStr(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 function formatMD(d: Date) { return `${d.getMonth()+1}/${d.getDate()}` }
+
+function weatherInfo(code: number): { type: 'sunny' | 'cloudy' | 'rain' | 'snow' | 'storm' } {
+  if (code <= 1) return { type: 'sunny' }
+  if (code <= 3) return { type: 'cloudy' }
+  if (code === 45 || code === 48) return { type: 'cloudy' }
+  if (code >= 51 && code <= 67) return { type: 'rain' }
+  if (code >= 71 && code <= 77) return { type: 'snow' }
+  if (code >= 80 && code <= 82) return { type: 'rain' }
+  if (code >= 95) return { type: 'storm' }
+  return { type: 'cloudy' }
+}
+
+function WeatherIcon({ type }: { type: 'sunny' | 'cloudy' | 'rain' | 'snow' | 'storm' }) {
+  if (type === 'sunny') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="5" fill="#f59e0b" />
+      {[0,45,90,135,180,225,270,315].map(a => (
+        <line key={a} x1="12" y1="12" x2={12+9*Math.cos(a*Math.PI/180)} y2={12+9*Math.sin(a*Math.PI/180)} stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" />
+      ))}
+    </svg>
+  )
+  if (type === 'rain') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M6 14a6 6 0 1 1 12 0" fill="#378ADD" /><rect x="6" y="14" width="12" height="3" rx="1.5" fill="#378ADD" />
+      <line x1="9" y1="19" x2="8" y2="22" stroke="#378ADD" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="12" y1="19" x2="11" y2="22" stroke="#378ADD" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="15" y1="19" x2="14" y2="22" stroke="#378ADD" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+  if (type === 'snow') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M6 13a6 6 0 1 1 12 0" fill="#85B7EB" /><rect x="6" y="13" width="12" height="3" rx="1.5" fill="#85B7EB" />
+      <circle cx="9" cy="20" r="1.5" fill="#85B7EB" /><circle cx="12" cy="21" r="1.5" fill="#85B7EB" /><circle cx="15" cy="20" r="1.5" fill="#85B7EB" />
+    </svg>
+  )
+  if (type === 'storm') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M5 12a7 7 0 1 1 14 0" fill="#94a3b8" /><rect x="5" y="12" width="14" height="3" rx="1.5" fill="#94a3b8" />
+      <polyline points="13,17 11,21 13,21 11,24" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M6.5 16a4.5 4.5 0 1 1 8.9-.5H17a3 3 0 0 1 0 6H6.5a4.5 4.5 0 0 1 0-9z" fill="#94a3b8" />
+    </svg>
+  )
+}
 function getTargetDate(tab: DateTab): Date {
   const d = new Date(); d.setHours(12,0,0,0)
   if (tab === 'tomorrow') d.setDate(d.getDate() + 1)
@@ -71,6 +119,11 @@ export default function ChibaNorthPage() {
   const [weeklyLoading, setWeeklyLoading] = useState(false)
   const [weeklyComment, setWeeklyComment] = useState<string | null>(null)
   const [weeklyCommentLoading, setWeeklyCommentLoading] = useState(false)
+  const [weatherDaily, setWeatherDaily] = useState<WeatherDaily[]>([])
+
+  useEffect(() => {
+    fetch('/api/weather').then(r => r.ok ? r.json() : null).then(d => { if (d?.daily) setWeatherDaily(d.daily) }).catch(() => {})
+  }, [])
 
   const today = new Date(); today.setHours(12,0,0,0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
@@ -252,6 +305,8 @@ export default function ChibaNorthPage() {
             {weeklyData.map(day => {
               const dow = ['日','月','火','水','木','金','土'][day.date.getDay()]
               const dowColor = day.date.getDay() === 0 ? '#ef4444' : day.date.getDay() === 6 ? '#3b82f6' : '#0a1628'
+              const dayW = weatherDaily.find(w => w.date === day.dateStr)
+              const { type: wType } = weatherInfo(dayW?.weatherCode ?? 3)
               const scoreColor = day.avgScore >= 85 ? '#0284c7' : day.avgScore >= 65 ? '#0ea5e9' : '#94a3b8'
               return (
                 <div key={day.dateStr} style={{ background: '#fff', border: '0.5px solid #eef1f4', borderRadius: 12, padding: '12px 16px' }} className="flex items-center">
@@ -259,7 +314,10 @@ export default function ChibaNorthPage() {
                     <div style={{ fontSize: 20, fontWeight: 700, color: dowColor, lineHeight: 1.1 }}>{dow}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{formatMD(day.date)}</div>
                   </div>
-                  <div className="flex-1" />
+                  <div className="flex-1 flex items-center justify-center gap-2">
+                    <WeatherIcon type={wType} />
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#0a1628' }}>{dayW ? `${dayW.temperatureMax}°` : '—'}</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <span style={{ fontSize: 30, fontWeight: 700, color: scoreColor, lineHeight: 1 }}>{day.avgScore}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', background: scoreColor, borderRadius: 6, padding: '3px 7px' }}>{day.grade}</span>
