@@ -191,7 +191,12 @@ export default function ChibaSouthPage() {
       const newScores = activeSpots
         .map(spot => { const c = condMap[spot.id]; if (!c || !profile) return null; return calculateScore(c, spot, profile) })
         .filter((s): s is SpotScore => s !== null)
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score
+          const aOrder = SPOTS.find(s => s.id === a.spotId)?.order ?? 99
+          const bOrder = SPOTS.find(s => s.id === b.spotId)?.order ?? 99
+          return aOrder - bOrder
+        })
       setScores(newScores)
       setConditions(condMap)
       if (newScores.length === 0) setError('波データを取得できませんでした。')
