@@ -18,6 +18,9 @@ export interface BathymetryProfile {
   closeoutRisk: 'high' | 'medium' | 'low'      // クローズアウトリスク
 }
 
+// エリア
+export type AreaKey = 'shonan' | 'chiba-north' | 'chiba-south' | 'ibaraki'
+
 // スポット
 export interface Spot {
   id: string
@@ -25,11 +28,14 @@ export interface Spot {
   nameEn: string
   lat: number
   lng: number
+  area: AreaKey
+  areaLabel: string
   bestSwellDir: number
   swellDirRange: number
+  swellDirScoreTable: Array<{ dir: number; score: number }>
   optimalTideMin: number
   optimalTideMax: number
-  bestTideMovement: 'rising' | 'falling' | 'slack'
+  bestTideMovement: 'rising' | 'falling' | 'any'
   beginnerScore: number        // 1-5
   waveType: 'beach' | 'point' | 'reef'
   waveCharacter: string
@@ -40,13 +46,12 @@ export interface Spot {
   mapUrl?: string
   mapPlaceName?: string
   mapCenter?: { lat: number; lng: number }
-  waveHeightMultiplier?: number   // スポット固有の波高補正係数（デフォルト: 1.0）
+  waveHeightMultiplier: number    // スポット固有の波高補正係数
   offshoreWindDir: number         // オフショア風の中心方向（度、真北基準）
   offshoreWindRange: number       // オフショアとみなす範囲 ±度
   bathymetryProfile?: BathymetryProfile
-  // 詳細情報（スポット詳細画面で表示）
   description?: string
-  bestSeasons?: ('spring' | 'summer' | 'autumn' | 'winter')[]
+  bestSeasons: ('spring' | 'summer' | 'autumn' | 'winter')[]
   bestTide?: string
   waveTypeTags?: string[]
   facilities?: string[]

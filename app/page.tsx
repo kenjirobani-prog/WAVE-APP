@@ -10,6 +10,7 @@ import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
+import AreaTabs from '@/components/AreaTabs'
 import BottomNav from '@/components/BottomNav'
 
 interface WeatherFullData {
@@ -222,7 +223,7 @@ export default function TopPage() {
     const dateStr = toDateStr(targetDate)
 
     try {
-      const activeSpots = SPOTS.filter(s => s.isActive)
+      const activeSpots = SPOTS.filter(s => s.isActive && s.area === 'shonan')
       const condMap: Record<string, WaveCondition | null> = {}
 
       await Promise.all(
@@ -473,6 +474,9 @@ export default function TopPage() {
           </div>
         </div>
       </header>
+
+      {/* エリアタブ */}
+      <AreaTabs />
 
       {/* 日付タブ */}
       <div className="bg-white border-b border-[#eef1f4] px-3 flex items-center gap-1 py-2">

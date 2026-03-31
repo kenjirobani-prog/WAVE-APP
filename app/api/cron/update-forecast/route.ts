@@ -46,7 +46,9 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now()
   const today = new Date()
   const dateStr = toJstDateStr(today)
-  const activeSpots = SPOTS.filter(s => s.isActive)
+  const { searchParams } = new URL(request.url)
+  const area = searchParams.get('area') ?? 'shonan'
+  const activeSpots = SPOTS.filter(s => s.isActive && s.area === area)
   const results: { spotId: string; status: string; hours?: number }[] = []
 
   try {
