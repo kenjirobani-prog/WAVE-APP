@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { calculateScore } from '@/lib/wave/scoring'
 import { getUserProfile } from '@/lib/userProfile'
@@ -41,6 +42,7 @@ function AvgScore({ scores }: { scores: SpotScore[] }) {
 }
 
 export default function ChibaSouthPage() {
+  const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [scores, setScores] = useState<SpotScore[]>([])
   const [conditions, setConditions] = useState<Record<string, WaveCondition | null>>({})
@@ -110,14 +112,21 @@ export default function ChibaSouthPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
       <header className="header-gradient" style={{ padding: '16px 1rem 1rem', color: '#fff' }}>
-        <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 4 }}>千葉南エリア</div>
-        {cacheUpdatedAt && (
-          <div style={{ marginTop: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 99, padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }} />
-            <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>{cacheUpdatedAt} 更新</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 4 }}>千葉南エリア</div>
+            {cacheUpdatedAt && (
+              <div style={{ marginTop: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 99, padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }} />
+                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>{cacheUpdatedAt} 更新</span>
+              </div>
+            )}
           </div>
-        )}
+          <button onClick={() => router.push('/settings')} style={{ background: '#fff', borderRadius: 10, padding: '8px 16px', fontSize: 12, fontWeight: 800, color: '#0284c7', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5, border: 'none', cursor: 'pointer' }}>
+            <span style={{ fontSize: 14 }}>⚙</span> マイ設定
+          </button>
+        </div>
       </header>
 
       <AreaTabs />
