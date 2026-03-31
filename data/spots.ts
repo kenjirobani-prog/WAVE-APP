@@ -318,7 +318,7 @@ export const SPOTS: Spot[] = [
     description: '2021年東京五輪サーフィン競技の会場。東向きのビーチブレイクで、コンスタントに質の高い波が立つ。',
     bestSeasons: ['spring', 'summer', 'autumn', 'winter'],
     bathymetryProfile: { type: 'moderate', optimalTideRange: [70, 130], swellSensitivity: 'high', closeoutRisk: 'medium' } as BathymetryProfile,
-    isActive: true, order: 9, createdAt: '2026-03-31', updatedAt: '2026-03-31',
+    isActive: true, order: 12, createdAt: '2026-03-31', updatedAt: '2026-03-31',
   },
   // =============================
   // 千葉南
@@ -389,7 +389,7 @@ export const SPOTS: Spot[] = [
     waveType: 'beach', waveCharacter: '南向きビーチ。Sうねりにダイレクトに反応',
     parking: 'free', shower: false, access: '旭駅から車20分',
     bestSeasons: ['spring', 'summer', 'autumn', 'winter'],
-    isActive: true, order: 14, createdAt: '2026-03-31', updatedAt: '2026-03-31',
+    isActive: true, order: 9, createdAt: '2026-03-31', updatedAt: '2026-03-31',
   },
   {
     id: 'iioka', name: '飯岡', nameEn: 'Iioka', lat: 35.702, lng: 140.711,
@@ -401,7 +401,7 @@ export const SPOTS: Spot[] = [
     waveType: 'beach', waveCharacter: 'SSE向きビーチ。穏やかな波が多く初中級者向き',
     parking: 'free', shower: true, access: '飯岡駅から車10分',
     bestSeasons: ['spring', 'summer', 'autumn', 'winter'],
-    isActive: true, order: 15, createdAt: '2026-03-31', updatedAt: '2026-03-31',
+    isActive: true, order: 10, createdAt: '2026-03-31', updatedAt: '2026-03-31',
   },
   {
     id: 'katakai', name: '片貝', nameEn: 'Katakai', lat: 35.537, lng: 140.462,
@@ -413,7 +413,7 @@ export const SPOTS: Spot[] = [
     waveType: 'beach', waveCharacter: 'SE向きビーチ。初心者にも優しい波が多い',
     parking: 'free', shower: true, access: '東金駅から車30分',
     bestSeasons: ['spring', 'summer', 'autumn', 'winter'],
-    isActive: true, order: 16, createdAt: '2026-03-31', updatedAt: '2026-03-31',
+    isActive: true, order: 11, createdAt: '2026-03-31', updatedAt: '2026-03-31',
   },
   {
     id: 'taito', name: '太東', nameEn: 'Taito', lat: 35.329, lng: 140.398,
@@ -425,7 +425,7 @@ export const SPOTS: Spot[] = [
     waveType: 'beach', waveCharacter: 'NE向きビーチ。太東岬の影響でうねりが整いやすい',
     parking: 'free', shower: true, access: '太東駅から車10分',
     bestSeasons: ['spring', 'summer', 'autumn', 'winter'],
-    isActive: true, order: 17, createdAt: '2026-03-31', updatedAt: '2026-03-31',
+    isActive: true, order: 13, createdAt: '2026-03-31', updatedAt: '2026-03-31',
   },
   {
     id: 'onjuku', name: '御宿', nameEn: 'Onjuku', lat: 35.182, lng: 140.364,
@@ -437,7 +437,7 @@ export const SPOTS: Spot[] = [
     waveType: 'beach', waveCharacter: 'SE向きビーチ。白砂が美しく波質も良い',
     parking: 'paid', shower: true, access: '御宿駅から徒歩10分',
     bestSeasons: ['spring', 'summer', 'autumn', 'winter'],
-    isActive: true, order: 18, createdAt: '2026-03-31', updatedAt: '2026-03-31',
+    isActive: true, order: 14, createdAt: '2026-03-31', updatedAt: '2026-03-31',
   },
   // =============================
   // 千葉南（追加）

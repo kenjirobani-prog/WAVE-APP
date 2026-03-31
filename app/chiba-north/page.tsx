@@ -4,6 +4,7 @@ import { SPOTS } from '@/data/spots'
 import { calculateScore } from '@/lib/wave/scoring'
 import { getUserProfile } from '@/lib/userProfile'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
+import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import type { UserProfile, SpotScore } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
@@ -42,11 +43,22 @@ export default function ChibaNorthPage() {
   const [scores, setScores] = useState<SpotScore[]>([])
   const [conditions, setConditions] = useState<Record<string, WaveCondition | null>>({})
   const [loading, setLoading] = useState(true)
+  const [dailyComment, setDailyComment] = useState<string | null>(null)
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   function toDateStr(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 
-  useEffect(() => { setProfile(getUserProfile()) }, [])
+  useEffect(() => {
+    setProfile(getUserProfile())
+    const jstHour = (new Date().getUTCHours() + 9) % 24
+    const scheduleHour = getLatestScheduleHour('today', jstHour)
+    if (scheduleHour !== null) {
+      fetch(`/api/daily-comment?target=today&hour=${padHour(scheduleHour)}&areaLabel=千葉北&spotName=一宮`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.comment) setDailyComment(data.comment) })
+        .catch(() => {})
+    }
+  }, [])
 
   useEffect(() => {
     if (!profile) return
@@ -94,6 +106,12 @@ export default function ChibaNorthPage() {
           <div className="flex items-center justify-center py-16"><p className="text-[#8899aa] text-sm">読み込み中...</p></div>
         ) : (
           <>
+            {dailyComment && (
+              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI今日の予報</div>
+                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0 }}>{dailyComment}</p>
+              </div>
+            )}
             {scores.length > 0 && <AvgScore scores={scores} />}
             {scores.map(score => {
               const spot = SPOTS.find(s => s.id === score.spotId)!
