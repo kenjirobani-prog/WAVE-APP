@@ -215,6 +215,15 @@ export default function TopPage() {
     loadWeeklyForecast()
   }, [tab, profile])
 
+  // 更新スケジュール（JST時）
+  const UPDATE_HOURS_JST = [3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 21]
+
+  function getLatestUpdateHour(): number {
+    const jstHour = (new Date().getUTCHours() + 9) % 24
+    const past = UPDATE_HOURS_JST.filter(h => h <= jstHour)
+    return past.length === 0 ? 21 : past[past.length - 1]
+  }
+
   async function loadForecast(targetDate: Date) {
     setLoading(true)
     setError(null)
@@ -231,8 +240,13 @@ export default function TopPage() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             const hourly: WaveCondition[] = data.conditions ?? []
-            const noon = hourly.find(c => new Date(c.timestamp).getHours() === 12)
-            condMap[spot.id] = noon ?? hourly[0] ?? null
+            // 今日: 最新の更新時刻、明日: 06時固定
+            const displayHour = tab === 'today' ? getLatestUpdateHour() : 6
+            const target = hourly.find(c => {
+              const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+              return h === displayHour
+            })
+            condMap[spot.id] = target ?? hourly[0] ?? null
           } catch {
             condMap[spot.id] = null
           }
