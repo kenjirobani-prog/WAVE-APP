@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   const dateStr = toJstDateStr()
-  const cacheKey = `dailyComment_${target}_${hour}`
+  const cacheKey = `dailyComment_${areaLabel}_${target}_${hour}`
 
   try {
     // Firestoreキャッシュ確認
@@ -71,8 +71,14 @@ export async function GET(request: NextRequest) {
       return jst.toISOString().split('T')[0]
     })()
 
-    // 複数スポットのデータを集める
-    const spotIds = ['kugenuma', 'tsujido', 'shichiri', 'chigasaki', 'oiso', 'yuigahama', 'aquarium']
+    // エリアに応じたスポットIDリストを使用
+    const AREA_SPOTS: Record<string, string[]> = {
+      '湘南': ['kugenuma', 'tsujido', 'shichiri', 'chigasaki', 'oiso', 'yuigahama', 'aquarium'],
+      '千葉北': ['byobu', 'iioka', 'katakai', 'ichinomiya', 'taito', 'onjuku'],
+      '千葉南': ['kamogawa', 'chikura', 'heisaura'],
+      '茨城': ['oarai', 'hokota', 'kashima', 'hasaki'],
+    }
+    const spotIds = AREA_SPOTS[areaLabel] ?? AREA_SPOTS['湘南']
     let forecastSummary = ''
     for (const spotId of spotIds) {
       try {
