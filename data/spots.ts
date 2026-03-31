@@ -324,7 +324,7 @@ export const SPOTS: Spot[] = [
   // 千葉南
   // =============================
   {
-    id: 'kamogawa', name: '鴨川', nameEn: 'Kamogawa', lat: 35.106, lng: 140.106,
+    id: 'kamogawa', name: '鴨川', nameEn: 'Kamogawa', lat: 35.1214, lng: 140.1315,
     area: 'chiba-south', areaLabel: '千葉南',
     bestSwellDir: 155, swellDirRange: 45,
     swellDirScoreTable: [{dir:158,score:18},{dir:180,score:17},{dir:202,score:14},{dir:135,score:13},{dir:225,score:9},{dir:90,score:6},{dir:45,score:2},{dir:0,score:0}],

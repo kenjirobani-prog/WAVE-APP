@@ -21,7 +21,7 @@ export default function AreaTabs() {
             style={{
               flex: 1,
               padding: '10px 16px',
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: activeKey === a.key ? 700 : 500,
               color: activeKey === a.key ? '#0284c7' : '#8899aa',
               background: 'none',
