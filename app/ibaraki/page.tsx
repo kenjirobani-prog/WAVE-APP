@@ -69,6 +69,8 @@ export default function IbarakiPage() {
   const [dailyCommentLoading, setDailyCommentLoading] = useState(false)
   const [weeklyData, setWeeklyData] = useState<WeeklyDayData[]>([])
   const [weeklyLoading, setWeeklyLoading] = useState(false)
+  const [weeklyComment, setWeeklyComment] = useState<string | null>(null)
+  const [weeklyCommentLoading, setWeeklyCommentLoading] = useState(false)
 
   const today = new Date(); today.setHours(12,0,0,0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
@@ -150,6 +152,8 @@ export default function IbarakiPage() {
     const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(base); d.setDate(d.getDate()+i); return d })
     const activeSpots = SPOTS.filter(s => s.isActive && s.area === AREA)
     const result: WeeklyDayData[] = []
+    const commentData: Array<{ date: string; avgScore: number; waveHeight?: number; windType?: string; swellDirection?: string; period?: number; waveQualityLabel?: string }> = []
+    const COMPASS_8 = ['北', '北東', '東', '南東', '南', '南西', '西', '北西']
     for (const day of days) {
       const dateStr = toDateStr(day)
       const condResults = await Promise.all(activeSpots.map(async spot => {
@@ -164,9 +168,33 @@ export default function IbarakiPage() {
       const dayScores = activeSpots.map((spot, i) => { const c = condResults[i]; if (!c) return null; return calculateScore(c, spot, profile!) }).filter((s): s is SpotScore => s !== null)
       const avgScore = dayScores.length > 0 ? Math.round(dayScores.reduce((s, sc) => s + sc.score, 0) / dayScores.length) : 0
       result.push({ date: day, dateStr, avgScore, grade: scoreToGrade(avgScore) })
+      const repCond = condResults.find(c => c !== null) ?? null
+      const repScore = dayScores[0] ?? null
+      commentData.push({
+        date: dateStr, avgScore,
+        waveHeight: repCond ? Math.round(repCond.waveHeight * 10) / 10 : undefined,
+        windType: repCond ? windTypeLabel(classifyWind(repCond.windDir, repCond.windSpeed)) : undefined,
+        swellDirection: repCond ? COMPASS_8[Math.round(repCond.swellDir / 45) % 8] : undefined,
+        period: repCond ? Math.round(repCond.wavePeriod) : undefined,
+        waveQualityLabel: repScore ? waveQualityLabel(repScore.breakdown.waveQuality) : undefined,
+      })
     }
     setWeeklyData(result)
     setWeeklyLoading(false)
+    // AI週間コメント
+    setWeeklyCommentLoading(true)
+    try {
+      const res = await fetch('/api/weekly-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weeklyData: commentData, areaLabel: AREA_LABEL, spotName: '大洗' }),
+      })
+      if (res.ok) {
+        const { comment } = await res.json()
+        setWeeklyComment(comment)
+      }
+    } catch {}
+    finally { setWeeklyCommentLoading(false) }
   }
 
   if (!profile) return null
@@ -209,26 +237,37 @@ export default function IbarakiPage() {
           weeklyLoading ? (
             <div className="flex items-center justify-center py-16"><p className="text-[#8899aa] text-sm">週間データを読み込み中...</p></div>
           ) : (
-            <div className="space-y-2">
-              {weeklyData.map(day => {
-                const scoreColor = day.avgScore >= 85 ? '#0284c7' : day.avgScore >= 65 ? '#0ea5e9' : '#94a3b8'
-                return (
-                  <div key={day.dateStr} className="bg-white rounded-xl border border-[#eef1f4] p-3 flex items-center gap-3">
-                    <div className="text-center" style={{ width: 44 }}>
-                      <p style={{ fontSize: 11, color: '#8899aa' }}>{formatMD(day.date)}</p>
-                      <p style={{ fontSize: 10, color: '#8899aa' }}>{['日','月','火','水','木','金','土'][day.date.getDay()]}</p>
-                    </div>
-                    <div className="flex-1 h-2 bg-[#eef1f4] rounded-full overflow-hidden">
-                      <div style={{ width: `${day.avgScore}%`, background: scoreColor }} className="h-full rounded-full" />
-                    </div>
-                    <div className="text-right" style={{ width: 40 }}>
-                      <span style={{ fontSize: 18, fontWeight: 700, color: scoreColor }}>{day.avgScore}</span>
-                    </div>
-                    <span style={{ fontSize: 14 }}>{day.grade}</span>
+            <>
+            {weeklyCommentLoading ? (
+              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI週間予報</div>
+                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>AIが今週の波を分析中...</p>
+              </div>
+            ) : weeklyComment ? (
+              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI週間予報</div>
+                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0 }}>{weeklyComment}</p>
+              </div>
+            ) : null}
+            {weeklyData.map(day => {
+              const dow = ['日','月','火','水','木','金','土'][day.date.getDay()]
+              const dowColor = day.date.getDay() === 0 ? '#ef4444' : day.date.getDay() === 6 ? '#3b82f6' : '#0a1628'
+              const scoreColor = day.avgScore >= 85 ? '#0284c7' : day.avgScore >= 65 ? '#0ea5e9' : '#94a3b8'
+              return (
+                <div key={day.dateStr} style={{ background: '#fff', border: '0.5px solid #eef1f4', borderRadius: 12, padding: '12px 16px' }} className="flex items-center">
+                  <div style={{ width: 48 }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: dowColor, lineHeight: 1.1 }}>{dow}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{formatMD(day.date)}</div>
                   </div>
-                )
-              })}
-            </div>
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: 30, fontWeight: 700, color: scoreColor, lineHeight: 1 }}>{day.avgScore}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', background: scoreColor, borderRadius: 6, padding: '3px 7px' }}>{day.grade}</span>
+                  </div>
+                </div>
+              )
+            })}
+            </>
           )
         ) : (
           <>
