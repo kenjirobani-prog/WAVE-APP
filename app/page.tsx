@@ -253,18 +253,7 @@ export default function TopPage() {
           return calculateScore(cond, spot, profile)
         })
         .filter((s): s is SpotScore => s !== null)
-        .sort((a, b) => {
-          const aFav = profile!.favoriteSpots.includes(a.spotId)
-          const bFav = profile!.favoriteSpots.includes(b.spotId)
-          if (aFav && !bFav) return -1
-          if (!aFav && bFav) return 1
-          // よく行くスポット同士はスコア順
-          if (aFav && bFav) return b.score - a.score
-          // それ以外は defaultOrder 固定順
-          const aOrder = SPOTS.find(s => s.id === a.spotId)?.defaultOrder ?? 99
-          const bOrder = SPOTS.find(s => s.id === b.spotId)?.defaultOrder ?? 99
-          return aOrder - bOrder
-        })
+        .sort((a, b) => (SPOTS.find(s => s.id === a.spotId)?.order ?? 99) - (SPOTS.find(s => s.id === b.spotId)?.order ?? 99))
       setScores(newScores)
 
       // 表示用に波高を補正（スコア計算後に適用して二重適用を防ぐ）

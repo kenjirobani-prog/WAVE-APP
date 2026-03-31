@@ -191,12 +191,7 @@ export default function IbarakiPage() {
       const newScores = activeSpots
         .map(spot => { const c = condMap[spot.id]; if (!c || !profile) return null; return calculateScore(c, spot, profile) })
         .filter((s): s is SpotScore => s !== null)
-        .sort((a, b) => {
-          if (b.score !== a.score) return b.score - a.score
-          const aOrder = SPOTS.find(s => s.id === a.spotId)?.order ?? 99
-          const bOrder = SPOTS.find(s => s.id === b.spotId)?.order ?? 99
-          return aOrder - bOrder
-        })
+        .sort((a, b) => (SPOTS.find(s => s.id === a.spotId)?.order ?? 99) - (SPOTS.find(s => s.id === b.spotId)?.order ?? 99))
       setScores(newScores)
       setConditions(condMap)
       if (newScores.length === 0) setError('波データを取得できませんでした。')
