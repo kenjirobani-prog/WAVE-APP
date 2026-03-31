@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       ? `現在時刻: ${hourNum}時。${hourNum}時以降の今日のサーフィン状況`
       : `明日一日のサーフィン状況`
 
-    const systemPrompt = `あなたは${areaLabel}のサーフィン予報AIです。${timeContext}を2〜3文で要約してください。ベストな時間帯やスポットがあれば明示し、サーファー向けのカジュアルな日本語で書いてください。余計な前置きや説明は不要です。コメントのみ返してください。`
+    const systemPrompt = `あなたは${areaLabel}のサーフィン予報AIです。${timeContext}を2〜3文で要約してください。ベストな時間帯やスポットがあれば明示し、サーファー向けのカジュアルな日本語で書いてください。波高が2.5mを超える時間帯はクローズアウトと判断し、海に行くことを強く控える表現にしてください。例：「12時以降はクローズアウトが予想されます。海に行くのは絶対にやめましょう。」余計な前置きや説明は不要です。コメントのみ返してください。`
 
     const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の${areaLabel}・${spotName}のデータ:\n${forecastSummary}`
 

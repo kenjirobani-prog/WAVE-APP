@@ -96,8 +96,17 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
           </div>
 
           <div className="text-right shrink-0">
-            <span ref={countRef as React.Ref<HTMLSpanElement>} className="text-2xl font-bold text-[#0a1628]">{count}</span>
-            <span className="text-xs text-[#8899aa] block">/ 100</span>
+            {score.reasonTags.includes('クローズアウト') ? (
+              <>
+                <span className="text-sm font-bold text-red-500">危険</span>
+                <span className="text-[10px] text-red-400 block">クローズアウト</span>
+              </>
+            ) : (
+              <>
+                <span ref={countRef as React.Ref<HTMLSpanElement>} className="text-2xl font-bold text-[#0a1628]">{count}</span>
+                <span className="text-xs text-[#8899aa] block">/ 100</span>
+              </>
+            )}
           </div>
         </div>
 
