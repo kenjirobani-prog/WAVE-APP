@@ -7,6 +7,7 @@ import { calculateScore, classifyWind, windTypeLabel, compassLabel, waveQualityL
 import { saveSurfLog } from '@/lib/surfLog'
 import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
+import { getLatestUpdateHour } from '@/lib/updateSchedule'
 import ScoreGrade, { gradeLabel } from '@/components/ScoreGrade'
 import { useCountUp } from '@/hooks/useCountUp'
 import ForecastChart from '@/components/ForecastChart'
@@ -218,8 +219,11 @@ export default function SpotDetailContent({ id }: { id: string }) {
         }
       } catch {}
 
-      const noon = conditions.find(c => new Date(c.timestamp).getHours() === 12)
-      const representative = noon ?? conditions[Math.floor(conditions.length / 2)] ?? conditions[0]
+      const displayHour = getLatestUpdateHour()
+      const representative = conditions.find(c => {
+        const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+        return h === displayHour
+      }) ?? conditions[Math.floor(conditions.length / 2)] ?? conditions[0]
       if (representative) {
         setScore(calculateScore(representative, spot, profile))
         setLastUpdated(new Date())

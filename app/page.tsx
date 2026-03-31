@@ -9,6 +9,7 @@ import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
+import { getLatestUpdateHour } from '@/lib/updateSchedule'
 import BottomNav from '@/components/BottomNav'
 
 interface WeatherFullData {
@@ -214,15 +215,6 @@ export default function TopPage() {
     if (weeklyData.length > 0) return
     loadWeeklyForecast()
   }, [tab, profile])
-
-  // 更新スケジュール（JST時）
-  const UPDATE_HOURS_JST = [3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 21]
-
-  function getLatestUpdateHour(): number {
-    const jstHour = (new Date().getUTCHours() + 9) % 24
-    const past = UPDATE_HOURS_JST.filter(h => h <= jstHour)
-    return past.length === 0 ? 21 : past[past.length - 1]
-  }
 
   async function loadForecast(targetDate: Date) {
     setLoading(true)
