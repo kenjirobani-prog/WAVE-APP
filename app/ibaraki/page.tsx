@@ -121,6 +121,9 @@ export default function IbarakiPage() {
       </header>
 
       <AreaTabs />
+      <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8, padding: '8px 16px', margin: '8px 12px', fontSize: 13, color: '#856404', textAlign: 'center' }}>
+        🚧 テスト運用中 — データや表示内容は予告なく変更される場合があります
+      </div>
 
       <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
         {loading ? (
