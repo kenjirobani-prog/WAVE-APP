@@ -82,7 +82,7 @@ export default function RootLayout({
             "@type": "WebApplication",
             "name": "AI 波予報",
             "url": "https://jpwaveforecast.com",
-            "description": "AIが湘南の波をリアルタイム分析。サーファーのレベルとボードに合わせたパーソナライズスコアで今日行くべきか即判断。",
+            "description": "AIが湘南・千葉・茨城の波をリアルタイム分析。サーファーのレベルとボードに合わせたパーソナライズスコアで今日行くべきか即判断。全20スポット対応。",
             "applicationCategory": "SportsApplication",
             "operatingSystem": "Web",
             "inLanguage": "ja",
@@ -91,7 +91,7 @@ export default function RootLayout({
               "price": "0",
               "priceCurrency": "JPY"
             },
-            "keywords": "AI 波予報, 湘南 波予報, サーフィン 波予報, AI サーフィン, 鵠沼 波, 由比ヶ浜 波, 七里ヶ浜 波"
+            "keywords": "AI 波予報, 湘南 波予報, 千葉 波予報, 茨城 波予報, サーフィン 波予報, AI サーフィン, 鵠沼 波, 一宮 波, 大洗 波"
           })}}
         />
         <script
@@ -124,7 +124,7 @@ export default function RootLayout({
               { "@type": "Question", "name": "どんなAPIデータを使っていますか？", "acceptedAnswer": { "@type": "Answer", "text": "StormGlass APIから波高・波周期・うねり高さ・風速・潮位などをリアルタイムで取得しています。複数の気象モデルを統合した高精度データを使用しています。" } },
               { "@type": "Question", "name": "Surf Logとは何ですか？", "acceptedAnswer": { "@type": "Answer", "text": "実際にサーフィンした日のコンディション・スポット・グレードを記録できる機能です。今年の通算日数や履歴を管理できます。" } },
               { "@type": "Question", "name": "週間予報はどこで見られますか？", "acceptedAnswer": { "@type": "Answer", "text": "波予報タブの「週間」を選ぶと7日分の予報が確認できます。AIが今週のベストな日を自動コメントで教えてくれます。" } },
-              { "@type": "Question", "name": "今後エリア拡張の予定はありますか？", "acceptedAnswer": { "@type": "Answer", "text": "現在は湘南エリア（7スポット）に対応しています。千葉・伊豆など他のエリアへの拡張を検討しています。" } }
+              { "@type": "Question", "name": "千葉・茨城エリアはテスト運用中ですか？", "acceptedAnswer": { "@type": "Answer", "text": "はい、千葉北・千葉南・茨城エリアは現在テスト運用中です。データや表示内容は予告なく変更される場合があります。湘南エリアは正式サービスとして提供しています。" } }
             ]
           })}}
         />
