@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     // エリアに応じたスポットIDリストを使用
     const AREA_SPOTS: Record<string, string[]> = {
-      '湘南': ['kugenuma', 'tsujido', 'shichiri', 'chigasaki', 'oiso', 'yuigahama', 'aquarium'],
+      '湘南': ['kugenuma', 'tsujido', 'aquarium', 'chigasaki', 'oiso', 'shichiri', 'yuigahama'],
       '千葉北': ['byobu', 'iioka', 'katakai', 'ichinomiya', 'taito', 'onjuku'],
       '千葉南': ['kamogawa', 'chikura', 'heisaura'],
       '茨城': ['oarai', 'hokota', 'kashima', 'hasaki'],
