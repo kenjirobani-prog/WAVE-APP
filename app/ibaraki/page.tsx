@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { SPOTS } from '@/data/spots'
 import { calculateScore } from '@/lib/wave/scoring'
 import { getUserProfile } from '@/lib/userProfile'
+import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
+import { doc, getDoc } from 'firebase/firestore'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import type { UserProfile, SpotScore } from '@/types'
@@ -44,12 +46,25 @@ export default function IbarakiPage() {
   const [conditions, setConditions] = useState<Record<string, WaveCondition | null>>({})
   const [loading, setLoading] = useState(true)
   const [dailyComment, setDailyComment] = useState<string | null>(null)
+  const [cacheUpdatedAt, setCacheUpdatedAt] = useState<string | null>(null)
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   function toDateStr(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 
   useEffect(() => {
     setProfile(getUserProfile())
+    async function fetchCacheTime() {
+      try {
+        await ensureAnonymousAuth()
+        const db = getDb()
+        const snap = await getDoc(doc(db, 'forecastCache', `oarai_${toDateStr(today)}`))
+        if (snap.exists()) {
+          const d = new Date(snap.data().updatedAt)
+          setCacheUpdatedAt(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)
+        }
+      } catch {}
+    }
+    fetchCacheTime()
     const jstHour = (new Date().getUTCHours() + 9) % 24
     const scheduleHour = getLatestScheduleHour('today', jstHour)
     if (scheduleHour !== null) {
@@ -97,6 +112,12 @@ export default function IbarakiPage() {
       <header className="header-gradient" style={{ padding: '16px 1rem 1rem', color: '#fff' }}>
         <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</div>
         <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 4 }}>茨城エリア</div>
+        {cacheUpdatedAt && (
+          <div style={{ marginTop: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 99, padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }} />
+            <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>{cacheUpdatedAt} 更新</span>
+          </div>
+        )}
       </header>
 
       <AreaTabs />
