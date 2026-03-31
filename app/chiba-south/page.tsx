@@ -6,7 +6,7 @@ import { calculateScore, scoreToGrade, classifyWind, windTypeLabel, waveQualityL
 import { getUserProfile } from '@/lib/userProfile'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
-import { getLatestUpdateHour } from '@/lib/updateSchedule'
+import { getLatestUpdateHour, getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
@@ -260,12 +260,14 @@ export default function ChibaSouthPage() {
           <div>
             <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 4 }}>{AREA_LABEL}エリア</div>
-            {cacheUpdatedAt && (
-              <div style={{ marginTop: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 99, padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }} />
-                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>{cacheUpdatedAt} 更新</span>
-              </div>
-            )}
+            <div style={{ marginTop: 4 }}>
+              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.6 }}>
+                更新時刻：{UPDATE_HOURS_JST.join(', ')}時
+              </p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.6 }}>
+                次回更新：{getNextUpdateTime()}
+              </p>
+            </div>
           </div>
           <button onClick={() => router.push('/settings')} style={{ background: '#fff', borderRadius: 10, padding: '8px 16px', fontSize: 12, fontWeight: 800, color: '#0284c7', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5, border: 'none', cursor: 'pointer' }}>
             <span style={{ fontSize: 14 }}>⚙</span> マイ設定

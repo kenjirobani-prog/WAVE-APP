@@ -9,7 +9,7 @@ import type { UserProfile, SpotScore, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
-import { getLatestUpdateHour } from '@/lib/updateSchedule'
+import { getLatestUpdateHour, getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
 import AreaTabs from '@/components/AreaTabs'
 import BottomNav from '@/components/BottomNav'
 
@@ -427,20 +427,13 @@ export default function TopPage() {
               <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em' }}>jpwaveforecast.com</div>
             </div>
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.15)',
-                borderRadius: 99,
-                padding: '3px 10px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-              }}>
-                <div style={{ width: 6, height: 6, background: '#4ade80', borderRadius: '50%' }} />
-                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>
-                  {cacheUpdatedAt ? `${cacheUpdatedAt} 更新` : '更新中...'}
-                </span>
-              </div>
+            <div style={{ marginTop: 6 }}>
+              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.6 }}>
+                更新時刻：{UPDATE_HOURS_JST.join(', ')}時
+              </p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.6 }}>
+                次回更新：{getNextUpdateTime()}
+              </p>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
