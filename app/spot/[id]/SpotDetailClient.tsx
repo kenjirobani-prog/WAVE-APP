@@ -433,8 +433,8 @@ export default function SpotDetailContent({ id }: { id: string }) {
                     return (
                       <div className="bg-[#f0f9ff] rounded-xl p-3" style={{ gridColumn: '1 / -1', background: bg }}>
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波質</p>
-                        <p style={{ fontSize: 20, fontWeight: 700, color: text }}>{waveQualityLabel(qScore)}</p>
-                        {difficultyBadge && waveQualityLabel(qScore) !== 'ダンパー' && waveQualityLabel(qScore) !== 'ワイド気味' && (
+                        <p style={{ fontSize: 20, fontWeight: 700, color: text }}>{waveQualityLabel(current.wavePeriod, windType)}</p>
+                        {difficultyBadge && waveQualityLabel(current.wavePeriod, windType) !== 'ダンパー' && waveQualityLabel(current.wavePeriod, windType) !== 'ワイド気味' && (
                           <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: difficultyBadge.bg, color: difficultyBadge.color, display: 'inline-block', marginTop: 4 }}>
                             {difficultyBadge.label}
                           </span>

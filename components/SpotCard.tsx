@@ -140,7 +140,7 @@ export default function SpotCard({ spot, score, isFavorite, condition, date, isT
               return (
                 <div style={{ background: bg, borderRadius: 7 }} className="p-2 text-center">
                   <p style={{ fontSize: 8, color: '#94a3b8' }} className="mb-0.5">波質</p>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: text, lineHeight: 1.2 }}>{waveQualityLabel(qScore)}</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: text, lineHeight: 1.2 }}>{waveQualityLabel(condition.wavePeriod, classifyWind(condition.windDir, condition.windSpeed))}</p>
                 </div>
               )
             })()}

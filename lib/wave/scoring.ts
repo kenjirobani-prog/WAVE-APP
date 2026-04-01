@@ -208,54 +208,56 @@ function scoreTideWithBathymetry(
 }
 
 // 波質スコア（3ステップ設計・20点満点）
+// 日本の海（周期5〜8秒が多い）に合わせた複合条件スコア
 
 function getBaseWaveQuality(period: number, windType: WindType): number {
+  // キレた波帯（周期 ≥ 10秒）
   if (period >= 14) {
     // ピュアグランドスウェル（台風・遠洋低気圧）
     if (windType === 'offshore')      return 20
     if (windType === 'calm')          return 19
     if (windType === 'side-offshore') return 17
-    if (windType === 'side-onshore')  return 11
-    return 5 // onshore
+    if (windType === 'side-onshore')  return 15
+    return 14 // onshore
   }
-  if (period >= 12) {
-    // グランドスウェル
+  if (period >= 10) {
+    // グランドスウェル〜良い周期
     if (windType === 'offshore')      return 19
     if (windType === 'calm')          return 18
     if (windType === 'side-offshore') return 16
-    if (windType === 'side-onshore')  return 10
-    return 4 // onshore
+    if (windType === 'side-onshore')  return 14
+    return 13 // onshore
   }
-  if (period >= 10) {
-    // 良い周期
+  // グッドウェーブ帯（周期 8〜9秒・風向き問わず）
+  if (period >= 8) {
     if (windType === 'offshore')      return 17
     if (windType === 'calm')          return 16
-    if (windType === 'side-offshore') return 14
-    if (windType === 'side-onshore')  return 8
-    return 3 // onshore
+    if (windType === 'side-offshore') return 15
+    if (windType === 'side-onshore')  return 14
+    return 13 // onshore
   }
-  if (period >= 8) {
-    // 普通
-    if (windType === 'offshore')      return 13
-    if (windType === 'calm')          return 12
-    if (windType === 'side-offshore') return 11
-    if (windType === 'side-onshore')  return 6
-    return 2 // onshore
-  }
+  // 周期 6〜7秒: offshore/calm → グッドウェーブ, sideshore → まあまあ, onshore → ワイド気味
   if (period >= 6) {
-    // やや弱い
-    if (windType === 'offshore')      return 8
-    if (windType === 'calm')          return 7
-    if (windType === 'side-offshore') return 6
-    if (windType === 'side-onshore')  return 4
-    return 1 // onshore
+    if (windType === 'offshore')      return 15
+    if (windType === 'calm')          return 13
+    if (windType === 'side-offshore') return 10
+    if (windType === 'side-onshore')  return 8
+    return 4 // onshore → ワイド気味
   }
-  // 6秒未満（風波・乗れない）
-  if (windType === 'offshore')      return 4
-  if (windType === 'calm')          return 3
-  if (windType === 'side-offshore') return 3
+  // 周期 5秒: onshore → ワイド気味, それ以外 → まあまあ
+  if (period >= 5) {
+    if (windType === 'offshore')      return 10
+    if (windType === 'calm')          return 9
+    if (windType === 'side-offshore') return 8
+    if (windType === 'side-onshore')  return 8
+    return 3 // onshore → ワイド気味
+  }
+  // 周期 < 5秒: offshore/calm → ワイド気味, sideshore/onshore → ダンパー
+  if (windType === 'offshore')      return 5
+  if (windType === 'calm')          return 4
+  if (windType === 'side-offshore') return 2
   if (windType === 'side-onshore')  return 1
-  return 0 // onshore
+  return 0 // onshore → ダンパー
 }
 
 // 【役割】波高×潮位の組み合わせ特性を評価（湘南ビーチブレイク特有）
@@ -483,12 +485,28 @@ export function calculateScore(
   }
 }
 
-export function waveQualityLabel(score: number): string {
-  if (score >= 18) return 'キレた波'
-  if (score >= 13) return 'グッドウェーブ'
-  if (score >= 8)  return 'まあまあ'
-  if (score >= 3)  return 'ワイド気味'
-  return 'ダンパー'
+/**
+ * 波質ラベルを周期と風向きの複合条件で判定（日本の海の実態に合わせた閾値）
+ */
+export function waveQualityLabel(period: number, windClass: WindType): string {
+  // 周期 ≥ 10秒 → キレた波（風向き問わず）
+  if (period >= 10) return 'キレた波'
+  // 周期 8〜9秒 → グッドウェーブ（風向き問わず）
+  if (period >= 8) return 'グッドウェーブ'
+  // 周期 6〜7秒
+  if (period >= 6) {
+    if (windClass === 'offshore' || windClass === 'calm') return 'グッドウェーブ'
+    if (windClass === 'side-offshore' || windClass === 'side-onshore') return 'まあまあ'
+    return 'ワイド気味' // onshore
+  }
+  // 周期 5秒（≥5 <6）
+  if (period >= 5) {
+    if (windClass === 'onshore') return 'ワイド気味'
+    return 'まあまあ' // offshore, calm, sideshore
+  }
+  // 周期 < 5秒
+  if (windClass === 'offshore' || windClass === 'calm') return 'ワイド気味'
+  return 'ダンパー' // sideshore or onshore
 }
 
 export function waveQualityColor(score: number): { text: string; bg: string } {

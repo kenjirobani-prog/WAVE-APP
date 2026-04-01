@@ -229,7 +229,7 @@ export default function ChibaNorthPage() {
         windType: repCond ? windTypeLabel(classifyWind(repCond.windDir, repCond.windSpeed)) : undefined,
         swellDirection: repCond ? COMPASS_8[Math.round(repCond.swellDir / 45) % 8] : undefined,
         period: repCond ? Math.round(repCond.wavePeriod) : undefined,
-        waveQualityLabel: repScore ? waveQualityLabel(repScore.breakdown.waveQuality) : undefined,
+        waveQualityLabel: repCond ? waveQualityLabel(repCond.wavePeriod, classifyWind(repCond.windDir, repCond.windSpeed)) : undefined,
       })
     }
     setWeeklyData(result)
