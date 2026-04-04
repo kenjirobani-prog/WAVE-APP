@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { COMMENT_SCHEDULES, padHour, type CommentTarget } from '@/lib/commentSchedules'
+import { getLatestUpdateHour } from '@/lib/updateSchedule'
 
 export const maxDuration = 30
 
@@ -31,7 +32,8 @@ export async function GET(request: NextRequest) {
   }
 
   const dateStr = toJstDateStr()
-  const cacheKey = `dailyComment_${areaLabel}_${target}_${hour}`
+  const latestUpdateHour = padHour(getLatestUpdateHour())
+  const cacheKey = `dailyComment_${areaLabel}_${target}_${hour}_u${latestUpdateHour}`
 
   try {
     // Firestoreキャッシュ確認
@@ -79,30 +81,59 @@ export async function GET(request: NextRequest) {
       '茨城': ['oarai', 'hokota', 'kashima', 'hasaki'],
     }
     const spotIds = AREA_SPOTS[areaLabel] ?? AREA_SPOTS['湘南']
+
+    // 時間帯からデータを抽出するヘルパー
+    function findByHour(conditions: any[], targetHour: number) {
+      return conditions.find((c: { timestamp: string }) => {
+        const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+        return h === targetHour
+      })
+    }
+
     let forecastSummary = ''
-    for (const spotId of spotIds) {
-      try {
-        const fRef = doc(db, 'forecastCache', `${spotId}_${forecastDate}`)
-        const fSnap = await getDoc(fRef)
-        if (fSnap.exists()) {
-          const fData = fSnap.data()
-          const conditions = fData.conditions ?? []
-          // 代表的な時間帯のデータを抽出
-          const hours = target === 'today'
-            ? conditions.filter((c: { timestamp: string }) => {
-                const h = new Date(c.timestamp).getUTCHours() + 9
-                return h >= hourNum
-              })
-            : conditions
-          if (hours.length > 0) {
-            const noon = hours.find((c: { timestamp: string }) => {
-              const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
-              return h === 12
-            }) ?? hours[Math.floor(hours.length / 2)]
-            forecastSummary += `${spotId}: 波高${noon.waveHeight}m, 周期${noon.wavePeriod}秒, 風速${noon.windSpeed}m/s, 潮位${noon.tideHeight}cm\n`
-          }
+
+    if (target === 'tomorrow') {
+      // 明日: 朝(6時)・昼(12時)・夕方(16時)の3時間帯を取得
+      const TIME_SLOTS = [
+        { label: '朝6時', hour: 6 },
+        { label: '昼12時', hour: 12 },
+        { label: '夕方16時', hour: 16 },
+      ]
+      for (const slot of TIME_SLOTS) {
+        forecastSummary += `\n【${slot.label}】\n`
+        for (const spotId of spotIds) {
+          try {
+            const fRef = doc(db, 'forecastCache', `${spotId}_${forecastDate}`)
+            const fSnap = await getDoc(fRef)
+            if (fSnap.exists()) {
+              const conditions = fSnap.data().conditions ?? []
+              const c = findByHour(conditions, slot.hour)
+              if (c) {
+                forecastSummary += `${spotId}: 波高${c.waveHeight}m, 周期${c.wavePeriod}秒, 風速${c.windSpeed}m/s, 風向${c.windDir}°, 潮位${c.tideHeight}cm\n`
+              }
+            }
+          } catch {}
         }
-      } catch {}
+      }
+    } else {
+      // 今日: 現在時刻以降のデータ（従来通り）
+      for (const spotId of spotIds) {
+        try {
+          const fRef = doc(db, 'forecastCache', `${spotId}_${forecastDate}`)
+          const fSnap = await getDoc(fRef)
+          if (fSnap.exists()) {
+            const conditions = fSnap.data().conditions ?? []
+            const hours = conditions.filter((c: { timestamp: string }) => {
+              const h = new Date(c.timestamp).getUTCHours() + 9
+              return h >= hourNum
+            })
+            if (hours.length > 0) {
+              const rep = findByHour(hours, 12) ?? hours[Math.floor(hours.length / 2)]
+              forecastSummary += `${spotId}: 波高${rep.waveHeight}m, 周期${rep.wavePeriod}秒, 風速${rep.windSpeed}m/s, 潮位${rep.tideHeight}cm\n`
+            }
+          }
+        } catch {}
+      }
     }
 
     if (!forecastSummary) {
@@ -114,7 +145,11 @@ export async function GET(request: NextRequest) {
       ? `現在時刻: ${hourNum}時。${hourNum}時以降の今日のサーフィン状況`
       : `明日一日のサーフィン状況`
 
-    const systemPrompt = `あなたは${areaLabel}のサーフィン予報AIです。${timeContext}を2〜3文で要約してください。ベストな時間帯やスポットがあれば明示し、サーファー向けのカジュアルな日本語で書いてください。波高が2.5mを超える時間帯はクローズアウトと判断し、海に行くことを強く控える表現にしてください。例：「12時以降はクローズアウトが予想されます。海に行くのは絶対にやめましょう。」余計な前置きや説明は不要です。コメントのみ返してください。`
+    const tomorrowInstruction = target === 'tomorrow'
+      ? '明日の予報コメントは必ず朝（6時頃）・昼（12時頃）・夕方（16時頃）の3つの時間帯それぞれについて言及してください。例：「朝は〜、昼は〜、夕方は〜」という形式で。'
+      : ''
+
+    const systemPrompt = `あなたは${areaLabel}のサーフィン予報AIです。${timeContext}を2〜3文で要約してください。${tomorrowInstruction}ベストな時間帯やスポットがあれば明示し、サーファー向けのカジュアルな日本語で書いてください。波高が2.5mを超える時間帯はクローズアウトと判断し、海に行くことを強く控える表現にしてください。例：「12時以降はクローズアウトが予想されます。海に行くのは絶対にやめましょう。」余計な前置きや説明は不要です。コメントのみ返してください。`
 
     const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の${areaLabel}・${spotName}のデータ:\n${forecastSummary}`
 
