@@ -12,6 +12,15 @@ function toJstDateStr(): string {
   return jst.toISOString().split('T')[0]
 }
 
+// 今日のコメント更新スロット（JST）
+const COMMENT_HOURS_JST = [4, 6, 10, 14]
+
+function getLatestCommentHour(): number {
+  const jstHour = (new Date().getUTCHours() + 9) % 24
+  const past = COMMENT_HOURS_JST.filter(h => h <= jstHour)
+  return past.length === 0 ? 14 : past[past.length - 1]
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const target = searchParams.get('target') as CommentTarget | null
@@ -32,8 +41,9 @@ export async function GET(request: NextRequest) {
   }
 
   const dateStr = toJstDateStr()
-  const latestUpdateHour = padHour(getLatestUpdateHour())
-  const cacheKey = `dailyComment_${areaLabel}_${target}_${hour}_u${latestUpdateHour}`
+  const cacheKey = target === 'today'
+    ? `dailyComment_today_${areaLabel}_${dateStr}_${getLatestCommentHour()}`
+    : `dailyComment_${areaLabel}_${target}_${hour}`
 
   try {
     // Firestoreキャッシュ確認
