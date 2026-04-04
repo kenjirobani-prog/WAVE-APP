@@ -428,12 +428,18 @@ export function calculateScore(
     ? { ...condition, waveHeight: condition.waveHeight * multiplier }
     : condition
 
-  const waveHeight = scoreWaveHeight(effCondition.waveHeight, profile.preferredSize)
+  // 地形補正係数
+  const tb = spot.terrainBonus ?? { offshoreMultiplier: 1.0, swellFocusing: 1.0, shelterFactor: 1.0 }
+  const windClass = classifyWind(condition.windDir, condition.windSpeed, spot)
+  const isOffshoreOrCalm = windClass === 'offshore' || windClass === 'calm'
+  const offMul = isOffshoreOrCalm ? tb.offshoreMultiplier : 1.0
+
+  const waveHeight = Math.round(scoreWaveHeight(effCondition.waveHeight, profile.preferredSize) * offMul * tb.swellFocusing * tb.shelterFactor)
   const wind = scoreWind(condition.windSpeed, condition.windDir, spot)
-  const swellDir = scoreSwellDir(condition.swellDir, spot)
+  const swellDir = Math.round(scoreSwellDir(condition.swellDir, spot) * tb.swellFocusing * tb.shelterFactor)
   const optimalTideRange = spot.bathymetryProfile?.optimalTideRange ?? [80, 120]
   const tide = scoreTideWithBathymetry(condition.tideHeight, condition.tideTrend, optimalTideRange)
-  const waveQuality = scoreWaveQuality(
+  const waveQuality = Math.round(scoreWaveQuality(
     condition.wavePeriod,
     condition.windDir,
     condition.windSpeed,
@@ -446,7 +452,7 @@ export function calculateScore(
     condition.secondarySwellHeight,
     condition.secondarySwellDirection,
     condition.secondarySwellPeriod,
-  )
+  ) * offMul)
   const weatherBonus = scoreComfort(condition.weather, condition.temperature, condition.uvIndex)
   const correction = boardCorrection(effCondition, profile)
 

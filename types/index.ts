@@ -21,6 +21,13 @@ export interface BathymetryProfile {
 // エリア
 export type AreaKey = 'shonan' | 'chiba-north' | 'chiba-south' | 'ibaraki'
 
+// 地形補正係数
+export interface TerrainBonus {
+  offshoreMultiplier: number  // オフショア時の波高・波質スコアへの乗数（1.0=補正なし）
+  swellFocusing: number       // 地形によるうねり集中度（1.0=標準）
+  shelterFactor: number       // 堤防・漁港等によるうねり軽減係数（1.0=遮蔽なし）
+}
+
 // スポット
 export interface Spot {
   id: string
@@ -49,6 +56,7 @@ export interface Spot {
   waveHeightMultiplier: number    // スポット固有の波高補正係数
   offshoreWindDir: number         // オフショア風の中心方向（度、真北基準）
   offshoreWindRange: number       // オフショアとみなす範囲 ±度
+  terrainBonus: TerrainBonus
   bathymetryProfile?: BathymetryProfile
   description?: string
   bestSeasons: ('spring' | 'summer' | 'autumn' | 'winter')[]
