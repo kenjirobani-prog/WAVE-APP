@@ -349,12 +349,43 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 </div>
               </div>
               {score && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {score.reasonTags.map(tag => (
                     <span key={tag} className="text-xs font-medium bg-[#f0f9ff] text-[#8899aa] px-3 py-1 rounded-full">
                       {tag}
                     </span>
                   ))}
+                </div>
+              )}
+              {/* スコア内訳 */}
+              {score && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">スコア内訳</p>
+                  {[
+                    { label: '波高', value: score.breakdown.waveHeight, max: 25 },
+                    { label: '風', value: score.breakdown.wind, max: 22 },
+                    { label: 'うねり方向', value: score.breakdown.swellDir, max: 18 },
+                    { label: '波質', value: score.breakdown.waveQuality, max: 20 },
+                    { label: '潮', value: score.breakdown.tide, max: 10 },
+                    { label: '天気', value: score.breakdown.weatherBonus, max: 5 },
+                  ].map(item => {
+                    const pct = Math.min(100, Math.round((item.value / item.max) * 100))
+                    const barColor = pct >= 75 ? '#0284c7' : pct >= 50 ? '#22c55e' : pct >= 25 ? '#eab308' : '#94a3b8'
+                    return (
+                      <div key={item.label} className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xs text-[#64748b] shrink-0" style={{ width: 64 }}>{item.label}</span>
+                        <div className="flex-1 h-2 bg-[#eef1f4] rounded-full overflow-hidden">
+                          <div style={{ width: `${pct}%`, background: barColor }} className="h-full rounded-full transition-all" />
+                        </div>
+                        <span className="text-xs text-[#8899aa] shrink-0" style={{ width: 48, textAlign: 'right' }}>{item.value}/{item.max}</span>
+                      </div>
+                    )
+                  })}
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#eef1f4]">
+                    <span className="text-xs font-bold text-[#0a1628] shrink-0" style={{ width: 64 }}>合計</span>
+                    <div className="flex-1" />
+                    <span className="text-xs font-bold text-[#0284c7] shrink-0" style={{ width: 48, textAlign: 'right' }}>{score.score}/100</span>
+                  </div>
                 </div>
               )}
             </section>
@@ -465,11 +496,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
                     setShowSwipeHint(false)
                   }}
                 />
-                <div className="flex gap-4 mt-3 text-xs text-[#8899aa]">
-                  <span><span className="inline-block w-3 h-3 bg-[#0284c7] rounded-sm mr-1" />好みサイズ</span>
-                  <span><span className="inline-block w-3 h-3 bg-sky-500 rounded-sm mr-1" />やや小さめ</span>
-                  <span><span className="inline-block w-3 h-3 bg-[#eef1f4] rounded-sm mr-1" />小さい</span>
-                </div>
               </section>
             )}
 

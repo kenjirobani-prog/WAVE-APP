@@ -70,27 +70,6 @@ export default function TideCurve({ tideSeries, currentHour }: Props) {
         </linearGradient>
       </defs>
 
-      {/* ミドルタイドゾーン帯 */}
-      {zoneH > 0 && (
-        <rect
-          x={0}
-          y={zoneTopY}
-          width={W}
-          height={zoneH}
-          fill="rgba(34,197,94,0.12)"
-          stroke="none"
-        />
-      )}
-      {/* ミドルタイドゾーン破線ボーダー（上・下） */}
-      {zoneH > 0 && (
-        <>
-          <line x1={0} y1={zoneTopY} x2={W} y2={zoneTopY}
-            stroke="rgba(34,197,94,0.4)" strokeWidth="0.8" strokeDasharray="4 3" />
-          <line x1={0} y1={zoneBotY} x2={W} y2={zoneBotY}
-            stroke="rgba(34,197,94,0.4)" strokeWidth="0.8" strokeDasharray="4 3" />
-        </>
-      )}
-
       {/* 曲線下塗り */}
       <path d={fillPath} fill="url(#tideGradC)" />
 
