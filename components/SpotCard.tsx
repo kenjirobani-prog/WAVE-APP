@@ -29,11 +29,14 @@ export default function SpotCard({ spot, stars, isCloseout, isFavorite, date }: 
 
   return (
     <Link href={href}>
-      <div className={`rounded-xl p-4 active:scale-[0.98] transition-all ${
-        isCloseout
-          ? 'bg-white border-2 border-red-400'
-          : 'bg-white border border-[#eef1f4] hover:border-sky-200 hover:bg-[#f8feff]'
-      }`}>
+      <div
+        className={`rounded-xl p-4 active:scale-[0.98] ${
+          isCloseout
+            ? 'bg-white border-2 border-red-400'
+            : 'bg-white border border-[#eef1f4] hover:border-sky-200 hover:bg-[#f0f9ff]'
+        }`}
+        style={{ borderRadius: 12, cursor: 'pointer', transition: 'background 0.15s ease' }}
+      >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <h2 className="text-base font-bold text-[#0a1628] truncate">{spot.name}</h2>
@@ -43,24 +46,27 @@ export default function SpotCard({ spot, stars, isCloseout, isFavorite, date }: 
               </span>
             )}
           </div>
-          {isCloseout ? (
-            <span className="text-xs font-bold text-red-500 shrink-0">終日クローズアウト</span>
-          ) : (
-            <div className="flex gap-3 shrink-0">
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[9px] text-[#94a3b8] font-semibold">朝</span>
-                <StarRating stars={stars.morning} size="sm" />
+          <div className="flex items-center gap-2 shrink-0">
+            {isCloseout ? (
+              <span className="text-xs font-bold text-red-500">終日クローズアウト</span>
+            ) : (
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[9px] text-[#94a3b8] font-semibold">朝</span>
+                  <StarRating stars={stars.morning} size="sm" />
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[9px] text-[#94a3b8] font-semibold">昼</span>
+                  <StarRating stars={stars.midday} size="sm" />
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[9px] text-[#94a3b8] font-semibold">夕</span>
+                  <StarRating stars={stars.evening} size="sm" />
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[9px] text-[#94a3b8] font-semibold">昼</span>
-                <StarRating stars={stars.midday} size="sm" />
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[9px] text-[#94a3b8] font-semibold">夕</span>
-                <StarRating stars={stars.evening} size="sm" />
-              </div>
-            </div>
-          )}
+            )}
+            <span style={{ fontSize: 14, color: '#94a3b8', marginLeft: 2 }}>›</span>
+          </div>
         </div>
       </div>
     </Link>
