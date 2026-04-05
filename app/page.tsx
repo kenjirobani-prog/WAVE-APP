@@ -418,7 +418,7 @@ export default function TopPage() {
             ) : dailyComment ? (
               <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI{tab === 'today' ? '今日' : '明日'}の予報</div>
-                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0 }}>{dailyComment}</p>
+                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{dailyComment}</p>
                 {dailyCommentAt && (
                   <div style={{ fontSize: 10, color: '#a0bac8', marginTop: 8, textAlign: 'right' }}>{dailyCommentAt} 生成</div>
                 )}
