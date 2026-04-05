@@ -231,8 +231,9 @@ export default function SpotDetailContent({ id }: { id: string }) {
       setMiddaySlot(slotResults[1])
       setEveningSlot(slotResults[2])
 
-      // Representative condition (nearest to current time)
-      const displayHour = getLatestUpdateHour()
+      // Representative condition: today = latest update hour, tomorrow = 6時
+      const isTomorrow = dateParam && dateParam !== toDateStr(new Date())
+      const displayHour = isTomorrow ? 6 : getLatestUpdateHour()
       const representative = conditions.find(c => {
         const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
         return h === displayHour
@@ -322,12 +323,13 @@ export default function SpotDetailContent({ id }: { id: string }) {
             <section className="bg-white p-4 border-b border-[#eef1f4]">
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: '朝', data: morningSlot },
-                  { label: '昼', data: middaySlot },
-                  { label: '夕方', data: eveningSlot },
-                ].map(({ label, data }) => (
+                  { label: '朝', sub: '4〜10時', data: morningSlot },
+                  { label: '昼', sub: '10〜15時', data: middaySlot },
+                  { label: '夕方', sub: '15〜18時', data: eveningSlot },
+                ].map(({ label, sub, data }) => (
                   <div key={label} className={`rounded-xl p-3 text-center ${data.isCloseout ? 'border-2 border-red-400 bg-red-50' : 'bg-[#f0f9ff]'}`}>
-                    <p className="text-xs font-semibold text-[#8899aa] mb-2">{label}</p>
+                    <p className="text-xs font-semibold text-[#8899aa] mb-0.5">{label}</p>
+                    <p className="text-[10px] text-[#94a3b8] mb-2">{sub}</p>
                     {data.isCloseout ? (
                       <p className="text-xs font-bold text-red-500">クローズアウト</p>
                     ) : (
@@ -357,7 +359,9 @@ export default function SpotDetailContent({ id }: { id: string }) {
             {/* 2. Five indicator grid */}
             {current && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">現在の状況</h2>
+                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">
+                  {dateParam && dateParam !== toDateStr(new Date()) ? '明日朝 6時のコンディション' : '現在のコンディション'}
+                </h2>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-[#f0f9ff] rounded-xl p-3">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波高</p>

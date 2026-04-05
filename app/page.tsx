@@ -10,6 +10,7 @@ import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import StarRating from '@/components/StarRating'
 import { getLatestUpdateHour, getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
+import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import AreaTabs from '@/components/AreaTabs'
 import BottomNav from '@/components/BottomNav'
 
@@ -141,6 +142,9 @@ export default function TopPage() {
   const [weeklyData, setWeeklyData] = useState<WeeklyDayData[]>([])
   const [weeklyLoading, setWeeklyLoading] = useState(false)
   const [bestSlot, setBestSlot] = useState<{ label: string; stars: number } | null>(null)
+  const [dailyComment, setDailyComment] = useState<string | null>(null)
+  const [dailyCommentAt, setDailyCommentAt] = useState<string | null>(null)
+  const [dailyCommentLoading, setDailyCommentLoading] = useState(false)
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
@@ -148,6 +152,29 @@ export default function TopPage() {
   useEffect(() => {
     setProfile(getUserProfile())
   }, [])
+
+  // AIコメント取得（今日・明日タブのみ）
+  useEffect(() => {
+    if (tab === 'weekly') { setDailyComment(null); return }
+    const target = tab === 'today' ? 'today' : 'tomorrow'
+    const jstHour = (new Date().getUTCHours() + 9) % 24
+    const scheduleHour = getLatestScheduleHour(target, jstHour)
+    if (scheduleHour === null) { setDailyComment(null); return }
+    setDailyCommentLoading(true)
+    fetch(`/api/daily-comment?target=${target}&hour=${padHour(scheduleHour)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.comment) {
+          setDailyComment(data.comment)
+          const d = new Date(data.generatedAt)
+          setDailyCommentAt(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+        } else {
+          setDailyComment(null)
+        }
+      })
+      .catch(() => setDailyComment(null))
+      .finally(() => setDailyCommentLoading(false))
+  }, [tab])
 
   useEffect(() => {
     if (!profile) return
@@ -382,6 +409,21 @@ export default function TopPage() {
                 </div>
               </div>
             )}
+            {/* AI comment */}
+            {!loading && (dailyCommentLoading ? (
+              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI{tab === 'today' ? '今日' : '明日'}の予報</div>
+                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>AIが波を分析中...</p>
+              </div>
+            ) : dailyComment ? (
+              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI{tab === 'today' ? '今日' : '明日'}の予報</div>
+                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0 }}>{dailyComment}</p>
+                {dailyCommentAt && (
+                  <div style={{ fontSize: 10, color: '#a0bac8', marginTop: 8, textAlign: 'right' }}>{dailyCommentAt} 生成</div>
+                )}
+              </div>
+            ) : null)}
             {loading ? (
               <SpotListSkeleton />
             ) : error ? (
