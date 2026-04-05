@@ -472,23 +472,25 @@ export default function SpotDetailContent({ id }: { id: string }) {
               )
             })()}
 
-            {/* 4. Tide chart (unchanged) */}
+            {/* 4. Tide chart */}
             {tideSeries.length > 0 && (() => {
+              const isToday = !dateParam || dateParam === toDateStr(new Date())
               const jstHour = (new Date().getUTCHours() + 9) % 24
-              const todayStr = toDateStr(new Date())
-              const currentHour = (!dateParam || dateParam === todayStr) ? jstHour : 12
               const tideArr = Array.from({ length: 24 }, (_, h) => {
                 const p = tideSeries.find(t => t.hour === h)
                 return p?.tideHeight ?? 0
               })
-              const currentLevel = tideArr[currentHour] ?? 0
-              const prevLevel = tideArr[Math.max(0, currentHour - 1)] ?? currentLevel
+              const currentHour = isToday ? jstHour : undefined
+              const currentLevel = isToday ? (tideArr[jstHour] ?? 0) : 0
+              const prevLevel = isToday ? (tideArr[Math.max(0, jstHour - 1)] ?? currentLevel) : 0
               const trend: 'rising' | 'falling' | 'steady' =
                 currentLevel - prevLevel > 2 ? 'rising' :
                 currentLevel - prevLevel < -2 ? 'falling' : 'steady'
               return (
                 <section className="bg-white mt-2 px-4 pt-4 pb-5 border-b border-[#eef1f4]">
-                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">潮位</h2>
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">
+                    {isToday ? '潮位' : '潮位（明日）'}
+                  </h2>
                   <TideCurve tideSeries={tideArr} currentHour={currentHour} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                     {['0:00', '6:00', '12:00', '18:00', '24:00'].map(t => (
@@ -496,7 +498,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
                     ))}
                   </div>
                   <TideCardStrip events={tideEvents} />
-                  <TideStatusBar currentLevel={currentLevel} trend={trend} />
+                  {isToday && <TideStatusBar currentLevel={currentLevel} trend={trend} />}
                 </section>
               )
             })()}

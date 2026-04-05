@@ -11,7 +11,7 @@ const MIDDLE_MAX = 120
 
 interface Props {
   tideSeries: number[]   // 24時間の潮位配列（インデックス=hour）
-  currentHour: number    // 現在時刻（0〜23）
+  currentHour?: number   // 現在時刻（0〜23）。undefinedの場合はマーカー非表示
 }
 
 function buildSmoothPath(pts: { x: number; y: number }[]): string {
@@ -49,8 +49,9 @@ export default function TideCurve({ tideSeries, currentHour }: Props) {
     linePath +
     ` L ${pts[pts.length - 1].x.toFixed(2)} ${H} L ${pts[0].x.toFixed(2)} ${H} Z`
 
-  const markerX = toX(currentHour)
-  const markerY = toY(filled[currentHour] ?? minH)
+  const showMarker = currentHour != null
+  const markerX = showMarker ? toX(currentHour) : 0
+  const markerY = showMarker ? toY(filled[currentHour] ?? minH) : 0
 
   // ミドルタイドゾーンのY座標
   const zoneTopY = toY(MIDDLE_MAX)
@@ -84,16 +85,18 @@ export default function TideCurve({ tideSeries, currentHour }: Props) {
       />
 
       {/* 現在時刻の縦点線 */}
-      <line
-        x1={markerX} y1={PAD_Y}
-        x2={markerX} y2={H - PAD_Y}
-        stroke="#22c55e"
-        strokeWidth="1"
-        strokeDasharray="3 2"
-      />
+      {showMarker && (
+        <line
+          x1={markerX} y1={PAD_Y}
+          x2={markerX} y2={H - PAD_Y}
+          stroke="#22c55e"
+          strokeWidth="1"
+          strokeDasharray="3 2"
+        />
+      )}
 
       {/* 現在時刻の緑ドット */}
-      <circle cx={markerX} cy={markerY} r="5" fill="#22c55e" />
+      {showMarker && <circle cx={markerX} cy={markerY} r="5" fill="#22c55e" />}
     </svg>
   )
 }
