@@ -8,7 +8,6 @@ import { saveSurfLog } from '@/lib/surfLog'
 import type { UserProfile, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
-import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import ScoreGrade from '@/components/ScoreGrade'
 import StarRating from '@/components/StarRating'
 import TideCurve from '@/components/TideCurve'
@@ -159,10 +158,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const [middaySlot, setMiddaySlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
   const [eveningSlot, setEveningSlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
 
-  const [dailyComment, setDailyComment] = useState<string | null>(null)
-  const [dailyCommentAt, setDailyCommentAt] = useState<string | null>(null)
-  const [dailyCommentLoading, setDailyCommentLoading] = useState(false)
-
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
   const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
   const [selectedSurfGrade, setSelectedSurfGrade] = useState<Grade | null>(null)
@@ -172,34 +167,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const surfDateOptions = getSurfDateOptions()
 
   useEffect(() => { setProfile(getUserProfile()) }, [])
-
-  // AIコメント取得
-  useEffect(() => {
-    if (!spot) return
-    const isToday = !dateParam || dateParam === toDateStr(new Date())
-    const target = isToday ? 'today' : 'tomorrow'
-    const jstHour = (new Date().getUTCHours() + 9) % 24
-    const scheduleHour = getLatestScheduleHour(target, jstHour)
-    if (scheduleHour === null) { setDailyComment(null); return }
-    const areaLabelMap: Record<string, string> = {
-      shonan: '湘南', 'chiba-north': '千葉北', 'chiba-south': '千葉南', ibaraki: '茨城',
-    }
-    const areaLabel = areaLabelMap[spot.area] ?? '湘南'
-    setDailyCommentLoading(true)
-    fetch(`/api/daily-comment?target=${target}&hour=${padHour(scheduleHour)}&areaLabel=${areaLabel}&spotName=${encodeURIComponent(spot.name)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.comment) {
-          setDailyComment(data.comment)
-          const d = new Date(data.generatedAt)
-          setDailyCommentAt(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
-        } else {
-          setDailyComment(null)
-        }
-      })
-      .catch(() => setDailyComment(null))
-      .finally(() => setDailyCommentLoading(false))
-  }, [spot, dateParam])
 
   useEffect(() => {
     if (!profile || !spot) return
@@ -340,61 +307,56 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </div>
             </section>
 
-            {/* AI comment */}
-            {dailyCommentLoading ? (
-              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI予報コメント</div>
-                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>AIが波を分析中...</p>
-              </section>
-            ) : dailyComment ? (
-              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI予報コメント</div>
-                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0 }}>{dailyComment}</p>
-                {dailyCommentAt && (
-                  <div style={{ fontSize: 10, color: '#a0bac8', marginTop: 8, textAlign: 'right' }}>{dailyCommentAt} 生成</div>
-                )}
-              </section>
-            ) : null}
-
-            {/* 2. Five indicator grid */}
-            {current && (
-              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">
-                  {dateParam && dateParam !== toDateStr(new Date()) ? '明日朝 6時のコンディション' : '現在のコンディション'}
-                </h2>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#f0f9ff] rounded-xl p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波高</p>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-xl font-bold text-[#0a1628]">{current.waveHeight.toFixed(1)}m</p>
-                      <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 10px', borderRadius: 99, background: '#dbeafe', color: '#1d4ed8' }}>
-                        {waveHeightLabel(current.waveHeight)}
+            {/* 2. Five indicator strip */}
+            {current && (() => {
+              const wt = classifyWind(current.windDir, current.windSpeed)
+              const wtLabel = windTypeLabel(wt)
+              const isOffshore = wt === 'offshore' || wt === 'calm' || wt === 'side-offshore'
+              return (
+                <section className="bg-white mt-2 px-4 py-3 border-b border-[#eef1f4]">
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">
+                    {dateParam && dateParam !== toDateStr(new Date()) ? '明日朝 6時のコンディション' : '現在のコンディション'}
+                  </h2>
+                  <div style={{ display: 'flex', border: '0.5px solid #eef1f4', borderRadius: 10, overflow: 'hidden' }}>
+                    {/* 波高 */}
+                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>波高</p>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{current.waveHeight.toFixed(1)}m</p>
+                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>{waveHeightLabel(current.waveHeight)}</p>
+                    </div>
+                    <div style={{ width: '0.5px', background: '#eef1f4' }} />
+                    {/* 風 */}
+                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>風</p>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{current.windSpeed.toFixed(1)}m/s</p>
+                      <span style={{ fontSize: 9, fontWeight: 600, padding: '1px 5px', borderRadius: 4, display: 'inline-block', background: isOffshore ? '#dbeafe' : '#fee2e2', color: isOffshore ? '#1d4ed8' : '#dc2626' }}>
+                        {wtLabel}
                       </span>
                     </div>
+                    <div style={{ width: '0.5px', background: '#eef1f4' }} />
+                    {/* うねり */}
+                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>うねり</p>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{swellDir8(current.swellDir)}</p>
+                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>{compassLabel(current.swellDir)}</p>
+                    </div>
+                    <div style={{ width: '0.5px', background: '#eef1f4' }} />
+                    {/* 周期 */}
+                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>周期</p>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{current.wavePeriod.toFixed(0)}秒</p>
+                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>{calcSetInterval(current.wavePeriod)}</p>
+                    </div>
+                    <div style={{ width: '0.5px', background: '#eef1f4' }} />
+                    {/* 波質 */}
+                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>波質</p>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{waveQualitySimple(current.wavePeriod, wt)}</p>
+                    </div>
                   </div>
-                  <div className="bg-[#f0f9ff] rounded-xl p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">風</p>
-                    <p className="text-xl font-bold text-[#0a1628]">{current.windSpeed.toFixed(1)}m/s</p>
-                    <p className="text-xs text-[#8899aa] mt-0.5">{windTypeLabel(classifyWind(current.windDir, current.windSpeed))} ({compassLabel(current.windDir)})</p>
-                  </div>
-                  <div className="bg-[#f0f9ff] rounded-xl p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">うねり方向</p>
-                    <p className="text-xl font-bold text-[#0a1628]">{swellDir8(current.swellDir)}</p>
-                  </div>
-                  <div className="bg-[#f0f9ff] rounded-xl p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">周期</p>
-                    <p className="text-xl font-bold text-[#0a1628]">{current.wavePeriod.toFixed(0)}秒</p>
-                    <p className="text-xs text-[#8899aa] mt-0.5">{calcSetInterval(current.wavePeriod)}/set</p>
-                  </div>
-                  <div className="bg-[#f0f9ff] rounded-xl p-3" style={{ gridColumn: '1 / -1' }}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-1">波質</p>
-                    <p className="text-xl font-bold text-[#0a1628]">
-                      {waveQualitySimple(current.wavePeriod, classifyWind(current.windDir, current.windSpeed))}
-                    </p>
-                  </div>
-                </div>
-              </section>
-            )}
+                </section>
+              )
+            })()}
 
             {/* 3. Hourly chart — 4-row layout */}
             {hourly.length > 0 && profile && (() => {
