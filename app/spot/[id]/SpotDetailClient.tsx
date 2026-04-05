@@ -1,13 +1,14 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { getUserProfile } from '@/lib/userProfile'
 import { calculateScore, classifyWind, windTypeLabel, compassLabel, getStarRating } from '@/lib/wave/scoring'
 import { saveSurfLog } from '@/lib/surfLog'
-import type { UserProfile, SpotScore, Grade } from '@/types'
+import type { UserProfile, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
+import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import ScoreGrade from '@/components/ScoreGrade'
 import StarRating from '@/components/StarRating'
 import TideCurve from '@/components/TideCurve'
@@ -158,6 +159,10 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const [middaySlot, setMiddaySlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
   const [eveningSlot, setEveningSlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
 
+  const [dailyComment, setDailyComment] = useState<string | null>(null)
+  const [dailyCommentAt, setDailyCommentAt] = useState<string | null>(null)
+  const [dailyCommentLoading, setDailyCommentLoading] = useState(false)
+
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
   const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
   const [selectedSurfGrade, setSelectedSurfGrade] = useState<Grade | null>(null)
@@ -167,6 +172,34 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const surfDateOptions = getSurfDateOptions()
 
   useEffect(() => { setProfile(getUserProfile()) }, [])
+
+  // AIコメント取得
+  useEffect(() => {
+    if (!spot) return
+    const isToday = !dateParam || dateParam === toDateStr(new Date())
+    const target = isToday ? 'today' : 'tomorrow'
+    const jstHour = (new Date().getUTCHours() + 9) % 24
+    const scheduleHour = getLatestScheduleHour(target, jstHour)
+    if (scheduleHour === null) { setDailyComment(null); return }
+    const areaLabelMap: Record<string, string> = {
+      shonan: '湘南', 'chiba-north': '千葉北', 'chiba-south': '千葉南', ibaraki: '茨城',
+    }
+    const areaLabel = areaLabelMap[spot.area] ?? '湘南'
+    setDailyCommentLoading(true)
+    fetch(`/api/daily-comment?target=${target}&hour=${padHour(scheduleHour)}&areaLabel=${areaLabel}&spotName=${encodeURIComponent(spot.name)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.comment) {
+          setDailyComment(data.comment)
+          const d = new Date(data.generatedAt)
+          setDailyCommentAt(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+        } else {
+          setDailyComment(null)
+        }
+      })
+      .catch(() => setDailyComment(null))
+      .finally(() => setDailyCommentLoading(false))
+  }, [spot, dateParam])
 
   useEffect(() => {
     if (!profile || !spot) return
@@ -305,6 +338,22 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </div>
             </section>
 
+            {/* AI comment */}
+            {dailyCommentLoading ? (
+              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI予報コメント</div>
+                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>AIが波を分析中...</p>
+              </section>
+            ) : dailyComment ? (
+              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI予報コメント</div>
+                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0 }}>{dailyComment}</p>
+                {dailyCommentAt && (
+                  <div style={{ fontSize: 10, color: '#a0bac8', marginTop: 8, textAlign: 'right' }}>{dailyCommentAt} 生成</div>
+                )}
+              </section>
+            ) : null}
+
             {/* 2. Five indicator grid */}
             {current && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
@@ -343,73 +392,71 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </section>
             )}
 
-            {/* 3. Hourly chart with wave height bars, wind bars, and stars */}
-            {hourly.length > 0 && profile && (
-              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">1時間ごと予報</h2>
-                <div className="overflow-x-auto -mx-4 px-4">
-                  <div className="flex gap-1.5 pb-2" style={{ minWidth: `${hourly.length * 52}px` }}>
-                    {hourly.map((c, i) => {
-                      const ts = new Date(c.timestamp)
-                      const hour = (ts.getUTCHours() + 9) % 24
-                      const maxHeight = Math.max(...hourly.map(h => h.waveHeight), 1)
-                      const barHeight = Math.round((c.waveHeight / maxHeight) * 60)
-                      const preferred = PREFERRED_SIZE_M[profile.preferredSize]
-                      const windType = classifyWind(c.windDir, c.windSpeed)
-                      const windColor = windTypeColor(windType)
+            {/* 3. Hourly chart with wave height bars and wind bars */}
+            {hourly.length > 0 && profile && (() => {
+              const maxHeight = Math.max(...hourly.map(h => h.waveHeight), 1)
+              const maxWind = Math.max(...hourly.map(h => h.windSpeed), 1)
+              const preferred = PREFERRED_SIZE_M[profile.preferredSize]
+              return (
+                <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">1時間ごと予報</h2>
+                  <div className="flex">
+                    {/* Left labels */}
+                    <div className="shrink-0 flex flex-col justify-between pr-2" style={{ width: 28 }}>
+                      <div className="flex items-center" style={{ height: 90 }}>
+                        <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>波高</span>
+                      </div>
+                      <div className="flex items-center" style={{ height: 64 }}>
+                        <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>風</span>
+                      </div>
+                      <div style={{ height: 20 }} />
+                    </div>
+                    {/* Scrollable chart */}
+                    <div className="overflow-x-auto flex-1">
+                      <div className="flex gap-1.5 pb-2" style={{ minWidth: `${hourly.length * 52}px` }}>
+                        {hourly.map((c, i) => {
+                          const ts = new Date(c.timestamp)
+                          const hour = (ts.getUTCHours() + 9) % 24
+                          const barHeight = Math.round((c.waveHeight / maxHeight) * 60)
+                          const windType = classifyWind(c.windDir, c.windSpeed)
+                          const windColor = windTypeColor(windType)
+                          const windBarHeight = Math.round((c.windSpeed / maxWind) * 30)
+                          const now = new Date()
+                          const isNow = Math.abs(ts.getTime() - now.getTime()) < 1800000
+                          const co = c.waveHeight > 2.5
 
-                      // Star for this hour
-                      const sc = calculateScore(c, spot, profile)
-                      const co = sc.reasonTags.includes('クローズアウト')
-                      const star = getStarRating(sc.score, co)
-
-                      // Wind bar
-                      const maxWind = Math.max(...hourly.map(h => h.windSpeed), 1)
-                      const windBarHeight = Math.round((c.windSpeed / maxWind) * 30)
-
-                      const now = new Date()
-                      const isNow = Math.abs(ts.getTime() - now.getTime()) < 1800000
-
-                      return (
-                        <div key={i} className="flex flex-col items-center gap-0.5 w-12 shrink-0">
-                          {/* Star */}
-                          <StarRating stars={star} size="sm" />
-                          {/* Wave height label */}
-                          <div className="flex items-center gap-0.5">
-                            <span className="text-[8px] text-[#94a3b8] font-semibold">波高</span>
-                          </div>
-                          {/* Wave bar */}
-                          <div className="h-16 flex items-end w-full">
-                            <div
-                              className={`w-full rounded-t-sm ${co ? 'bg-red-400' : getBarColor(c.waveHeight, preferred)}`}
-                              style={{ height: `${Math.max(barHeight, 4)}px` }}
-                            />
-                          </div>
-                          <span className="text-xs text-slate-600 font-medium leading-none">{c.waveHeight.toFixed(1)}m</span>
-                          {/* Wind label */}
-                          <div className="flex items-center gap-0.5 mt-1">
-                            <span className="text-[8px] text-[#94a3b8] font-semibold">風</span>
-                          </div>
-                          {/* Wind bar */}
-                          <div className="h-8 flex items-end w-full">
-                            <div
-                              className={`w-full rounded-t-sm ${windType === 'offshore' || windType === 'calm' ? 'bg-emerald-300' : windType === 'onshore' ? 'bg-red-300' : 'bg-amber-300'}`}
-                              style={{ height: `${Math.max(windBarHeight, 2)}px` }}
-                            />
-                          </div>
-                          <span className={`text-[10px] leading-none font-semibold ${windColor}`}>{c.windSpeed.toFixed(1)}</span>
-                          <span className={`text-[9px] leading-none font-semibold ${windColor}`}>{windTypeShort(windType)}</span>
-                          {/* Hour */}
-                          <span className={`text-[10px] font-medium leading-none mt-1 ${isNow ? 'text-sky-600' : 'text-slate-400'}`}>
-                            {isNow ? '▲' : ''}{hour}時
-                          </span>
-                        </div>
-                      )
-                    })}
+                          return (
+                            <div key={i} className="flex flex-col items-center gap-0.5 w-12 shrink-0">
+                              {/* Wave bar */}
+                              <div className="h-16 flex items-end w-full">
+                                <div
+                                  className={`w-full rounded-t-sm ${co ? 'bg-red-400' : getBarColor(c.waveHeight, preferred)}`}
+                                  style={{ height: `${Math.max(barHeight, 4)}px` }}
+                                />
+                              </div>
+                              <span className="text-xs text-slate-600 font-medium leading-none">{c.waveHeight.toFixed(1)}m</span>
+                              {/* Wind bar */}
+                              <div className="h-8 flex items-end w-full mt-1">
+                                <div
+                                  className={`w-full rounded-t-sm ${windType === 'offshore' || windType === 'calm' ? 'bg-emerald-300' : windType === 'onshore' ? 'bg-red-300' : 'bg-amber-300'}`}
+                                  style={{ height: `${Math.max(windBarHeight, 2)}px` }}
+                                />
+                              </div>
+                              <span className={`text-[10px] leading-none font-semibold ${windColor}`}>{c.windSpeed.toFixed(1)}</span>
+                              <span className={`text-[9px] leading-none font-semibold ${windColor}`}>{windTypeShort(windType)}</span>
+                              {/* Hour */}
+                              <span className={`text-[10px] font-medium leading-none mt-1 ${isNow ? 'text-sky-600' : 'text-slate-400'}`}>
+                                {isNow ? '▲' : ''}{hour}時
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </section>
-            )}
+                </section>
+              )
+            })()}
 
             {/* 4. Tide chart (unchanged) */}
             {tideSeries.length > 0 && (() => {
