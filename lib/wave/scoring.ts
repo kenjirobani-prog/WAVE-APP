@@ -541,10 +541,10 @@ export function waveQualitySub(
 
 export function getStarRating(score: number, isCloseout: boolean): number {
   if (isCloseout) return 1
-  if (score >= 80) return 5
-  if (score >= 60) return 4
-  if (score >= 40) return 3
-  if (score >= 20) return 2
+  if (score >= 90) return 5
+  if (score >= 70) return 4
+  if (score >= 50) return 3
+  if (score >= 30) return 2
   return 1
 }
 
