@@ -396,76 +396,112 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </section>
             )}
 
-            {/* 3. Hourly chart with wave height bars and wind bars */}
+            {/* 3. Hourly chart — 4-row layout */}
             {hourly.length > 0 && profile && (() => {
               const maxHeight = Math.max(...hourly.map(h => h.waveHeight), 1)
               const maxWind = Math.max(...hourly.map(h => h.windSpeed), 1)
-              const preferred = PREFERRED_SIZE_M[profile.preferredSize]
+              const colW = 36
+              const gap = 2
+              const labelW = 28
+              const rowSep = { height: 1, background: '#eef1f4', margin: '3px 0' } as const
               return (
                 <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
                   <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">1時間ごと予報</h2>
-                  <div className="flex">
-                    {/* Left labels */}
-                    <div className="shrink-0 flex flex-col pr-2" style={{ width: 28 }}>
-                      <div className="flex items-center" style={{ height: 90 }}>
-                        <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>波高</span>
-                      </div>
-                      <div className="flex items-center" style={{ height: 64 }}>
-                        <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>風</span>
-                      </div>
-                      <div className="flex items-center" style={{ height: 18 }}>
-                        <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>うねり</span>
-                      </div>
-                      <div className="flex items-center" style={{ height: 18 }}>
-                        <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>周期</span>
-                      </div>
-                      <div style={{ height: 20 }} />
-                    </div>
-                    {/* Scrollable chart */}
-                    <div className="overflow-x-auto flex-1">
-                      <div className="flex gap-1.5 pb-2" style={{ minWidth: `${hourly.length * 52}px` }}>
-                        {hourly.map((c, i) => {
-                          const ts = new Date(c.timestamp)
-                          const hour = (ts.getUTCHours() + 9) % 24
-                          const barHeight = Math.round((c.waveHeight / maxHeight) * 60)
-                          const windType = classifyWind(c.windDir, c.windSpeed)
-                          const windColor = windTypeColor(windType)
-                          const windBarHeight = Math.round((c.windSpeed / maxWind) * 30)
-                          const now = new Date()
-                          const isNow = Math.abs(ts.getTime() - now.getTime()) < 1800000
-                          const co = c.waveHeight > 2.5
+                  <div className="overflow-x-auto">
+                    <div style={{ minWidth: `${labelW + hourly.length * (colW + gap)}px` }}>
 
+                      {/* Header row — hours */}
+                      <div style={{ display: 'flex', gap, marginBottom: 4 }}>
+                        <div style={{ width: labelW, flexShrink: 0 }} />
+                        {hourly.map((c, i) => {
+                          const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+                          const now = new Date()
+                          const isNow = Math.abs(new Date(c.timestamp).getTime() - now.getTime()) < 1800000
                           return (
-                            <div key={i} className="flex flex-col items-center gap-0.5 w-12 shrink-0">
-                              {/* Wave bar */}
-                              <div className="h-16 flex items-end w-full">
-                                <div
-                                  className={`w-full rounded-t-sm ${co ? 'bg-red-400' : getBarColor(c.waveHeight, preferred)}`}
-                                  style={{ height: `${Math.max(barHeight, 4)}px` }}
-                                />
-                              </div>
-                              <span className="text-xs text-slate-600 font-medium leading-none">{c.waveHeight.toFixed(1)}m</span>
-                              {/* Wind bar */}
-                              <div className="h-8 flex items-end w-full mt-1">
-                                <div
-                                  className={`w-full rounded-t-sm ${windType === 'offshore' || windType === 'calm' ? 'bg-emerald-300' : windType === 'onshore' ? 'bg-red-300' : 'bg-amber-300'}`}
-                                  style={{ height: `${Math.max(windBarHeight, 2)}px` }}
-                                />
-                              </div>
-                              <span className={`text-[10px] leading-none font-semibold ${windColor}`}>{c.windSpeed.toFixed(1)}</span>
-                              <span className={`text-[9px] leading-none font-semibold ${windColor}`}>{windTypeShort(windType)}</span>
-                              {/* Swell direction */}
-                              <span className="text-[10px] leading-none text-[#8899aa] mt-1">{swellDir8(c.swellDir)}</span>
-                              {/* Period */}
-                              <span className="text-[10px] leading-none text-[#8899aa]">{Math.round(c.wavePeriod)}秒</span>
-                              {/* Hour */}
-                              <span className={`text-[10px] font-medium leading-none mt-1 ${isNow ? 'text-sky-600' : 'text-slate-400'}`}>
-                                {isNow ? '▲' : ''}{hour}時
+                            <div key={i} style={{ width: colW, flexShrink: 0, textAlign: 'center' }}>
+                              <span style={{ fontSize: 9, fontWeight: 600, color: isNow ? '#0284c7' : '#94a3b8' }}>
+                                {isNow ? '▲' : ''}{h}時
                               </span>
                             </div>
                           )
                         })}
                       </div>
+
+                      {/* Row 1 — 波高 */}
+                      <div style={{ display: 'flex', gap, alignItems: 'flex-end' }}>
+                        <div style={{ width: labelW, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 58 }}>
+                          <span style={{ fontSize: 9, fontWeight: 500, color: '#94a3b8' }}>波高</span>
+                        </div>
+                        {hourly.map((c, i) => {
+                          const barH = Math.round((c.waveHeight / maxHeight) * 44)
+                          const co = c.waveHeight > 2.5
+                          return (
+                            <div key={i} style={{ width: colW, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <div style={{ height: 44, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
+                                <div style={{ width: '100%', height: Math.max(barH, 3), borderRadius: '2px 2px 0 0', background: co ? '#ef4444' : '#1d9e75' }} />
+                              </div>
+                              <span style={{ fontSize: 8, color: '#64748b', fontWeight: 500, marginTop: 1, lineHeight: 1 }}>{c.waveHeight.toFixed(1)}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <div style={rowSep} />
+
+                      {/* Row 2 — 風 */}
+                      <div style={{ display: 'flex', gap, alignItems: 'flex-end' }}>
+                        <div style={{ width: labelW, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38 }}>
+                          <span style={{ fontSize: 9, fontWeight: 500, color: '#94a3b8' }}>風</span>
+                        </div>
+                        {hourly.map((c, i) => {
+                          const barH = Math.round((c.windSpeed / maxWind) * 24)
+                          const wt = classifyWind(c.windDir, c.windSpeed)
+                          const isOff = wt === 'offshore' || wt === 'calm' || wt === 'side-offshore'
+                          const barColor = isOff ? '#85b7eb' : '#f0997b'
+                          const labelColor = isOff ? '#185fa5' : '#b91c1c'
+                          return (
+                            <div key={i} style={{ width: colW, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <div style={{ height: 24, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
+                                <div style={{ width: '100%', height: Math.max(barH, 2), borderRadius: '2px 2px 0 0', background: barColor }} />
+                              </div>
+                              <span style={{ fontSize: 8, fontWeight: 600, color: labelColor, marginTop: 1, lineHeight: 1 }}>{windTypeShort(wt)}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <div style={rowSep} />
+
+                      {/* Row 3 — うねり */}
+                      <div style={{ display: 'flex', gap, alignItems: 'center' }}>
+                        <div style={{ width: labelW, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 18 }}>
+                          <span style={{ fontSize: 9, fontWeight: 500, color: '#94a3b8' }}>うねり</span>
+                        </div>
+                        {hourly.map((c, i) => (
+                          <div key={i} style={{ width: colW, flexShrink: 0, textAlign: 'center' }}>
+                            <span style={{ fontSize: 8, fontWeight: 600, color: '#185fa5', background: '#e6f1fb', padding: '1px 3px', borderRadius: 3, display: 'inline-block', lineHeight: 1.3 }}>
+                              {swellDir8(c.swellDir)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={rowSep} />
+
+                      {/* Row 4 — 周期 */}
+                      <div style={{ display: 'flex', gap, alignItems: 'center' }}>
+                        <div style={{ width: labelW, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 18 }}>
+                          <span style={{ fontSize: 9, fontWeight: 500, color: '#94a3b8' }}>周期</span>
+                        </div>
+                        {hourly.map((c, i) => (
+                          <div key={i} style={{ width: colW, flexShrink: 0, textAlign: 'center' }}>
+                            <span style={{ fontSize: 8, fontWeight: 600, color: '#0f6e56', background: '#e1f5ee', padding: '1px 3px', borderRadius: 3, display: 'inline-block', lineHeight: 1.3 }}>
+                              {Math.round(c.wavePeriod)}秒
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
                     </div>
                   </div>
                 </section>
