@@ -16,6 +16,14 @@ import TideStatusBar from '@/components/TideStatusBar'
 import BottomNav from '@/components/BottomNav'
 import type { TideEvent } from '@/lib/wave/types'
 
+interface Shop {
+  name: string
+  vicinity: string
+  rating?: number
+  place_id: string
+  geometry: { location: { lat: number; lng: number } }
+}
+
 function toDateStr(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -158,6 +166,10 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const [middaySlot, setMiddaySlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
   const [eveningSlot, setEveningSlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
 
+  const [windyLoaded, setWindyLoaded] = useState(false)
+  const [shops, setShops] = useState<Shop[] | null>(null)
+  const [shopsLoading, setShopsLoading] = useState(false)
+
   const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
   const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
   const [selectedSurfGrade, setSelectedSurfGrade] = useState<Grade | null>(null)
@@ -167,6 +179,16 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const surfDateOptions = getSurfDateOptions()
 
   useEffect(() => { setProfile(getUserProfile()) }, [])
+
+  useEffect(() => {
+    if (!spot) return
+    setShopsLoading(true)
+    fetch(`/api/shops?lat=${spot.lat}&lng=${spot.lng}`)
+      .then(r => r.ok ? r.json() : { shops: [] })
+      .then(d => setShops(d.shops ?? []))
+      .catch(() => setShops([]))
+      .finally(() => setShopsLoading(false))
+  }, [spot?.id])
 
   useEffect(() => {
     if (!profile || !spot) return
@@ -500,6 +522,101 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 </section>
               )
             })()}
+
+            {/* Windy map */}
+            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">風・波のマップ</h2>
+              <div className="relative" style={{ borderRadius: 12, overflow: 'hidden', height: 300 }}>
+                {!windyLoaded && (
+                  <div className="absolute inset-0 bg-[#f0f9ff] animate-pulse" />
+                )}
+                <iframe
+                  src={`https://embed.windy.com/embed2.html?lat=${spot.lat}&lon=${spot.lng}&detailLat=${spot.lat}&detailLon=${spot.lng}&zoom=12&level=surface&overlay=waves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default`}
+                  width="100%"
+                  height="300"
+                  style={{ border: 'none' }}
+                  onLoad={() => setWindyLoaded(true)}
+                />
+              </div>
+            </section>
+
+            {/* Google Map */}
+            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">ポイントマップ</h2>
+              <div className="relative" style={{ borderRadius: 12, overflow: 'hidden', height: 200 }}>
+                <iframe
+                  src={(() => {
+                    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+                    const center = spot.mapCenter ?? { lat: spot.lat, lng: spot.lng }
+                    return `https://www.google.com/maps/embed/v1/view?key=${key}&center=${center.lat},${center.lng}&zoom=15&maptype=roadmap`
+                  })()}
+                  width="100%"
+                  height="200"
+                  style={{ border: 'none' }}
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+              <a
+                href={spot.mapUrl ?? `https://www.google.com/maps?q=${spot.lat},${spot.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-end gap-1 mt-2 text-xs font-semibold text-sky-700"
+              >
+                Google Mapで開く
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </section>
+
+            {/* Nearby surf shops */}
+            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">近隣サーフショップ</h2>
+              {shopsLoading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse flex items-center gap-3">
+                      <div className="w-6 h-6 bg-[#f0f9ff] rounded-full shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 bg-[#f0f9ff] rounded w-1/2" />
+                        <div className="h-2.5 bg-[#f0f9ff] rounded w-3/4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : !shops || shops.length === 0 ? (
+                <p className="text-sm text-[#8899aa]">近隣のサーフショップ情報はありません</p>
+              ) : (
+                <div className="space-y-3">
+                  {shops.map((shop, i) => (
+                    <div key={shop.place_id} className="flex items-start gap-3">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-amber-400 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[#0a1628] truncate">{shop.name}</p>
+                        <p className="text-xs text-[#8899aa] truncate">{shop.vicinity}</p>
+                        {shop.rating && (
+                          <p className="text-xs text-amber-500 font-semibold mt-0.5">★ {shop.rating.toFixed(1)}</p>
+                        )}
+                      </div>
+                      <a
+                        href={`https://www.google.com/maps/place/?q=place_id:${shop.place_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 text-[10px] font-semibold text-sky-700 flex items-center gap-0.5 mt-0.5"
+                      >
+                        Map
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
             {/* Spot info */}
             <section className="bg-white mt-2 p-4 border-b border-[#eef1f4] space-y-5">
