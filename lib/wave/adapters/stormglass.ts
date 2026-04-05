@@ -136,7 +136,8 @@ export async function fetchTideFromStormGlass(lat: number, lng: number, date: st
       const json = await res.json()
       json.data?.forEach((d: { time: string; sg: number }) => {
         const jstHour = (new Date(d.time).getUTCHours() + 9) % 24
-        hourly[jstHour] = Math.round(d.sg * 100)
+        // Chart Datum → TP基準: +115cm オフセット（横浜検潮所基準）
+        hourly[jstHour] = Math.round(d.sg * 100 + 115)
       })
     } finally {
       clearTimeout(timeout)
