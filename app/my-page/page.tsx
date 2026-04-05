@@ -116,9 +116,9 @@ export default function MyPage() {
             </p>
           </div>
 
-          {/* 100点満点スコアの内訳 */}
+          {/* 6つの軸で星5段階評価 */}
           <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>100点満点スコアの内訳</p>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>6つの軸で100点満点 → ★1〜5の星で表示</p>
             <div className="grid grid-cols-3 gap-1.5 mb-3">
               {[
                 { label: '波高', score: '25点' },
@@ -134,8 +134,15 @@ export default function MyPage() {
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
-              波質スコアは周期（14/12/10/8/6秒の6段階）・セカンダリースウェル・クロスうねり干渉・波エネルギー（kJ）を複合計算。「上げ三分・下げ七分」の日本の格言まで数値化されています。
+            <div style={{ fontSize: 13, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 8 }}>
+              <p style={{ margin: '0 0 4px' }}>★★★★★ 最高のコンディション（月1回出るかのレア）</p>
+              <p style={{ margin: '0 0 4px' }}>★★★★☆ 良いコンディション</p>
+              <p style={{ margin: '0 0 4px' }}>★★★☆☆ まずまず。楽しめます</p>
+              <p style={{ margin: '0 0 4px' }}>★★☆☆☆ やや難しめ。上級者向け</p>
+              <p style={{ margin: 0 }}>★☆☆☆☆ おすすめしません</p>
+            </div>
+            <p style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6 }}>
+              クローズアウト時は★1の赤字で表示されます。波質スコアは周期・セカンダリースウェル・クロスうねり干渉・波エネルギーを複合計算しています。
             </p>
           </div>
 
