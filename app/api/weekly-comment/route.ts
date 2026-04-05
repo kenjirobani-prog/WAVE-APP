@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 
 export const maxDuration = 30
 
@@ -19,6 +21,24 @@ export async function POST(request: Request) {
 
     if (!weeklyData || !Array.isArray(weeklyData)) {
       return NextResponse.json({ error: 'weeklyData is required' }, { status: 400 })
+    }
+
+    // Firestoreキャッシュ確認（日付＋エリアでキー）
+    const dateStr = todayStr()
+    const area = areaLabel ?? '湘南'
+    const cacheDocId = `${area}_${dateStr}`
+    try {
+      await ensureAnonymousAuth()
+      const db = getDb()
+      const cacheRef = doc(db, 'weeklyComment', cacheDocId)
+      const cached = await getDoc(cacheRef)
+      if (cached.exists()) {
+        const data = cached.data()
+        console.log(`[weekly-comment] Cache HIT: ${cacheDocId}`)
+        return NextResponse.json({ comment: data.comment, generatedAt: data.generatedAt, cached: true })
+      }
+    } catch (cacheErr) {
+      console.error('[weekly-comment] Cache read error:', cacheErr)
     }
 
     // Claude API呼び出し
@@ -79,12 +99,20 @@ export async function POST(request: Request) {
 
     const result = await res.json()
     const comment = result.content?.[0]?.text ?? ''
+    const generatedAt = new Date().toISOString()
     console.log('[weekly-comment] Generated comment:', comment.substring(0, 100))
 
-    return NextResponse.json({
-      comment,
-      generatedAt: new Date().toISOString(),
-    })
+    // Firestoreにキャッシュ保存
+    try {
+      await ensureAnonymousAuth()
+      const db = getDb()
+      const cacheRef = doc(db, 'weeklyComment', cacheDocId)
+      await setDoc(cacheRef, { comment, generatedAt, areaLabel: area, date: dateStr })
+    } catch (writeErr) {
+      console.error('[weekly-comment] Cache write error:', writeErr)
+    }
+
+    return NextResponse.json({ comment, generatedAt })
   } catch (err) {
     console.error('[weekly-comment] error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

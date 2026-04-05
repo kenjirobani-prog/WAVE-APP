@@ -539,6 +539,15 @@ export function waveQualitySub(
   return '周期短め × オンショア・波が崩れやすい'
 }
 
+export function getStarRating(score: number, isCloseout: boolean): number {
+  if (isCloseout) return 1
+  if (score >= 80) return 5
+  if (score >= 60) return 4
+  if (score >= 40) return 3
+  if (score >= 20) return 2
+  return 1
+}
+
 export function scoreToGrade(score: number): Grade {
   if (score >= 85) return '◎'
   if (score >= 65) return '○'
