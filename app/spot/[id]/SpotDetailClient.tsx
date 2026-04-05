@@ -406,12 +406,18 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">1時間ごと予報</h2>
                   <div className="flex">
                     {/* Left labels */}
-                    <div className="shrink-0 flex flex-col justify-between pr-2" style={{ width: 28 }}>
+                    <div className="shrink-0 flex flex-col pr-2" style={{ width: 28 }}>
                       <div className="flex items-center" style={{ height: 90 }}>
                         <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>波高</span>
                       </div>
                       <div className="flex items-center" style={{ height: 64 }}>
                         <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>風</span>
+                      </div>
+                      <div className="flex items-center" style={{ height: 18 }}>
+                        <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>うねり</span>
+                      </div>
+                      <div className="flex items-center" style={{ height: 18 }}>
+                        <span className="text-[10px] font-bold text-[#94a3b8]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>周期</span>
                       </div>
                       <div style={{ height: 20 }} />
                     </div>
@@ -448,6 +454,10 @@ export default function SpotDetailContent({ id }: { id: string }) {
                               </div>
                               <span className={`text-[10px] leading-none font-semibold ${windColor}`}>{c.windSpeed.toFixed(1)}</span>
                               <span className={`text-[9px] leading-none font-semibold ${windColor}`}>{windTypeShort(windType)}</span>
+                              {/* Swell direction */}
+                              <span className="text-[10px] leading-none text-[#8899aa] mt-1">{swellDir8(c.swellDir)}</span>
+                              {/* Period */}
+                              <span className="text-[10px] leading-none text-[#8899aa]">{Math.round(c.wavePeriod)}秒</span>
                               {/* Hour */}
                               <span className={`text-[10px] font-medium leading-none mt-1 ${isNow ? 'text-sky-600' : 'text-slate-400'}`}>
                                 {isNow ? '▲' : ''}{hour}時
