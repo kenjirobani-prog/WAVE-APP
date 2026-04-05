@@ -448,7 +448,8 @@ export default function SpotDetailContent({ id }: { id: string }) {
                               <div style={{ height: 24, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
                                 <div style={{ width: '100%', height: Math.max(barH, 2), borderRadius: '2px 2px 0 0', background: barColor }} />
                               </div>
-                              <span style={{ fontSize: 8, fontWeight: 600, color: labelColor, marginTop: 1, lineHeight: 1 }}>{windTypeShort(wt)}</span>
+                              <span style={{ fontSize: 8, color: '#94a3b8', marginTop: 1, lineHeight: 1 }}>{c.windSpeed.toFixed(1)}</span>
+                              <span style={{ fontSize: 8, fontWeight: 600, color: labelColor, lineHeight: 1 }}>{windTypeShort(wt)}</span>
                             </div>
                           )
                         })}
