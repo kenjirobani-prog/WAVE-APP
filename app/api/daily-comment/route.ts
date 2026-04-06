@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { COMMENT_SCHEDULES, padHour, type CommentTarget } from '@/lib/commentSchedules'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
 import { SPOTS } from '@/data/spots'
+import { classifyWind, windTypeLabel } from '@/lib/wave/scoring'
 
 export const maxDuration = 30
 
@@ -120,7 +121,9 @@ export async function GET(request: NextRequest) {
               const conditions = fSnap.data().conditions ?? []
               const c = findByHour(conditions, slot.hour)
               if (c) {
-                forecastSummary += `${spotId}: 波高${c.waveHeight}m, 周期${c.wavePeriod}秒, 風速${c.windSpeed}m/s, 風向${c.windDir}°, 潮位${c.tideHeight}cm\n`
+                const spot = SPOTS.find(s => s.id === spotId)
+                const wClass = classifyWind(c.windDir, c.windSpeed, spot)
+                forecastSummary += `${spotId}: 波高${c.waveHeight}m, 周期${c.wavePeriod}秒, 風速${c.windSpeed}m/s, 風の種類:${windTypeLabel(wClass)}, 潮位${c.tideHeight}cm\n`
               }
             }
           } catch {}
@@ -140,7 +143,9 @@ export async function GET(request: NextRequest) {
             })
             if (hours.length > 0) {
               const rep = findByHour(hours, 12) ?? hours[Math.floor(hours.length / 2)]
-              forecastSummary += `${spotId}: 波高${rep.waveHeight}m, 周期${rep.wavePeriod}秒, 風速${rep.windSpeed}m/s, 潮位${rep.tideHeight}cm\n`
+              const spot = SPOTS.find(s => s.id === spotId)
+              const wClass = classifyWind(rep.windDir, rep.windSpeed, spot)
+              forecastSummary += `${spotId}: 波高${rep.waveHeight}m, 周期${rep.wavePeriod}秒, 風速${rep.windSpeed}m/s, 風の種類:${windTypeLabel(wClass)}, 潮位${rep.tideHeight}cm\n`
             }
           }
         } catch {}
@@ -192,6 +197,7 @@ export async function GET(request: NextRequest) {
 3. 初心者へのアドバイスまたは注意点（1〜2文）— 安全への配慮として「無理は禁物です」「コンディションが悪い時は見学に徹しましょう」などの表現を自然に含めてください。
 
 ルール:
+- 風の種類は各スポットの地形・海岸線方向を考慮して計算済みの値を渡しています。自分で風向きから再解釈せず、渡された「風の種類」をそのまま使ってください。例えば「南西の風」でもスポットによってオンショアになったりオフショアになったりします。
 - 風の専門用語を使う場合は必ず簡単な説明を添えてください。例：「オフショア（陸から海に向かう風で波の面がキレイに整います）」「オンショア（海から陸に向かう風で波が崩れやすくなります）」
 - 波高が2.5mを超える時間帯はクローズアウトと判断し、「海に入るのは絶対にやめましょう」と強く警告してください。
 - 「ライフジャケット」という表現は使わないでください。
