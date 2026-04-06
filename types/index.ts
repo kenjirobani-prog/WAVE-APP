@@ -57,6 +57,7 @@ export interface Spot {
   offshoreWindDir: number         // オフショア風の中心方向（度、真北基準）
   offshoreWindRange: number       // オフショアとみなす範囲 ±度
   terrainBonus: TerrainBonus
+  coastlineAngle?: number            // 海岸線の方角（度数、真北基準）
   bathymetryProfile?: BathymetryProfile
   description?: string
   bestSeasons: ('spring' | 'summer' | 'autumn' | 'winter')[]

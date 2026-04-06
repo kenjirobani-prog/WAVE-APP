@@ -3,6 +3,7 @@ import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { COMMENT_SCHEDULES, padHour, type CommentTarget } from '@/lib/commentSchedules'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
+import { SPOTS } from '@/data/spots'
 
 export const maxDuration = 30
 
@@ -150,6 +151,30 @@ export async function GET(request: NextRequest) {
       forecastSummary = '予報データが取得できませんでした。一般的なコメントを生成してください。'
     }
 
+    // ダンパー傾向の検出: うねりが海岸線にほぼ直角 + 短周期
+    let dumperWarning = ''
+    for (const spotId of spotIds) {
+      const spot = SPOTS.find(s => s.id === spotId)
+      if (!spot || spot.coastlineAngle == null) continue
+      try {
+        const fRef = doc(db, 'forecastCache', `${spotId}_${forecastDate}`)
+        const fSnap = await getDoc(fRef)
+        if (!fSnap.exists()) continue
+        const conditions = fSnap.data().conditions ?? []
+        const rep = conditions.find((c: { timestamp: string }) => {
+          const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+          return h === 12
+        }) ?? conditions[0]
+        if (!rep) continue
+        const rawDiff = Math.abs(rep.swellDir - spot.coastlineAngle)
+        const angleDiff = rawDiff > 180 ? 360 - rawDiff : rawDiff
+        if (angleDiff >= 70 && angleDiff <= 110 && rep.wavePeriod <= 8) {
+          dumperWarning = `\n【ダンパー傾向の注意】${spot.name}付近ではうねりが海岸線に対してほぼ直角に入っており、周期も${Math.round(rep.wavePeriod)}秒と短めのため、波が厚くダンパーになりやすい傾向があります。`
+          break
+        }
+      } catch {}
+    }
+
     const targetLabel = target === 'today' ? '今日' : '明日'
     const timeContext = target === 'today'
       ? `現在時刻: ${hourNum}時。${hourNum}時以降の今日のサーフィン状況`
@@ -172,9 +197,10 @@ export async function GET(request: NextRequest) {
 - 「ライフジャケット」という表現は使わないでください。
 - 口調は丁寧でフレンドリーな「〜です」「〜ましょう」調で、友人の先輩サーファーが教えてくれるようなトーンにしてください。
 - 余計な前置きや見出し記号は不要です。コメント本文のみ返してください。
-- コメントは読みやすくするため、内容のまとまりごとに改行を入れてください。全体概要のあと、ベスト時間帯のあと、初心者アドバイスのあとにそれぞれ改行を入れ、1つの段落が長くなりすぎないよう2文ごとを目安に改行してください。`
+- コメントは読みやすくするため、内容のまとまりごとに改行を入れてください。全体概要のあと、ベスト時間帯のあと、初心者アドバイスのあとにそれぞれ改行を入れ、1つの段落が長くなりすぎないよう2文ごとを目安に改行してください。
+- データに「ダンパー傾向の注意」が含まれている場合は、コメントの最後に「なお、うねりが海岸線に対してほぼ直角に入っており、周期も短めのため、波が厚くダンパーになりやすい傾向があります。波に乗りづらいと感じたら無理せず様子を見ましょう。」という趣旨の注記を自然な文章で追加してください。`
 
-    const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の${areaLabel}・${spotName}のデータ:\n${forecastSummary}`
+    const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の${areaLabel}・${spotName}のデータ:\n${forecastSummary}${dumperWarning}`
 
     console.log(`[daily-comment] Generating for ${target} ${hour}h...`)
 

@@ -369,12 +369,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
                       <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{current.wavePeriod.toFixed(0)}秒</p>
                       <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>{calcSetInterval(current.wavePeriod)}</p>
                     </div>
-                    <div style={{ width: '0.5px', background: '#eef1f4' }} />
-                    {/* 波質 */}
-                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
-                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>波質</p>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{waveQualitySimple(current.wavePeriod, wt)}</p>
-                    </div>
                   </div>
                 </section>
               )

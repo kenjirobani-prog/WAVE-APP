@@ -15,6 +15,7 @@ export const SPOTS: Spot[] = [
     lng: 139.474,
     area: 'shonan',
     areaLabel: '湘南',
+    coastlineAngle: 85,
     bestSwellDir: 175,
     swellDirRange: 40,
     swellDirScoreTable: SHONAN_SWELL_TABLE,
@@ -56,6 +57,7 @@ export const SPOTS: Spot[] = [
     lng: 139.457,
     area: 'shonan',
     areaLabel: '湘南',
+    coastlineAngle: 80,
     bestSwellDir: 180,
     swellDirRange: 35,
     swellDirScoreTable: SHONAN_SWELL_TABLE,
@@ -97,6 +99,7 @@ export const SPOTS: Spot[] = [
     lng: 139.490,
     area: 'shonan',
     areaLabel: '湘南',
+    coastlineAngle: 90,
     bestSwellDir: 165,
     swellDirRange: 40,
     swellDirScoreTable: SHONAN_SWELL_TABLE,
@@ -137,6 +140,7 @@ export const SPOTS: Spot[] = [
     lng: 139.412,
     area: 'shonan',
     areaLabel: '湘南',
+    coastlineAngle: 85,
     bestSwellDir: 205,
     swellDirRange: 30,
     swellDirScoreTable: SHONAN_SWELL_TABLE,
@@ -177,6 +181,7 @@ export const SPOTS: Spot[] = [
     lat: 35.308,
     lng: 139.314,
     area: 'shonan',
+    coastlineAngle: 80,
     areaLabel: '湘南',
     bestSwellDir: 215,
     swellDirRange: 30,
@@ -217,6 +222,7 @@ export const SPOTS: Spot[] = [
     nameEn: 'Shichiri',
     lat: 35.301,
     lng: 139.528,
+    coastlineAngle: 100,
     area: 'shonan',
     areaLabel: '湘南',
     bestSwellDir: 160,
@@ -258,6 +264,7 @@ export const SPOTS: Spot[] = [
     nameEn: 'Yuigahama',
     lat: 35.316,
     lng: 139.547,
+    coastlineAngle: 95,
     area: 'shonan',
     areaLabel: '湘南',
     bestSwellDir: 165,
@@ -298,7 +305,7 @@ export const SPOTS: Spot[] = [
   // =============================
   {
     id: 'oarai', name: '大洗', nameEn: 'Oarai', lat: 36.305, lng: 140.578,
-    area: 'ibaraki', areaLabel: '茨城',
+    area: 'ibaraki', areaLabel: '茨城', coastlineAngle: 5,
     bestSwellDir: 90, swellDirRange: 45,
     swellDirScoreTable: [{dir:90,score:18},{dir:67,score:17},{dir:112,score:16},{dir:135,score:14},{dir:45,score:13},{dir:158,score:8},{dir:22,score:7},{dir:180,score:5},{dir:0,score:3},{dir:270,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 70, optimalTideMax: 130, bestTideMovement: 'rising',
@@ -317,7 +324,7 @@ export const SPOTS: Spot[] = [
   // =============================
   {
     id: 'ichinomiya', name: '一宮', nameEn: 'Ichinomiya', lat: 35.336, lng: 140.395,
-    area: 'chiba-north', areaLabel: '千葉北',
+    area: 'chiba-north', areaLabel: '千葉北', coastlineAngle: 5,
     bestSwellDir: 90, swellDirRange: 40,
     swellDirScoreTable: [{dir:90,score:18},{dir:67,score:17},{dir:45,score:17},{dir:112,score:14},{dir:22,score:14},{dir:0,score:11},{dir:135,score:10},{dir:158,score:6},{dir:180,score:5},{dir:270,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 70, optimalTideMax: 130, bestTideMovement: 'rising',
@@ -336,7 +343,7 @@ export const SPOTS: Spot[] = [
   // =============================
   {
     id: 'kamogawa', name: '鴨川', nameEn: 'Kamogawa', lat: 35.1214, lng: 140.1315,
-    area: 'chiba-south', areaLabel: '千葉南',
+    area: 'chiba-south', areaLabel: '千葉南', coastlineAngle: 45,
     bestSwellDir: 155, swellDirRange: 45,
     swellDirScoreTable: [{dir:158,score:18},{dir:180,score:17},{dir:202,score:14},{dir:135,score:13},{dir:225,score:9},{dir:90,score:6},{dir:45,score:2},{dir:0,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 80, optimalTideMax: 140, bestTideMovement: 'rising',
@@ -355,7 +362,7 @@ export const SPOTS: Spot[] = [
   // =============================
   {
     id: 'hokota', name: '鉾田', nameEn: 'Hokota', lat: 36.086, lng: 140.608,
-    area: 'ibaraki', areaLabel: '茨城',
+    area: 'ibaraki', areaLabel: '茨城', coastlineAngle: 5,
     bestSwellDir: 67, swellDirRange: 50,
     swellDirScoreTable: [{dir:67,score:18},{dir:45,score:17},{dir:90,score:16},{dir:112,score:14},{dir:22,score:11},{dir:135,score:12},{dir:158,score:10},{dir:0,score:9},{dir:180,score:7},{dir:270,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 70, optimalTideMax: 130, bestTideMovement: 'rising',
@@ -369,7 +376,7 @@ export const SPOTS: Spot[] = [
   },
   {
     id: 'kashima', name: '鹿島', nameEn: 'Kashima', lat: 35.969, lng: 140.673,
-    area: 'ibaraki', areaLabel: '茨城',
+    area: 'ibaraki', areaLabel: '茨城', coastlineAngle: 10,
     bestSwellDir: 45, swellDirRange: 50,
     swellDirScoreTable: [{dir:45,score:18},{dir:67,score:17},{dir:22,score:16},{dir:90,score:15},{dir:0,score:13},{dir:112,score:12},{dir:135,score:10},{dir:180,score:8},{dir:158,score:6},{dir:270,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 80, optimalTideMax: 150, bestTideMovement: 'rising',
@@ -383,7 +390,7 @@ export const SPOTS: Spot[] = [
   },
   {
     id: 'hasaki', name: '波崎', nameEn: 'Hasaki', lat: 35.753, lng: 140.832,
-    area: 'ibaraki', areaLabel: '茨城',
+    area: 'ibaraki', areaLabel: '茨城', coastlineAngle: 5,
     bestSwellDir: 90, swellDirRange: 55,
     swellDirScoreTable: [{dir:90,score:18},{dir:112,score:17},{dir:135,score:16},{dir:67,score:15},{dir:45,score:14},{dir:158,score:14},{dir:180,score:11},{dir:0,score:10},{dir:202,score:7},{dir:270,score:0}],
     waveHeightMultiplier: 0.85, optimalTideMin: 70, optimalTideMax: 140, bestTideMovement: 'rising',
@@ -400,7 +407,7 @@ export const SPOTS: Spot[] = [
   // =============================
   {
     id: 'byobu', name: '屏風浦', nameEn: 'Byobugaura', lat: 35.716, lng: 140.829,
-    area: 'chiba-north', areaLabel: '千葉北',
+    area: 'chiba-north', areaLabel: '千葉北', coastlineAngle: 30,
     bestSwellDir: 180, swellDirRange: 50,
     swellDirScoreTable: [{dir:180,score:18},{dir:158,score:17},{dir:202,score:15},{dir:135,score:12},{dir:90,score:4},{dir:45,score:0},{dir:0,score:0},{dir:270,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 80, optimalTideMax: 150, bestTideMovement: 'rising',
@@ -414,7 +421,7 @@ export const SPOTS: Spot[] = [
   },
   {
     id: 'iioka', name: '飯岡', nameEn: 'Iioka', lat: 35.702, lng: 140.711,
-    area: 'chiba-north', areaLabel: '千葉北',
+    area: 'chiba-north', areaLabel: '千葉北', coastlineAngle: 15,
     bestSwellDir: 158, swellDirRange: 50,
     swellDirScoreTable: [{dir:158,score:18},{dir:135,score:16},{dir:180,score:15},{dir:112,score:13},{dir:202,score:12},{dir:90,score:9},{dir:45,score:2},{dir:0,score:0}],
     waveHeightMultiplier: 0.85, optimalTideMin: 70, optimalTideMax: 120, bestTideMovement: 'any',
@@ -428,7 +435,7 @@ export const SPOTS: Spot[] = [
   },
   {
     id: 'katakai', name: '片貝', nameEn: 'Katakai', lat: 35.537, lng: 140.462,
-    area: 'chiba-north', areaLabel: '千葉北',
+    area: 'chiba-north', areaLabel: '千葉北', coastlineAngle: 10,
     bestSwellDir: 140, swellDirRange: 50,
     swellDirScoreTable: [{dir:135,score:18},{dir:158,score:16},{dir:112,score:15},{dir:180,score:13},{dir:90,score:12},{dir:202,score:10},{dir:45,score:8},{dir:0,score:5},{dir:315,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 80, optimalTideMax: 130, bestTideMovement: 'rising',
@@ -442,7 +449,7 @@ export const SPOTS: Spot[] = [
   },
   {
     id: 'taito', name: '太東', nameEn: 'Taito', lat: 35.329, lng: 140.398,
-    area: 'chiba-north', areaLabel: '千葉北',
+    area: 'chiba-north', areaLabel: '千葉北', coastlineAngle: 10,
     bestSwellDir: 45, swellDirRange: 40,
     swellDirScoreTable: [{dir:45,score:18},{dir:22,score:16},{dir:67,score:16},{dir:90,score:14},{dir:0,score:12},{dir:112,score:11},{dir:135,score:8},{dir:158,score:5},{dir:180,score:4},{dir:270,score:0}],
     waveHeightMultiplier: 0.85, optimalTideMin: 70, optimalTideMax: 140, bestTideMovement: 'falling',
@@ -456,7 +463,7 @@ export const SPOTS: Spot[] = [
   },
   {
     id: 'onjuku', name: '御宿', nameEn: 'Onjuku', lat: 35.182, lng: 140.364,
-    area: 'chiba-north', areaLabel: '千葉北',
+    area: 'chiba-north', areaLabel: '千葉北', coastlineAngle: 20,
     bestSwellDir: 135, swellDirRange: 45,
     swellDirScoreTable: [{dir:135,score:18},{dir:112,score:15},{dir:158,score:15},{dir:180,score:12},{dir:90,score:11},{dir:202,score:8},{dir:45,score:5},{dir:270,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 80, optimalTideMax: 140, bestTideMovement: 'rising',
@@ -473,7 +480,7 @@ export const SPOTS: Spot[] = [
   // =============================
   {
     id: 'chikura', name: '千倉', nameEn: 'Chikura', lat: 34.963, lng: 139.961,
-    area: 'chiba-south', areaLabel: '千葉南',
+    area: 'chiba-south', areaLabel: '千葉南', coastlineAngle: 130,
     bestSwellDir: 200, swellDirRange: 40,
     swellDirScoreTable: [{dir:202,score:18},{dir:180,score:17},{dir:225,score:16},{dir:270,score:12},{dir:158,score:12},{dir:135,score:7},{dir:90,score:3},{dir:45,score:0},{dir:0,score:0}],
     waveHeightMultiplier: 1.0, optimalTideMin: 80, optimalTideMax: 130, bestTideMovement: 'rising',
@@ -487,7 +494,7 @@ export const SPOTS: Spot[] = [
   },
   {
     id: 'heisaura', name: '平砂浦', nameEn: 'Heisaura', lat: 34.939, lng: 139.820,
-    area: 'chiba-south', areaLabel: '千葉南',
+    area: 'chiba-south', areaLabel: '千葉南', coastlineAngle: 10,
     bestSwellDir: 210, swellDirRange: 40,
     swellDirScoreTable: [{dir:202,score:18},{dir:180,score:17},{dir:225,score:16},{dir:270,score:10},{dir:158,score:10},{dir:135,score:5},{dir:90,score:2},{dir:45,score:0},{dir:0,score:0}],
     waveHeightMultiplier: 0.9, optimalTideMin: 80, optimalTideMax: 140, bestTideMovement: 'rising',
