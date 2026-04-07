@@ -580,6 +580,24 @@ export default function SpotDetailContent({ id }: { id: string }) {
               <p className="text-xs text-[#8899aa]">{spot.access}</p>
             </section>
 
+            {/* Live camera */}
+            {spot.livecam?.type === 'link' && spot.livecam.url && (
+              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">ライブカメラ</h2>
+                <a
+                  href={spot.livecam.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl text-sm font-semibold active:scale-[0.98] transition-transform"
+                >
+                  ライブカメラを見る →
+                </a>
+                {spot.livecam.channelName && (
+                  <p className="text-sm text-[#8899aa] mt-1">配信：{spot.livecam.channelName}</p>
+                )}
+              </section>
+            )}
+
           </>
         )}
       </main>
