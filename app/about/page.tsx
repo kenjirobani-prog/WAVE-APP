@@ -25,7 +25,7 @@ export default function AboutPage() {
 
       <main className="flex-1 overflow-auto pb-4 px-4 pt-4 space-y-3">
         <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
-          <h1 className="text-2xl font-medium mb-6 text-[#0a1628]">波を、AIが読む時代。</h1>
+          <h1 className="text-3xl font-bold text-[#0B2545] mb-8">波を、AIが読む時代。</h1>
 
           <h2 className="text-base font-bold mt-8 mb-2 text-[#0a1628]">AI 波予報とは</h2>
           <p className="text-sm leading-7 text-[#4a6fa5]">
