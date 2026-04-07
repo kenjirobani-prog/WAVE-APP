@@ -2,13 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
-import { getUserProfile } from '@/lib/userProfile'
 import { calculateScore, classifyWind, windTypeLabel, compassLabel, getStarRating } from '@/lib/wave/scoring'
-import { saveSurfLog } from '@/lib/surfLog'
-import type { UserProfile, Grade } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
-import ScoreGrade from '@/components/ScoreGrade'
 import StarRating from '@/components/StarRating'
 import TideCurve from '@/components/TideCurve'
 import TideCardStrip from '@/components/TideCardStrip'
@@ -16,35 +12,11 @@ import TideStatusBar from '@/components/TideStatusBar'
 import BottomNav from '@/components/BottomNav'
 import type { TideEvent } from '@/lib/wave/types'
 
-interface Shop {
-  name: string
-  vicinity: string
-  rating?: number
-  place_id: string
-  geometry: { location: { lat: number; lng: number } }
-}
-
 function toDateStr(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
-}
-
-function getSurfDateOptions() {
-  const today = new Date(); today.setHours(12, 0, 0, 0)
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
-  const dow = today.getDay()
-  const daysToSat = dow === 0 ? 6 : (6 - dow + 7) % 7
-  const sat = new Date(today); sat.setDate(sat.getDate() + daysToSat)
-  const sun = new Date(sat); sun.setDate(sun.getDate() + 1)
-  const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
-  return [
-    { label: `今日 ${fmt(today)}`, dateStr: toDateStr(today) },
-    { label: `明日 ${fmt(tomorrow)}`, dateStr: toDateStr(tomorrow) },
-    { label: `土曜 ${fmt(sat)}`, dateStr: toDateStr(sat) },
-    { label: `日曜 ${fmt(sun)}`, dateStr: toDateStr(sun) },
-  ]
 }
 
 export function SpotDetailSkeleton() {
@@ -121,9 +93,7 @@ interface TimeSlotData {
   isCloseout: boolean
 }
 
-const PREFERRED_SIZE_M: Record<UserProfile['preferredSize'], number> = {
-  'ankle': 0.3, 'waist-chest': 0.8, 'head': 1.5, 'overhead': 2.0,
-}
+const PREFERRED_SIZE_M = 0.8  // 基準: 腰サイズ
 
 function getBarColor(waveHeight: number, preferred: number): string {
   if (waveHeight >= preferred) return 'bg-emerald-400'
@@ -153,7 +123,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const dateParam = searchParams.get('date')
   const spot = SPOTS.find(s => s.id === id)
 
-  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [current, setCurrent] = useState<WaveCondition | null>(null)
   const [hourly, setHourly] = useState<WaveCondition[]>([])
   const [tideSeries, setTideSeries] = useState<{ hour: number; tideHeight: number }[]>([])
@@ -167,36 +136,14 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const [eveningSlot, setEveningSlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
 
   const [windyLoaded, setWindyLoaded] = useState(false)
-  const [shops, setShops] = useState<Shop[] | null>(null)
-  const [shopsLoading, setShopsLoading] = useState(false)
-
-  const [showSurfLogSheet, setShowSurfLogSheet] = useState(false)
-  const [selectedDateStr, setSelectedDateStr] = useState(toDateStr(new Date()))
-  const [selectedSurfGrade, setSelectedSurfGrade] = useState<Grade | null>(null)
-  const [showToast, setShowToast] = useState(false)
-
-  const GRADE_SCORE: Record<Grade, number> = { '◎': 90, '○': 70, '△': 50, '×': 20 }
-  const surfDateOptions = getSurfDateOptions()
-
-  useEffect(() => { setProfile(getUserProfile()) }, [])
 
   useEffect(() => {
     if (!spot) return
-    setShopsLoading(true)
-    fetch(`/api/shops?lat=${spot.lat}&lng=${spot.lng}`)
-      .then(r => r.ok ? r.json() : { shops: [] })
-      .then(d => setShops(d.shops ?? []))
-      .catch(() => setShops([]))
-      .finally(() => setShopsLoading(false))
-  }, [spot?.id])
-
-  useEffect(() => {
-    if (!profile || !spot) return
     loadData()
-  }, [profile, spot, dateParam])
+  }, [spot, dateParam])
 
   async function loadData() {
-    if (!spot || !profile) return
+    if (!spot) return
     setLoading(true)
     setError(null)
     try {
@@ -212,7 +159,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
       const slotResults = slotHours.map(h => {
         const cond = conditions.find(c => (new Date(c.timestamp).getUTCHours() + 9) % 24 === h)
         if (!cond) return { stars: 1, isCloseout: false }
-        const sc = calculateScore(cond, spot, profile)
+        const sc = calculateScore(cond, spot)
         const co = sc.reasonTags.includes('クローズアウト')
         return { stars: getStarRating(sc.score, co), isCloseout: co }
       })
@@ -263,16 +210,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
     } finally {
       setLoading(false)
     }
-  }
-
-  function handleSurfLogSave() {
-    if (!spot || !selectedSurfGrade) return
-    saveSurfLog({ date: selectedDateStr, spotId: spot.id, spotName: spot.name, grade: selectedSurfGrade, score: GRADE_SCORE[selectedSurfGrade] })
-    try { navigator.vibrate([10, 50, 20]) } catch {}
-    setShowSurfLogSheet(false)
-    setSelectedSurfGrade(null)
-    setShowToast(true)
-    setTimeout(() => setShowToast(false), 2500)
   }
 
   if (!spot) {
@@ -375,7 +312,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
             })()}
 
             {/* 3. Hourly chart — 4-row layout */}
-            {hourly.length > 0 && profile && (() => {
+            {hourly.length > 0 && (() => {
               const maxHeight = Math.max(...hourly.map(h => h.waveHeight), 1)
               const maxWind = Math.max(...hourly.map(h => h.windSpeed), 1)
               const colW = 36
@@ -565,54 +502,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </a>
             </section>
 
-            {/* Nearby surf shops */}
-            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">近隣サーフショップ</h2>
-              {shopsLoading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#f0f9ff] rounded-full shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3 bg-[#f0f9ff] rounded w-1/2" />
-                        <div className="h-2.5 bg-[#f0f9ff] rounded w-3/4" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : !shops || shops.length === 0 ? (
-                <p className="text-sm text-[#8899aa]">近隣のサーフショップ情報はありません</p>
-              ) : (
-                <div className="space-y-3">
-                  {shops.map((shop, i) => (
-                    <div key={shop.place_id} className="flex items-start gap-3">
-                      <span className="shrink-0 w-5 h-5 rounded-full bg-amber-400 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">
-                        {i + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#0a1628] truncate">{shop.name}</p>
-                        <p className="text-xs text-[#8899aa] truncate">{shop.vicinity}</p>
-                        {shop.rating && (
-                          <p className="text-xs text-amber-500 font-semibold mt-0.5">★ {shop.rating.toFixed(1)}</p>
-                        )}
-                      </div>
-                      <a
-                        href={`https://www.google.com/maps/place/?q=place_id:${shop.place_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 text-[10px] font-semibold text-sky-700 flex items-center gap-0.5 mt-0.5"
-                      >
-                        Map
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
             {/* Spot info */}
             <section className="bg-white mt-2 p-4 border-b border-[#eef1f4] space-y-5">
               <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa]">スポット情報</h2>
@@ -681,60 +570,9 @@ export default function SpotDetailContent({ id }: { id: string }) {
               )}
             </section>
 
-            {/* Surf Log button */}
-            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-              <button
-                onClick={() => { try { navigator.vibrate(20) } catch {}; setSelectedSurfGrade(null); setShowSurfLogSheet(true) }}
-                className="w-full py-4 bg-[#0284c7] text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
-              >
-                今日サーフィンした！
-              </button>
-            </section>
           </>
         )}
       </main>
-
-      {/* Surf Log sheet */}
-      {showSurfLogSheet && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowSurfLogSheet(false)} />
-          <div className="relative bg-white rounded-t-3xl w-full max-w-md px-6 pt-6 pb-10">
-            <div className="w-10 h-1 bg-[#dde3ea] rounded-full mx-auto mb-6" />
-            <h3 className="text-lg font-bold text-[#0a1628] mb-1">Surf Log に記録</h3>
-            <p className="text-sm text-[#8899aa] mb-4">{spot.name}</p>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">いつ？</p>
-            <div className="grid grid-cols-2 gap-2 mb-5">
-              {surfDateOptions.map(opt => (
-                <button key={opt.dateStr} onClick={() => setSelectedDateStr(opt.dateStr)}
-                  className={`p-3 rounded-xl border-2 text-center font-semibold transition-colors ${selectedDateStr === opt.dateStr ? 'border-[#0284c7] bg-sky-50 text-[#0284c7]' : 'border-[#eef1f4] text-[#8899aa]'}`}
-                >{opt.label}</button>
-              ))}
-            </div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">今日の波どうだった？</p>
-            <div className="space-y-2 mb-6">
-              {(['◎', '○', '△', '×'] as Grade[]).map(g => (
-                <button key={g} onClick={() => setSelectedSurfGrade(g)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-colors text-left ${selectedSurfGrade === g ? 'border-[#0284c7] bg-sky-50' : 'border-[#eef1f4] bg-white'}`}
-                >
-                  <ScoreGrade grade={g} size="sm" />
-                  <span className={`font-semibold text-sm ${selectedSurfGrade === g ? 'text-[#0284c7]' : 'text-[#8899aa]'}`}>
-                    {g === '◎' ? '最高！' : g === '○' ? 'まあまあ' : g === '△' ? 'いまいち' : '残念'}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <button onClick={handleSurfLogSave} disabled={!selectedSurfGrade}
-              className={`w-full py-4 rounded-xl font-bold text-base transition-colors ${selectedSurfGrade ? 'bg-[#0284c7] text-white' : 'bg-[#eef1f4] text-[#8899aa] cursor-not-allowed'}`}
-            >記録する</button>
-          </div>
-        </div>
-      )}
-
-      {showToast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-[#0a1628] text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold">
-          記録しました！
-        </div>
-      )}
 
       <BottomNav current="forecast" />
     </div>

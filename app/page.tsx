@@ -1,15 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { getUserProfile, saveUserProfile } from '@/lib/userProfile'
-import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
-import { doc, getDoc } from 'firebase/firestore'
 import { SPOTS } from '@/data/spots'
-import { calculateScore, getStarRating, isCloseout as checkCloseout } from '@/lib/wave/scoring'
-import type { UserProfile, SpotScore } from '@/types'
+import { calculateScore, getStarRating } from '@/lib/wave/scoring'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import StarRating from '@/components/StarRating'
-import { getLatestUpdateHour, getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
+import { getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import AreaTabs from '@/components/AreaTabs'
 import BottomNav from '@/components/BottomNav'
@@ -73,12 +69,11 @@ function findConditionAtHour(conditions: WaveCondition[], targetHour: number): W
 function computeSpotStars(
   conditions: WaveCondition[],
   spot: typeof SPOTS[number],
-  profile: UserProfile,
 ): { stars: TimeSlotStars; isCloseout: boolean } {
   const slots = (['morning', 'midday', 'evening'] as const).map(slot => {
     const cond = findConditionAtHour(conditions, TIME_SLOT_HOURS[slot])
     if (!cond) return { slot, stars: 1, closeout: false }
-    const score = calculateScore(cond, spot, profile)
+    const score = calculateScore(cond, spot)
     const closeout = score.reasonTags.includes('クローズアウト')
     return { slot, stars: getStarRating(score.score, closeout), closeout }
   })
@@ -102,43 +97,11 @@ function getBestTimeSlot(stars: TimeSlotStars): { slot: string; label: string; s
   return entries.reduce((best, e) => e.stars > best.stars ? e : best, entries[0])
 }
 
-const SETTING_LEVELS: { value: UserProfile['level']; label: string }[] = [
-  { value: 'beginner', label: '初級' },
-  { value: 'intermediate', label: '中級' },
-  { value: 'advanced', label: '上級' },
-]
-const SETTING_BOARDS: { value: UserProfile['boardType']; label: string }[] = [
-  { value: 'longboard', label: 'ロング' },
-  { value: 'funboard', label: 'ミッド' },
-  { value: 'shortboard', label: 'ショート' },
-]
-const SETTING_SIZES: { value: UserProfile['preferredSize']; label: string }[] = [
-  { value: 'ankle', label: 'モモ' },
-  { value: 'waist-chest', label: '腰' },
-  { value: 'head', label: '胸' },
-  { value: 'overhead', label: '肩↑' },
-]
-
-function levelLabel(v: UserProfile['level']): string {
-  return SETTING_LEVELS.find(x => x.value === v)?.label ?? v
-}
-function boardLabel(v: UserProfile['boardType']): string {
-  return SETTING_BOARDS.find(x => x.value === v)?.label ?? v
-}
-function sizeLabel(v: UserProfile['preferredSize']): string {
-  return SETTING_SIZES.find(x => x.value === v)?.label ?? v
-}
-
 export default function TopPage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [spotCards, setSpotCards] = useState<SpotCardData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<DateTab>('today')
-  const [showSettingsSheet, setShowSettingsSheet] = useState(false)
-  const [draftLevel, setDraftLevel] = useState<UserProfile['level']>('intermediate')
-  const [draftBoard, setDraftBoard] = useState<UserProfile['boardType']>('funboard')
-  const [draftSize, setDraftSize] = useState<UserProfile['preferredSize']>('waist-chest')
   const [weeklyData, setWeeklyData] = useState<WeeklyDayData[]>([])
   const [weeklyLoading, setWeeklyLoading] = useState(false)
   const [bestSlot, setBestSlot] = useState<{ label: string; stars: number } | null>(null)
@@ -148,10 +111,6 @@ export default function TopPage() {
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
-
-  useEffect(() => {
-    setProfile(getUserProfile())
-  }, [])
 
   // AIコメント取得（今日・明日タブのみ）
   useEffect(() => {
@@ -177,16 +136,15 @@ export default function TopPage() {
   }, [tab])
 
   useEffect(() => {
-    if (!profile) return
     if (tab === 'weekly') return
     loadForecast(getTargetDate(tab))
-  }, [profile, tab])
+  }, [tab])
 
   useEffect(() => {
-    if (tab !== 'weekly' || !profile) return
+    if (tab !== 'weekly') return
     if (weeklyData.length > 0) return
     loadWeeklyForecast()
-  }, [tab, profile])
+  }, [tab])
 
   async function loadForecast(targetDate: Date) {
     setLoading(true)
@@ -205,7 +163,7 @@ export default function TopPage() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             const conditions: WaveCondition[] = data.conditions ?? []
-            const { stars, isCloseout } = computeSpotStars(conditions, spot, profile!)
+            const { stars, isCloseout } = computeSpotStars(conditions, spot)
             results.push({ spotId: spot.id, stars, isCloseout })
             if (!isCloseout) allStars.push(stars)
           } catch {
@@ -265,7 +223,7 @@ export default function TopPage() {
             if (!res.ok) return
             const data = await res.json()
             const conditions: WaveCondition[] = data.conditions ?? []
-            const { stars, isCloseout } = computeSpotStars(conditions, spot, profile!)
+            const { stars, isCloseout } = computeSpotStars(conditions, spot)
             const spotMax = Math.max(stars.morning, stars.midday, stars.evening)
             if (spotMax > dayBestStars) dayBestStars = spotMax
             if (!isCloseout) dayAllCloseout = false
@@ -279,8 +237,6 @@ export default function TopPage() {
     setWeeklyData(result)
     setWeeklyLoading(false)
   }
-
-  if (!profile) return null
 
   const targetDate = tab !== 'weekly' ? getTargetDate(tab) : today
 
@@ -301,27 +257,6 @@ export default function TopPage() {
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.6 }}>
                 次回更新：{getNextUpdateTime()}
               </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
-            <button
-              onClick={() => {
-                setDraftLevel(profile.level)
-                setDraftBoard(profile.boardType)
-                setDraftSize(profile.preferredSize)
-                setShowSettingsSheet(true)
-              }}
-              style={{
-                background: '#fff', borderRadius: 10, padding: '8px 16px',
-                fontSize: 12, fontWeight: 800, color: '#0284c7',
-                whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5,
-                border: 'none', cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontSize: 14 }}>⚙</span> マイ設定
-            </button>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', textAlign: 'right' }}>
-              {levelLabel(profile.level)}・{boardLabel(profile.boardType)}・{sizeLabel(profile.preferredSize)}
             </div>
           </div>
         </div>
@@ -445,7 +380,6 @@ export default function TopPage() {
                     spot={spot}
                     stars={card.stars}
                     isCloseout={card.isCloseout}
-                    isFavorite={profile.favoriteSpots.includes(spot.id)}
                     date={targetDate}
                   />
                 )
@@ -455,58 +389,6 @@ export default function TopPage() {
         )}
       </main>
 
-      {/* Settings bottom sheet */}
-      {showSettingsSheet && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowSettingsSheet(false)} />
-          <div className="relative bg-white rounded-t-3xl w-full max-w-md px-6 pt-6 pb-10">
-            <div className="w-10 h-1 bg-[#dde3ea] rounded-full mx-auto mb-5" />
-            <h3 className="text-lg font-bold text-[#0a1628] mb-5">サーフィン設定</h3>
-
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">レベル</p>
-            <div className="grid grid-cols-3 gap-2 mb-5">
-              {SETTING_LEVELS.map(l => (
-                <button key={l.value} onClick={() => setDraftLevel(l.value)}
-                  className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                  style={draftLevel === l.value ? { background: '#0284c7', color: '#fff' } : { background: '#f0f9ff', color: '#8899aa' }}
-                >{l.label}</button>
-              ))}
-            </div>
-
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ボード</p>
-            <div className="grid grid-cols-3 gap-2 mb-5">
-              {SETTING_BOARDS.map(b => (
-                <button key={b.value} onClick={() => setDraftBoard(b.value)}
-                  className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                  style={draftBoard === b.value ? { background: '#0284c7', color: '#fff' } : { background: '#f0f9ff', color: '#8899aa' }}
-                >{b.label}</button>
-              ))}
-            </div>
-
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">好みの波サイズ</p>
-            <div className="grid grid-cols-4 gap-2 mb-6">
-              {SETTING_SIZES.map(s => (
-                <button key={s.value} onClick={() => setDraftSize(s.value)}
-                  className="py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                  style={draftSize === s.value ? { background: '#0284c7', color: '#fff' } : { background: '#f0f9ff', color: '#8899aa' }}
-                >{s.label}</button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => {
-                const updated: UserProfile = { ...profile, level: draftLevel, boardType: draftBoard, preferredSize: draftSize }
-                saveUserProfile(updated)
-                setProfile(updated)
-                setShowSettingsSheet(false)
-              }}
-              className="w-full py-4 bg-[#0284c7] text-white rounded-xl font-bold text-base active:scale-[0.98] transition-transform"
-            >
-              保存して再計算
-            </button>
-          </div>
-        </div>
-      )}
 
       <BottomNav current="forecast" />
     </div>

@@ -53,7 +53,6 @@ type LinkItem = { type: 'link'; id: NavTab; label: string; href: string; icon: R
 
 const NAV_ITEMS: LinkItem[] = [
   { type: 'link', id: 'forecast', label: '波予報',   href: '/',          icon: <IconEye /> },
-  { type: 'link', id: 'surflog',  label: 'Surf Log', href: '/surf-log',  icon: <IconCalendar /> },
   { type: 'link', id: 'mypage',   label: 'コンテンツ',  href: '/my-page',   icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 6H20M4 12H20M4 18H14" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg> },
 ]
 

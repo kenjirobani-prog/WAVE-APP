@@ -1,6 +1,5 @@
 import type { WaveCondition } from './types'
 import type { Spot, Grade, SpotScore, ScoreBreakdown, WindType, BathymetryProfile } from '@/types'
-import type { UserProfile } from '@/types'
 
 // クローズアウト閾値
 export const CLOSEOUT_WAVE_HEIGHT = 2.5       // m：単独でクローズアウト
@@ -116,19 +115,13 @@ export function compassLabel(dir: number): string {
   return labels[Math.round(dir / 45) % 8]
 }
 
-// 波高スコア（25点満点）
-function scoreWaveHeight(waveHeight: number, preferredSize: UserProfile['preferredSize']): number {
-  const sizeThresholds: Record<UserProfile['preferredSize'], number> = {
-    'ankle': 0.3,
-    'waist-chest': 0.8,
-    'head': 1.5,
-    'overhead': 2.0,
-  }
-  const preferred = sizeThresholds[preferredSize]
+// 波高スコア（25点満点）— 基準: 腰サイズ（0.8m）
+const PREFERRED_SIZE = 0.8
+function scoreWaveHeight(waveHeight: number): number {
   if (waveHeight <= 0.15) return 0               // フラット
-  if (waveHeight >= preferred) return 25         // 好みサイズ以上
-  if (waveHeight >= preferred - 0.2) return 18  // −20cm以内
-  if (waveHeight >= preferred - 0.4) return 8   // −20〜40cm
+  if (waveHeight >= PREFERRED_SIZE) return 25    // 基準サイズ以上
+  if (waveHeight >= PREFERRED_SIZE - 0.2) return 18  // −20cm以内
+  if (waveHeight >= PREFERRED_SIZE - 0.4) return 8   // −20〜40cm
   return 2                                        // −40cm超
 }
 
@@ -401,26 +394,9 @@ function scoreComfort(weather: WaveCondition['weather'], temperature: number, uv
   return Math.max(0, base + tempBonus + uvPenalty)
 }
 
-// ボードタイプ補正（±5点）
-function boardCorrection(condition: WaveCondition, profile: UserProfile): number {
-  const sizeThresholds: Record<UserProfile['preferredSize'], number> = {
-    'ankle': 0.3,
-    'waist-chest': 0.8,
-    'head': 1.5,
-    'overhead': 2.0,
-  }
-  const preferred = sizeThresholds[profile.preferredSize]
-  const isSmallerThanPreferred = condition.waveHeight < preferred
-
-  if (profile.boardType === 'longboard' && isSmallerThanPreferred) return 5
-  if (profile.boardType === 'shortboard' && isSmallerThanPreferred) return -5
-  return 0
-}
-
 export function calculateScore(
   condition: WaveCondition,
   spot: Spot,
-  profile: UserProfile
 ): SpotScore {
   // スポット固有の波高補正（例: 水族館前は江ノ島の影響で0.8倍）
   const multiplier = spot.waveHeightMultiplier ?? 1.0
@@ -434,7 +410,7 @@ export function calculateScore(
   const isOffshoreOrCalm = windClass === 'offshore' || windClass === 'calm'
   const offMul = isOffshoreOrCalm ? tb.offshoreMultiplier : 1.0
 
-  const waveHeight = Math.round(scoreWaveHeight(effCondition.waveHeight, profile.preferredSize) * offMul * tb.swellFocusing * tb.shelterFactor)
+  const waveHeight = Math.round(scoreWaveHeight(effCondition.waveHeight) * offMul * tb.swellFocusing * tb.shelterFactor)
   const wind = scoreWind(condition.windSpeed, condition.windDir, spot)
   const swellDir = Math.round(scoreSwellDir(condition.swellDir, spot) * tb.swellFocusing * tb.shelterFactor)
   const optimalTideRange = spot.bathymetryProfile?.optimalTideRange ?? [80, 120]
@@ -454,9 +430,8 @@ export function calculateScore(
     condition.secondarySwellPeriod,
   ) * offMul)
   const weatherBonus = scoreComfort(condition.weather, condition.temperature, condition.uvIndex)
-  const correction = boardCorrection(effCondition, profile)
 
-  const total = Math.max(0, Math.min(100, waveHeight + wind + swellDir + tide + waveQuality + weatherBonus + correction))
+  const total = Math.max(0, Math.min(100, waveHeight + wind + swellDir + tide + waveQuality + weatherBonus))
 
   const breakdown: ScoreBreakdown = {
     waveHeight,
@@ -465,10 +440,10 @@ export function calculateScore(
     tide,
     waveQuality,
     weatherBonus,
-    levelCorrection: correction,
+    levelCorrection: 0,
   }
 
-  const tags = buildReasonTags(condition, spot, profile, breakdown)
+  const tags = buildReasonTags(condition, spot, breakdown)
 
   // クローズアウト判定: 複合条件でグレード×固定
   if (isCloseout(effCondition.waveHeight, condition.windSpeed, condition.windDir)) {
@@ -558,7 +533,6 @@ export function scoreToGrade(score: number): Grade {
 function buildReasonTags(
   condition: WaveCondition,
   spot: Spot,
-  _profile: UserProfile,
   breakdown: ScoreBreakdown
 ): string[] {
   const tags: string[] = []

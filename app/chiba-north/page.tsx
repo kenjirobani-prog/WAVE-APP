@@ -3,10 +3,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { SPOTS } from '@/data/spots'
 import { calculateScore, getStarRating } from '@/lib/wave/scoring'
-import { getUserProfile } from '@/lib/userProfile'
 import { getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
-import type { UserProfile } from '@/types'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import StarRating from '@/components/StarRating'
@@ -40,11 +38,11 @@ function findConditionAtHour(conditions: WaveCondition[], targetHour: number): W
   return conditions.find(c => { const h = (new Date(c.timestamp).getUTCHours() + 9) % 24; return h === targetHour }) ?? null
 }
 
-function computeSpotStars(conditions: WaveCondition[], spot: typeof SPOTS[number], profile: UserProfile) {
+function computeSpotStars(conditions: WaveCondition[], spot: typeof SPOTS[number]) {
   const slots = (['morning', 'midday', 'evening'] as const).map(slot => {
     const cond = findConditionAtHour(conditions, TIME_SLOT_HOURS[slot])
     if (!cond) return { slot, stars: 1, closeout: false }
-    const score = calculateScore(cond, spot, profile)
+    const score = calculateScore(cond, spot)
     const closeout = score.reasonTags.includes('クローズアウト')
     return { slot, stars: getStarRating(score.score, closeout), closeout }
   })
@@ -65,7 +63,6 @@ function getBestTimeSlot(stars: TimeSlotStars) {
 
 export default function ChibaNorthPage() {
   const router = useRouter()
-  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [spotCards, setSpotCards] = useState<SpotCardData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -79,8 +76,6 @@ export default function ChibaNorthPage() {
 
   const today = new Date(); today.setHours(12,0,0,0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
-
-  useEffect(() => { setProfile(getUserProfile()) }, [])
 
   // AIコメント取得
   useEffect(() => {
@@ -104,14 +99,14 @@ export default function ChibaNorthPage() {
   }, [tab])
 
   useEffect(() => {
-    if (!profile || tab === 'weekly') return
+    if (tab === 'weekly') return
     loadForecast(getTargetDate(tab))
-  }, [profile, tab])
+  }, [tab])
 
   useEffect(() => {
-    if (tab !== 'weekly' || !profile || weeklyData.length > 0) return
+    if (tab !== 'weekly' || weeklyData.length > 0) return
     loadWeeklyForecast()
-  }, [tab, profile])
+  }, [tab])
 
   async function loadForecast(targetDate: Date) {
     setLoading(true); setError(null)
@@ -125,7 +120,7 @@ export default function ChibaNorthPage() {
           const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
           if (!res.ok) throw new Error()
           const data = await res.json()
-          const { stars, isCloseout } = computeSpotStars(data.conditions ?? [], spot, profile!)
+          const { stars, isCloseout } = computeSpotStars(data.conditions ?? [], spot)
           results.push({ spotId: spot.id, stars, isCloseout })
           if (!isCloseout) allStars.push(stars)
         } catch { results.push({ spotId: spot.id, stars: { morning: 1, midday: 1, evening: 1 }, isCloseout: false }) }
@@ -160,7 +155,7 @@ export default function ChibaNorthPage() {
           const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
           if (!res.ok) return
           const data = await res.json()
-          const { stars, isCloseout } = computeSpotStars(data.conditions ?? [], spot, profile!)
+          const { stars, isCloseout } = computeSpotStars(data.conditions ?? [], spot)
           const spotMax = Math.max(stars.morning, stars.midday, stars.evening)
           if (spotMax > dayBestStars) dayBestStars = spotMax
           if (!isCloseout) dayAllCloseout = false
@@ -172,7 +167,6 @@ export default function ChibaNorthPage() {
     setWeeklyLoading(false)
   }
 
-  if (!profile) return null
   const targetDate = tab !== 'weekly' ? getTargetDate(tab) : today
 
   return (
@@ -187,9 +181,6 @@ export default function ChibaNorthPage() {
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.6 }}>次回更新：{getNextUpdateTime()}</p>
             </div>
           </div>
-          <button onClick={() => router.push('/settings')} style={{ background: '#fff', borderRadius: 10, padding: '8px 16px', fontSize: 12, fontWeight: 800, color: '#0284c7', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5, border: 'none', cursor: 'pointer' }}>
-            <span style={{ fontSize: 14 }}>⚙</span> マイ設定
-          </button>
         </div>
       </header>
 
@@ -262,7 +253,7 @@ export default function ChibaNorthPage() {
             ) : (
               spotCards.map(card => {
                 const spot = SPOTS.find(s => s.id === card.spotId)!
-                return <SpotCard key={card.spotId} spot={spot} stars={card.stars} isCloseout={card.isCloseout} isFavorite={profile.favoriteSpots.includes(spot.id)} date={targetDate} />
+                return <SpotCard key={card.spotId} spot={spot} stars={card.stars} isCloseout={card.isCloseout} date={targetDate} />
               })
             )}
           </>

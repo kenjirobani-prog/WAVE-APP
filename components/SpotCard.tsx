@@ -13,7 +13,6 @@ interface Props {
   spot: Spot
   stars: TimeSlotStars
   isCloseout?: boolean
-  isFavorite?: boolean
   date?: Date
 }
 
@@ -24,7 +23,7 @@ function toDateString(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-export default function SpotCard({ spot, stars, isCloseout, isFavorite, date }: Props) {
+export default function SpotCard({ spot, stars, isCloseout, date }: Props) {
   const href = date ? `/spot/${spot.id}?date=${toDateString(date)}` : `/spot/${spot.id}`
 
   return (
@@ -40,11 +39,6 @@ export default function SpotCard({ spot, stars, isCloseout, isFavorite, date }: 
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <h2 className="text-base font-bold text-[#0a1628] truncate">{spot.name}</h2>
-            {isFavorite && (
-              <span className="text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-100 px-2 py-0.5 rounded-full tracking-wide shrink-0">
-                よく行く
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {isCloseout ? (

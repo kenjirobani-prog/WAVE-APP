@@ -72,19 +72,6 @@ export default function MyPage() {
           </button>
         </div>
 
-        {/* 設定 */}
-        <div className="mt-4 mx-4 bg-white rounded-xl border border-[#eef1f4] overflow-hidden">
-          <button
-            onClick={() => router.push('/settings')}
-            className="w-full flex items-center justify-between px-4 py-4 active:bg-[#f0f9ff] transition-colors"
-          >
-            <span className="text-[#0a1628] font-medium">設定変更</span>
-            <svg className="w-4 h-4 text-[#8899aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
         {/* About AI 波予報 */}
         <div className="mx-4 mt-4 space-y-3">
           <div style={{ fontSize: 11, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.1em' }}>ABOUT AI 波予報</div>
