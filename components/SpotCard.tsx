@@ -62,7 +62,7 @@ export default function SpotCard({ spot, stars, isCloseout, date }: Props) {
           </div>
         </div>
         <div className="flex items-center justify-end gap-1 pt-2 border-t border-[#D0D8E0] mt-2">
-          <span className="text-xs font-medium text-[#1A7A6E]">{spot.livecam?.type ? '詳細・ライブカメラを見る' : '詳細を見る'}</span>
+          <span className="text-xs font-medium text-[#1A7A6E]">詳細を見る</span>
           <span className="text-sm text-[#1A7A6E] animate-bounce-x">›</span>
         </div>
       </div>
