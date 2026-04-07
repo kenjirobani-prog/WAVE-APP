@@ -578,18 +578,59 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 </div>
               )}
               <p className="text-xs text-[#8899aa]">{spot.access}</p>
-              {spot.liveCameraUrl && (
-                <a
-                  href={spot.liveCameraUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl text-sm font-semibold active:scale-[0.98] transition-transform"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  ライブカメラを見る
-                </a>
-              )}
             </section>
+
+            {/* Live camera */}
+            {spot.livecam && spot.livecam.type && (
+              <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
+                <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">ライブカメラ</h2>
+                {spot.livecam.type === 'youtube_channel' && spot.livecam.youtubeChannelId && (
+                  <>
+                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 12 }}>
+                      <iframe
+                        src={`https://www.youtube.com/embed/live_stream?channel=${spot.livecam.youtubeChannelId}&autoplay=0`}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        allowFullScreen
+                        loading="lazy"
+                      />
+                    </div>
+                    {spot.livecam.channelName && (
+                      <p className="text-xs text-[#8899aa] mt-2">配信：{spot.livecam.channelName}</p>
+                    )}
+                  </>
+                )}
+                {spot.livecam.type === 'youtube_video' && spot.livecam.youtubeVideoId && (
+                  <>
+                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 12 }}>
+                      <iframe
+                        src={`https://www.youtube.com/embed/${spot.livecam.youtubeVideoId}`}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        allowFullScreen
+                        loading="lazy"
+                      />
+                    </div>
+                    {spot.livecam.channelName && (
+                      <p className="text-xs text-[#8899aa] mt-2">配信：{spot.livecam.channelName}</p>
+                    )}
+                  </>
+                )}
+                {spot.livecam.type === 'link' && spot.livecam.url && (
+                  <>
+                    <a
+                      href={spot.livecam.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl text-sm font-semibold active:scale-[0.98] transition-transform"
+                    >
+                      ライブカメラを見る →
+                    </a>
+                    {spot.livecam.channelName && (
+                      <p className="text-xs text-[#8899aa] mt-2">提供：{spot.livecam.channelName}</p>
+                    )}
+                  </>
+                )}
+              </section>
+            )}
 
           </>
         )}

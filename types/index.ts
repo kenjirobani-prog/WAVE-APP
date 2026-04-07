@@ -50,6 +50,13 @@ export interface Spot {
   shower: boolean
   access: string
   liveCameraUrl?: string
+  livecam?: {
+    type: 'youtube_channel' | 'youtube_video' | 'link' | null
+    youtubeChannelId?: string
+    youtubeVideoId?: string
+    url?: string
+    channelName?: string
+  }
   mapUrl?: string
   mapPlaceName?: string
   mapCenter?: { lat: number; lng: number }
