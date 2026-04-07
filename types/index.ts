@@ -62,6 +62,9 @@ export interface Spot {
   description?: string
   bestSeasons: ('spring' | 'summer' | 'autumn' | 'winter')[]
   bestTide?: string
+  tideType?: string               // 潮のタイプ（ミドルタイド優勢 etc）
+  offshoreLabel?: string           // オフショア風の方角（日本語表記）
+  swellDirLabel?: string           // 対応うねり方向（日本語表記）
   waveTypeTags?: string[]
   facilities?: string[]
   beginnerNote?: string

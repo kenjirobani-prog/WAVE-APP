@@ -529,6 +529,28 @@ export default function SpotDetailContent({ id }: { id: string }) {
                   <p className="text-sm text-[#0a1628] leading-relaxed">{spot.bestTide}</p>
                 </div>
               )}
+              {spot.tideType && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">潮のタイプ</p>
+                  <p className="text-sm text-[#0a1628] leading-relaxed">{spot.tideType}</p>
+                </div>
+              )}
+              {(spot.offshoreLabel || spot.swellDirLabel) && (
+                <div className="grid grid-cols-2 gap-3">
+                  {spot.offshoreLabel && (
+                    <div className="bg-[#f0f9ff] rounded-xl p-3">
+                      <p className="text-[10px] font-semibold text-[#8899aa] mb-1">オフショア風向</p>
+                      <p className="text-sm font-medium text-[#0a1628]">{spot.offshoreLabel}</p>
+                    </div>
+                  )}
+                  {spot.swellDirLabel && (
+                    <div className="bg-[#f0f9ff] rounded-xl p-3">
+                      <p className="text-[10px] font-semibold text-[#8899aa] mb-1">対応うねり方向</p>
+                      <p className="text-sm font-medium text-[#0a1628]">{spot.swellDirLabel}</p>
+                    </div>
+                  )}
+                </div>
+              )}
               {spot.waveTypeTags && spot.waveTypeTags.length > 0 && (
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">波のタイプ</p>
