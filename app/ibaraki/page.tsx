@@ -9,7 +9,7 @@ import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
 import StarRating from '@/components/StarRating'
 import AreaTabs from '@/components/AreaTabs'
-import BottomNav from '@/components/BottomNav'
+import HamburgerMenu from '@/components/HamburgerMenu'
 
 const AREA = 'ibaraki'
 const AREA_LABEL = '茨城'
@@ -181,6 +181,7 @@ export default function IbarakiPage() {
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.6 }}>次回更新：{getNextUpdateTime()}</p>
             </div>
           </div>
+          <HamburgerMenu />
         </div>
       </header>
 
@@ -192,7 +193,7 @@ export default function IbarakiPage() {
         <button onClick={() => setTab('weekly')} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${tab === 'weekly' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'}`}>週間</button>
       </div>
 
-      <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
+      <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-4">
         {tab === 'weekly' ? (
           weeklyLoading ? (
             <div className="flex items-center justify-center py-16"><p className="text-[#8899aa] text-sm">週間データを読み込み中...</p></div>
@@ -260,7 +261,6 @@ export default function IbarakiPage() {
         )}
       </main>
 
-      <BottomNav current="forecast" />
     </div>
   )
 }

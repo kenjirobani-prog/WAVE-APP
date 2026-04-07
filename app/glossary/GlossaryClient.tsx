@@ -3,7 +3,6 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { glossaryData } from '@/data/glossary'
-import BottomNav from '@/components/BottomNav'
 
 const ALL_ID = 'all'
 
@@ -114,7 +113,7 @@ export default function GlossaryClient() {
       </div>
 
       {/* 用語リスト */}
-      <main className="flex-1 overflow-auto pb-28 px-4 pt-1 space-y-2">
+      <main className="flex-1 overflow-auto pb-4 px-4 pt-1 space-y-2">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-2">
             <p className="text-[#8899aa] text-sm">該当する用語がありません</p>
@@ -135,7 +134,6 @@ export default function GlossaryClient() {
         )}
       </main>
 
-      <BottomNav current="glossary" />
     </div>
   )
 }

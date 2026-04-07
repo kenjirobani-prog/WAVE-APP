@@ -2,7 +2,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { HowToArticle } from '@/data/howto'
-import BottomNav from '@/components/BottomNav'
 
 // ──────────────────────────────────────────
 // Markdown parser (no external library)
@@ -236,13 +235,12 @@ export default function ArticleClient({ article }: { article: HowToArticle }) {
       </header>
 
       {/* 本文 */}
-      <main className="flex-1 overflow-auto pb-28">
+      <main className="flex-1 overflow-auto pb-4">
         <div className="bg-white px-5 py-6">
           <MarkdownBody content={article.content} />
         </div>
       </main>
 
-      <BottomNav current="howto" />
     </div>
   )
 }

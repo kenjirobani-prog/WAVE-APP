@@ -9,7 +9,6 @@ import StarRating from '@/components/StarRating'
 import TideCurve from '@/components/TideCurve'
 import TideCardStrip from '@/components/TideCardStrip'
 import TideStatusBar from '@/components/TideStatusBar'
-import BottomNav from '@/components/BottomNav'
 import type { TideEvent } from '@/lib/wave/types'
 
 function toDateStr(d: Date): string {
@@ -235,7 +234,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-28">
+      <main className="flex-1 overflow-auto pb-4">
         {loading ? (
           <SpotDetailSkeleton />
         ) : error ? (
@@ -574,7 +573,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
         )}
       </main>
 
-      <BottomNav current="forecast" />
     </div>
   )
 }

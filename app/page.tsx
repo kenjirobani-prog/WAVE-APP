@@ -8,7 +8,7 @@ import StarRating from '@/components/StarRating'
 import { getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import AreaTabs from '@/components/AreaTabs'
-import BottomNav from '@/components/BottomNav'
+import HamburgerMenu from '@/components/HamburgerMenu'
 
 type DateTab = 'today' | 'tomorrow' | 'weekly'
 const DOW_JA = ['日', '月', '火', '水', '木', '金', '土']
@@ -259,6 +259,7 @@ export default function TopPage() {
               </p>
             </div>
           </div>
+          <HamburgerMenu />
         </div>
       </header>
 
@@ -292,7 +293,7 @@ export default function TopPage() {
         </button>
       </div>
 
-      <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-28">
+      <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-4">
         {tab === 'weekly' ? (
           weeklyLoading ? (
             <WeeklyListSkeleton />
@@ -390,7 +391,6 @@ export default function TopPage() {
       </main>
 
 
-      <BottomNav current="forecast" />
     </div>
   )
 }

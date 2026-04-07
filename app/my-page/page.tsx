@@ -1,7 +1,6 @@
 'use client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import BottomNav from '@/components/BottomNav'
 
 export default function MyPage() {
   const router = useRouter()
@@ -30,7 +29,7 @@ export default function MyPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-28">
+      <main className="flex-1 overflow-auto pb-4">
         {/* コンテンツ */}
         <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mt-4 mb-2 mx-4">コンテンツ</p>
         <div className="mx-4 bg-white rounded-xl border border-[#eef1f4] overflow-hidden">
@@ -174,7 +173,6 @@ export default function MyPage() {
         </div>
       </main>
 
-      <BottomNav current="mypage" />
     </div>
   )
 }

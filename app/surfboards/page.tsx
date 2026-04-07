@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import BottomNav from '@/components/BottomNav'
 import type { SurfboardItem } from '@/app/api/surfboards/route'
 
 type GenreFilter = 'all' | 'ショートボード' | 'ミッドレングス' | 'ロング・ソフト'
@@ -177,7 +176,7 @@ export default function SurfboardsPage() {
       </div>
 
       {/* リスト */}
-      <main className="flex-1 overflow-auto pb-28">
+      <main className="flex-1 overflow-auto pb-4">
         {loading ? (
           <SkeletonList />
         ) : error ? (
@@ -265,7 +264,6 @@ export default function SurfboardsPage() {
         )}
       </main>
 
-      <BottomNav current="mypage" />
     </div>
   )
 }

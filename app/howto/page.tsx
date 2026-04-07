@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { howtoArticles } from '@/data/howto'
 import BackButton from '@/components/BackButton'
-import BottomNav from '@/components/BottomNav'
 
 function FaqCategory({ title, items }: { title: string; items: { q: string; a: string }[] }) {
   return (
@@ -43,7 +42,7 @@ export default function HowToPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-28 px-4 pt-4 space-y-3">
+      <main className="flex-1 overflow-auto pb-4 px-4 pt-4 space-y-3">
         {(['how-to-start-surfing', 'surfing-gear-guide', 'rules-and-manners', 'point-selection-guide', 'wave-forecast-basics']
           .map(slug => howtoArticles.find(a => a.slug === slug))
           .filter((a): a is (typeof howtoArticles)[number] => !!a)
@@ -138,7 +137,6 @@ export default function HowToPage() {
         </div>
       </main>
 
-      <BottomNav current="howto" />
     </div>
   )
 }

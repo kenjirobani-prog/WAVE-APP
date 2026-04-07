@@ -77,7 +77,7 @@ export default function FaqPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-28 px-4 pt-4 space-y-3">
+      <main className="flex-1 overflow-auto pb-4 px-4 pt-4 space-y-3">
         <p style={{ fontSize: 13, color: '#8899aa', marginBottom: 8 }}>全{FAQ_CATEGORIES.reduce((s, c) => s + c.items.length, 0)}問</p>
 
         {FAQ_CATEGORIES.map(cat => (

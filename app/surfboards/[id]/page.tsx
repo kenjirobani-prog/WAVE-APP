@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
-import BottomNav from '@/components/BottomNav'
 import type { SurfboardItem } from '@/app/api/surfboards/route'
 
 function lengthToFeet(inch: number | null): string {
@@ -83,7 +82,7 @@ export default function SurfboardDetailPage() {
             </div>
           ))}
         </main>
-        <BottomNav current="mypage" />
+
       </div>
     )
   }
@@ -100,7 +99,6 @@ export default function SurfboardDetailPage() {
         <main className="flex-1 flex items-center justify-center">
           <p className="text-[#8899aa]">ボードが見つかりませんでした</p>
         </main>
-        <BottomNav current="mypage" />
       </div>
     )
   }
@@ -132,7 +130,7 @@ export default function SurfboardDetailPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-28 p-4 space-y-3">
+      <main className="flex-1 overflow-auto pb-4 p-4 space-y-3">
         {/* スペック詳細 */}
         <div className="bg-white rounded-xl border border-[#eef1f4] p-4">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-3">スペック詳細</p>
@@ -191,7 +189,6 @@ export default function SurfboardDetailPage() {
         </div>
       </main>
 
-      <BottomNav current="mypage" />
     </div>
   )
 }
