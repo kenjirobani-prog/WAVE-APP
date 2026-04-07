@@ -3,8 +3,8 @@ import Link from 'next/link'
 import BackButton from '@/components/BackButton'
 
 export const metadata: Metadata = {
-  title: 'よくある質問（FAQ） | AI 波予報',
-  description: 'AI 波予報の使い方・スコアの仕組み・湘南スポット情報などよくある質問に回答。',
+  title: 'よくある質問（FAQ）| AI波予報',
+  description: 'AI波予報のよくある質問。使い方・スコアの仕組み・対応エリア・更新頻度についてまとめています。',
 }
 
 const FAQ_CATEGORIES = [

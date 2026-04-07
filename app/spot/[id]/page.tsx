@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!spot) return {}
   return {
     title: `${spot.name}の波予報 | AI 波予報`,
-    description: `AIが${spot.name}の波をリアルタイム分析。波高・風・うねり・潮位を総合スコア化。今日サーフィンに行くべきか即判断。湘南のAI波予報アプリ。`,
+    description: `${spot.name}のリアルタイム波予報。波高・風・うねり・潮位をAIがスコア化。今日・明日・週間の予報を無料で確認できます。`,
     openGraph: {
       title: `${spot.name}の波予報 | AI 波予報`,
       description: `AIが${spot.name}の波をリアルタイム分析。`,

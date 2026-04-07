@@ -229,7 +229,7 @@ export default function SpotDetailContent({ id }: { id: string }) {
           </svg>
         </button>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{spot.name}</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{spot.name}の波予報</h1>
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{spot.nameEn}</p>
         </div>
       </header>

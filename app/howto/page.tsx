@@ -23,8 +23,8 @@ function FaqCategory({ title, items }: { title: string; items: { q: string; a: s
 }
 
 export const metadata: Metadata = {
-  title: 'How to Surfing | AI 波予報',
-  description: '湘南サーフィンの基礎知識。波予報の読み方・ポイント選び・ボードの選び方を初心者向けにわかりやすく解説。',
+  title: 'サーフィンの始め方 | AI波予報',
+  description: 'サーフィン初心者向け入門ガイド。道具の選び方・波の読み方・マナーまでわかりやすく解説。',
 }
 
 export default function HowToPage() {
