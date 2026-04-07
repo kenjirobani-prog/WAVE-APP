@@ -51,9 +51,7 @@ export interface Spot {
   access: string
   liveCameraUrl?: string
   livecam?: {
-    type: 'youtube_channel' | 'youtube_video' | 'link' | null
-    youtubeChannelId?: string
-    youtubeVideoId?: string
+    type: 'link' | null
     url?: string
     channelName?: string
   }

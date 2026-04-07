@@ -581,53 +581,19 @@ export default function SpotDetailContent({ id }: { id: string }) {
             </section>
 
             {/* Live camera */}
-            {spot.livecam && spot.livecam.type && (
+            {spot.livecam?.type === 'link' && spot.livecam.url && (
               <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
                 <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">ライブカメラ</h2>
-                {spot.livecam.type === 'youtube_channel' && spot.livecam.youtubeChannelId && (
-                  <>
-                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 12 }}>
-                      <iframe
-                        src={`https://www.youtube.com/embed/live_stream?channel=${spot.livecam.youtubeChannelId}&autoplay=0`}
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                        allowFullScreen
-                        loading="lazy"
-                      />
-                    </div>
-                    {spot.livecam.channelName && (
-                      <p className="text-xs text-[#8899aa] mt-2">配信：{spot.livecam.channelName}</p>
-                    )}
-                  </>
-                )}
-                {spot.livecam.type === 'youtube_video' && spot.livecam.youtubeVideoId && (
-                  <>
-                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 12 }}>
-                      <iframe
-                        src={`https://www.youtube.com/embed/${spot.livecam.youtubeVideoId}`}
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                        allowFullScreen
-                        loading="lazy"
-                      />
-                    </div>
-                    {spot.livecam.channelName && (
-                      <p className="text-xs text-[#8899aa] mt-2">配信：{spot.livecam.channelName}</p>
-                    )}
-                  </>
-                )}
-                {spot.livecam.type === 'link' && spot.livecam.url && (
-                  <>
-                    <a
-                      href={spot.livecam.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-3 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl text-sm font-semibold active:scale-[0.98] transition-transform"
-                    >
-                      ライブカメラを見る →
-                    </a>
-                    {spot.livecam.channelName && (
-                      <p className="text-xs text-[#8899aa] mt-2">提供：{spot.livecam.channelName}</p>
-                    )}
-                  </>
+                <a
+                  href={spot.livecam.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl text-sm font-semibold active:scale-[0.98] transition-transform"
+                >
+                  ライブカメラを見る →
+                </a>
+                {spot.livecam.channelName && (
+                  <p className="text-sm text-[#8899aa] mt-1">配信：{spot.livecam.channelName}</p>
                 )}
               </section>
             )}
