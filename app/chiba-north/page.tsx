@@ -10,6 +10,7 @@ import SpotCard from '@/components/SpotCard'
 import StarRating from '@/components/StarRating'
 import AreaTabs from '@/components/AreaTabs'
 import HamburgerMenu from '@/components/HamburgerMenu'
+import AiCommentLoading from '@/components/AiCommentLoading'
 
 const AREA = 'chiba-north'
 const AREA_LABEL = '千葉北'
@@ -231,10 +232,7 @@ export default function ChibaNorthPage() {
             )}
             {/* AI comment */}
             {!loading && (dailyCommentLoading ? (
-              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI{tab === 'today' ? '今日' : '明日'}の予報</div>
-                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>AIが波を分析中...</p>
-              </div>
+              <AiCommentLoading />
             ) : dailyComment ? (
               <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI{tab === 'today' ? '今日' : '明日'}の予報</div>
