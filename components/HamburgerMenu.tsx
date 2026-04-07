@@ -7,6 +7,7 @@ const MENU_ITEMS = [
   { label: '波予報', href: '/' },
   { label: 'How to Surfing', href: '/howto' },
   { label: '用語集', href: '/glossary' },
+  { label: 'FAQ', href: '/faq' },
 ]
 
 export default function HamburgerMenu() {
