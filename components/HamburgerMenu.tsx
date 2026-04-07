@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 
 const MENU_ITEMS = [
-  { label: 'About', href: '/about' },
+  { label: 'About Us', href: '/about' },
   { label: '波予報', href: '/' },
-  { label: 'How to Surfing', href: '/howto' },
+  { label: 'サーフィンの始め方', href: '/howto' },
   { label: '用語集', href: '/glossary' },
+  { label: 'サーフボード図鑑', href: '/surfboards' },
   { label: 'FAQ', href: '/faq' },
 ]
 
