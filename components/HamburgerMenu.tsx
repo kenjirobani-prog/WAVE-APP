@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 
 const MENU_ITEMS = [
+  { label: 'About', href: '/about' },
   { label: '波予報', href: '/' },
   { label: 'How to Surfing', href: '/howto' },
   { label: '用語集', href: '/glossary' },
-  { label: 'コンテンツ', href: '/my-page' },
 ]
 
 export default function HamburgerMenu() {
