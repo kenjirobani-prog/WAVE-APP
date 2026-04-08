@@ -58,9 +58,25 @@ const FAQ_CATEGORIES = [
   },
 ]
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ_CATEGORIES.flatMap(cat =>
+    cat.items.map(item => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    }))
+  ),
+}
+
 export default function FaqPage() {
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <BackButton />
