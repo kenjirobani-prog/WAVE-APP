@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { getApproximateLocation } from '@/lib/typhoon/location'
 
 interface Props {
   year: string
@@ -10,6 +11,8 @@ interface Props {
     position: { lat: number; lon: number }
     pressure: number
     windSpeed: number
+    intensity?: string
+    size?: string
     updatedAt?: string
   }
 }
@@ -28,16 +31,16 @@ export default function TyphoonCard({ year, typhoon }: Props) {
   return (
     <div className="bg-white border border-[#eef1f4] rounded-xl p-4 mb-3">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-bold text-[#0a1628]">🌀 {typhoon.name}</h3>
+        <h3 className="text-base font-bold text-[#0a1628]">{typhoon.name}</h3>
         {typhoon.updatedAt && (
           <span className="text-[10px] text-[#8899aa]">{formatUpdatedAt(typhoon.updatedAt)}</span>
         )}
       </div>
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="bg-[#f0f9ff] rounded-lg p-2">
+        <div className="bg-[#f0f9ff] rounded-lg p-2" style={{ gridColumn: '1 / -1' }}>
           <p className="text-[9px] text-[#8899aa]">現在位置</p>
           <p className="text-sm font-semibold text-[#0a1628]">
-            {typhoon.position.lat.toFixed(1)}°N / {typhoon.position.lon.toFixed(1)}°E
+            {getApproximateLocation(typhoon.position.lat, typhoon.position.lon)}
           </p>
         </div>
         <div className="bg-[#f0f9ff] rounded-lg p-2">
@@ -49,8 +52,12 @@ export default function TyphoonCard({ year, typhoon }: Props) {
           <p className="text-sm font-semibold text-[#0a1628]">{typhoon.windSpeed} m/s</p>
         </div>
         <div className="bg-[#f0f9ff] rounded-lg p-2">
-          <p className="text-[9px] text-[#8899aa]">台風番号</p>
-          <p className="text-sm font-semibold text-[#0a1628]">{typhoon.number}号</p>
+          <p className="text-[9px] text-[#8899aa]">強さ</p>
+          <p className="text-sm font-semibold text-[#0a1628]">{typhoon.intensity || '-'}</p>
+        </div>
+        <div className="bg-[#f0f9ff] rounded-lg p-2">
+          <p className="text-[9px] text-[#8899aa]">大きさ</p>
+          <p className="text-sm font-semibold text-[#0a1628]">{typhoon.size || '-'}</p>
         </div>
       </div>
       <Link

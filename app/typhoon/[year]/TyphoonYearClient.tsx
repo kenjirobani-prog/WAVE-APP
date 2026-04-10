@@ -69,7 +69,7 @@ export default function TyphoonYearClient({ year }: { year: string }) {
               <Link href="/" style={{ textDecoration: 'none' }}>
                 <span style={{ fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</span>
               </Link>
-              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>🌀 台風情報</span>
+              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>台風情報</span>
             </div>
             <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{year}年</div>
           </div>
@@ -84,7 +84,7 @@ export default function TyphoonYearClient({ year }: { year: string }) {
         ) : activeTyphoons.length > 0 ? (
           <section>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-blue-700 font-medium text-sm">🌀 現在、日本へのうねり影響が見込まれる台風があります</p>
+              <p className="text-blue-700 font-medium text-sm">現在、日本へのうねり影響が見込まれる台風があります</p>
             </div>
             {activeTyphoons.map(t => (
               <TyphoonCard key={t.id} year={year} typhoon={t} />

@@ -1,197 +1,103 @@
 'use client'
-
-interface ForecastPoint {
-  lat: number
-  lon: number
-  time: string
-  pressure: number
-  windSpeed: number
-}
+import { useEffect, useRef } from 'react'
+import type { ForecastPoint } from '@/types/typhoon'
 
 interface Props {
-  current: { lat: number; lon: number }
+  position: { lat: number; lon: number }
   forecastPath: ForecastPoint[]
 }
 
-const SVG_WIDTH = 400
-const SVG_HEIGHT = 320
+export default function TyphoonMap({ position, forecastPath }: Props) {
+  const mapRef = useRef<HTMLDivElement>(null)
 
-// 範囲: lon 100-180, lat 0-50
-const LON_MIN = 100
-const LON_MAX = 180
-const LAT_MIN = 0
-const LAT_MAX = 50
+  useEffect(() => {
+    if (!mapRef.current) return
+    let map: import('leaflet').Map | null = null
 
-const mapLonToX = (lon: number) => ((lon - LON_MIN) / (LON_MAX - LON_MIN)) * SVG_WIDTH
-const mapLatToY = (lat: number) => ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * SVG_HEIGHT
+    // 動的import（SSR対策）
+    import('leaflet').then((mod) => {
+      const L = mod.default ?? mod
+      if (!mapRef.current) return
 
-// 日本列島の簡略海岸線（北海道・本州・四国・九州）
-// 実座標を SVG にマップするための関数
-function latLonPath(points: [number, number][]): string {
-  return points
-    .map((p, i) => {
-      const x = mapLonToX(p[1]).toFixed(1)
-      const y = mapLatToY(p[0]).toFixed(1)
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
+      // Leaflet CSSを動的に読み込み
+      const existing = document.querySelector('link[data-leaflet-css]')
+      if (!existing) {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+        link.setAttribute('data-leaflet-css', 'true')
+        document.head.appendChild(link)
+      }
+
+      map = L.map(mapRef.current).setView([position.lat, position.lon], 4)
+
+      // OpenStreetMapタイル
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map)
+
+      // 現在地マーカー（赤丸）
+      const currentIcon = L.divIcon({
+        html: '<div style="width:14px;height:14px;background:#EF4444;border-radius:50%;border:2px solid white;box-shadow:0 0 0 2px #EF4444;"></div>',
+        className: '',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      })
+      L.marker([position.lat, position.lon], { icon: currentIcon }).addTo(map)
+
+      // 予報円（+24h / +48h / +72h）— 半径は仮値
+      const radii = [150000, 250000, 350000]
+      const labels = ['+24h', '+48h', '+72h']
+      forecastPath.slice(0, 3).forEach((point, i) => {
+        L.circle([point.lat, point.lon], {
+          radius: radii[i],
+          color: '#EC4899',
+          fill: true,
+          fillColor: '#EC4899',
+          fillOpacity: 0.1,
+          weight: 1.2,
+          dashArray: '4, 4',
+        }).addTo(map!)
+
+        // 予報ポイントラベル
+        const labelIcon = L.divIcon({
+          html: `<div style="font-size:10px;font-weight:600;color:#BE185D;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:4px;white-space:nowrap;">${labels[i] || ''}</div>`,
+          className: '',
+          iconSize: [40, 16],
+          iconAnchor: [20, 8],
+        })
+        L.marker([point.lat, point.lon], { icon: labelIcon }).addTo(map!)
+      })
+
+      // 進路ライン（破線）
+      if (forecastPath.length > 0) {
+        const pathPoints: [number, number][] = [
+          [position.lat, position.lon],
+          ...forecastPath.map(p => [p.lat, p.lon] as [number, number]),
+        ]
+        L.polyline(pathPoints, {
+          color: '#0284C7',
+          weight: 2.5,
+          dashArray: '6, 4',
+        }).addTo(map)
+      }
+    }).catch(err => {
+      console.error('[TyphoonMap] Leaflet load failed:', err)
     })
-    .join(' ') + ' Z'
-}
 
-// 簡略化された日本海岸線（代表点のみ）
-const HOKKAIDO: [number, number][] = [
-  [45.5, 141.6], [45.3, 142.8], [44.3, 145.4], [43.0, 145.8], [41.8, 143.2], [42.0, 140.4], [43.2, 140.0], [44.5, 141.5], [45.5, 141.6],
-]
-const HONSHU: [number, number][] = [
-  [41.2, 140.4], [41.5, 141.5], [40.5, 141.9], [39.0, 141.8], [37.5, 141.0], [35.6, 140.8], [34.7, 138.9], [34.6, 138.2], [34.5, 136.9], [33.9, 135.4], [34.3, 133.0], [34.4, 131.0], [34.8, 131.8], [35.5, 132.5], [36.5, 133.2], [37.4, 137.3], [38.0, 138.3], [39.5, 140.0], [41.2, 140.4],
-]
-const SHIKOKU: [number, number][] = [
-  [34.3, 134.3], [33.8, 134.8], [33.1, 134.2], [32.7, 132.9], [33.4, 132.5], [34.0, 133.0], [34.3, 134.3],
-]
-const KYUSHU: [number, number][] = [
-  [33.9, 131.0], [33.2, 131.9], [32.8, 131.9], [31.8, 131.5], [31.2, 130.6], [32.0, 130.2], [32.9, 129.7], [33.5, 130.2], [33.9, 131.0],
-]
-
-const COAST_PATHS = [HOKKAIDO, HONSHU, SHIKOKU, KYUSHU].map(latLonPath)
-
-function formatHour(iso: string): string {
-  try {
-    const d = new Date(iso)
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
-    const hh = String(d.getHours()).padStart(2, '0')
-    return `${mm}/${dd} ${hh}時`
-  } catch {
-    return ''
-  }
-}
-
-export default function TyphoonMap({ current, forecastPath }: Props) {
-  const currentX = mapLonToX(current.lon)
-  const currentY = mapLatToY(current.lat)
-
-  // 進路矢印のパス
-  const pathPoints = [
-    { x: currentX, y: currentY },
-    ...forecastPath.map(p => ({ x: mapLonToX(p.lon), y: mapLatToY(p.lat) })),
-  ]
-  const pathD = pathPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-
-  // 緯度グリッド（10度ごと）
-  const latGrid = [10, 20, 30, 40]
-  // 経度グリッド（10度ごと）
-  const lonGrid = [110, 120, 130, 140, 150, 160, 170]
+    return () => {
+      if (map) {
+        map.remove()
+        map = null
+      }
+    }
+  }, [position, forecastPath])
 
   return (
-    <div style={{ width: '100%', overflowX: 'auto' }}>
-      <svg
-        viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-        width="100%"
-        style={{ display: 'block', background: '#e0f2fe', borderRadius: 8 }}
-      >
-        {/* 緯度経度グリッド */}
-        {latGrid.map(lat => (
-          <line
-            key={`lat-${lat}`}
-            x1={0}
-            y1={mapLatToY(lat)}
-            x2={SVG_WIDTH}
-            y2={mapLatToY(lat)}
-            stroke="#bae6fd"
-            strokeWidth="0.5"
-            strokeDasharray="2 2"
-          />
-        ))}
-        {lonGrid.map(lon => (
-          <line
-            key={`lon-${lon}`}
-            x1={mapLonToX(lon)}
-            y1={0}
-            x2={mapLonToX(lon)}
-            y2={SVG_HEIGHT}
-            stroke="#bae6fd"
-            strokeWidth="0.5"
-            strokeDasharray="2 2"
-          />
-        ))}
-
-        {/* 日本列島海岸線 */}
-        {COAST_PATHS.map((d, i) => (
-          <path key={i} d={d} fill="#94a3b8" stroke="#64748b" strokeWidth="0.8" />
-        ))}
-
-        {/* 進路矢印（破線） */}
-        {forecastPath.length > 0 && (
-          <>
-            <defs>
-              <marker
-                id="arrowhead"
-                markerWidth="10"
-                markerHeight="10"
-                refX="8"
-                refY="5"
-                orient="auto"
-              >
-                <polygon points="0 0, 10 5, 0 10" fill="#0284c7" />
-              </marker>
-            </defs>
-            <path
-              d={pathD}
-              fill="none"
-              stroke="#0284c7"
-              strokeWidth="2"
-              strokeDasharray="5 3"
-              markerEnd="url(#arrowhead)"
-            />
-          </>
-        )}
-
-        {/* 予報円（ピンクの楕円、24h ごとに半径を拡大） */}
-        {forecastPath.slice(0, 3).map((p, i) => {
-          const cx = mapLonToX(p.lon)
-          const cy = mapLatToY(p.lat)
-          const r = 12 + i * 4 // +24h: 12, +48h: 16, +72h: 20
-          return (
-            <g key={`forecast-${i}`}>
-              <circle
-                cx={cx}
-                cy={cy}
-                r={r}
-                fill="rgba(236, 72, 153, 0.15)"
-                stroke="#ec4899"
-                strokeWidth="1.2"
-                strokeDasharray="3 2"
-              />
-              <text
-                x={cx}
-                y={cy - r - 3}
-                textAnchor="middle"
-                fontSize="9"
-                fill="#be185d"
-                fontWeight="600"
-              >
-                +{(i + 1) * 24}h
-              </text>
-            </g>
-          )
-        })}
-
-        {/* 現在地（赤丸） */}
-        <circle cx={currentX} cy={currentY} r="6" fill="#ef4444" stroke="#fff" strokeWidth="2" />
-        <circle cx={currentX} cy={currentY} r="10" fill="none" stroke="#ef4444" strokeWidth="1.2" opacity="0.5" />
-      </svg>
-
-      {/* 凡例 */}
-      <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
-        <span className="flex items-center gap-1 text-[10px] text-[#64748b]">
-          <span className="inline-block w-2 h-2 rounded-full bg-red-500" />現在地
-        </span>
-        <span className="flex items-center gap-1 text-[10px] text-[#64748b]">
-          <span className="inline-block w-3 h-0.5" style={{ background: '#0284c7', borderTop: '1px dashed #0284c7' }} />進路
-        </span>
-        <span className="flex items-center gap-1 text-[10px] text-[#64748b]">
-          <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: 'rgba(236,72,153,0.15)', border: '1px dashed #ec4899' }} />予報円
-        </span>
-      </div>
-    </div>
+    <div
+      ref={mapRef}
+      style={{ height: '360px', width: '100%', borderRadius: '12px', overflow: 'hidden' }}
+    />
   )
 }

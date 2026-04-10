@@ -4,6 +4,7 @@ import Link from 'next/link'
 import BackButton from '@/components/BackButton'
 import TyphoonMap from '@/components/typhoon/TyphoonMap'
 import AreaCommentCard from '@/components/typhoon/AreaCommentCard'
+import { getApproximateLocation } from '@/lib/typhoon/location'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore'
 
@@ -22,6 +23,8 @@ interface Typhoon {
   pressure: number
   windSpeed: number
   maxWindGust?: number
+  intensity?: string
+  size?: string
   forecastPath: ForecastPoint[]
   isActive: boolean
   updatedAt?: string
@@ -77,6 +80,8 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
           pressure: d.pressure ?? 0,
           windSpeed: d.windSpeed ?? 0,
           maxWindGust: d.maxWindGust,
+          intensity: d.intensity,
+          size: d.size,
           forecastPath: d.forecastPath ?? [],
           isActive: d.isActive ?? false,
           updatedAt: d.updatedAt,
@@ -148,7 +153,7 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
               <Link href={`/typhoon/${year}`} style={{ textDecoration: 'none' }}>
                 <span style={{ fontSize: 18, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>{year}年 台風</span>
               </Link>
-              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>🌀 {typhoon.name}</span>
+              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>{typhoon.name}</span>
             </div>
           </div>
         </div>
@@ -164,10 +169,10 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
             )}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
+            <div className="bg-[#f0f9ff] rounded-lg p-2.5" style={{ gridColumn: '1 / -1' }}>
               <p className="text-[9px] text-[#8899aa]">現在位置</p>
               <p className="text-sm font-semibold text-[#0a1628]">
-                {typhoon.position.lat.toFixed(1)}°N / {typhoon.position.lon.toFixed(1)}°E
+                {getApproximateLocation(typhoon.position.lat, typhoon.position.lon)}
               </p>
             </div>
             <div className="bg-[#f0f9ff] rounded-lg p-2.5">
@@ -179,10 +184,12 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
               <p className="text-sm font-semibold text-[#0a1628]">{typhoon.windSpeed} m/s</p>
             </div>
             <div className="bg-[#f0f9ff] rounded-lg p-2.5">
-              <p className="text-[9px] text-[#8899aa]">最大瞬間風速</p>
-              <p className="text-sm font-semibold text-[#0a1628]">
-                {typhoon.maxWindGust ? `${typhoon.maxWindGust} m/s` : '—'}
-              </p>
+              <p className="text-[9px] text-[#8899aa]">強さ</p>
+              <p className="text-sm font-semibold text-[#0a1628]">{typhoon.intensity || '-'}</p>
+            </div>
+            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
+              <p className="text-[9px] text-[#8899aa]">大きさ</p>
+              <p className="text-sm font-semibold text-[#0a1628]">{typhoon.size || '-'}</p>
             </div>
           </div>
         </section>
@@ -190,7 +197,7 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
         {/* ② SVG進路マップ */}
         <section className="bg-white border border-[#eef1f4] rounded-xl p-4">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">進路予報</h2>
-          <TyphoonMap current={typhoon.position} forecastPath={typhoon.forecastPath} />
+          <TyphoonMap position={typhoon.position} forecastPath={typhoon.forecastPath} />
         </section>
 
         {/* ③ エリア別影響コメント */}

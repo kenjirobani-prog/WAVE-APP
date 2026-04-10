@@ -46,8 +46,8 @@ export default function TyphoonBanner() {
     <Link href={`/typhoon/${year}`}>
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between active:scale-[0.98] transition-transform" style={{ cursor: 'pointer' }}>
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-blue-600 text-sm font-medium shrink-0">🌀 {label}</span>
-          <span className="text-blue-500 text-sm truncate">— うねり影響を確認する</span>
+          <span className="text-blue-600 text-sm font-medium shrink-0">{label}</span>
+          <span className="text-blue-500 text-sm truncate">— 進路や影響を確認する</span>
         </div>
         <span className="text-blue-400 text-sm shrink-0 ml-2">→</span>
       </div>

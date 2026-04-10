@@ -6,7 +6,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 const MENU_ITEMS = [
   { label: 'About Us', href: '/about' },
   { label: '波予報', href: '/' },
-  { label: '🌀 台風情報', href: `/typhoon/${CURRENT_YEAR}` },
+  { label: '台風情報', href: `/typhoon/${CURRENT_YEAR}` },
   { label: 'サーフィンの始め方', href: '/howto' },
   { label: '用語集', href: '/glossary' },
   { label: 'サーフボード図鑑', href: '/surfboards' },
