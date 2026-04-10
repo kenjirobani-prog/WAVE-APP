@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed:typhoon": "node --env-file=.env.local --experimental-strip-types scripts/seed-typhoon-test.ts"
   },
   "dependencies": {
     "@notionhq/client": "^5.15.0",
