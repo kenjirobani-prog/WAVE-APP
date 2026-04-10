@@ -29,7 +29,7 @@ export default function TyphoonMap({ position, forecastPath }: Props) {
         document.head.appendChild(link)
       }
 
-      map = L.map(mapRef.current)
+      map = L.map(mapRef.current).setView([position.lat, position.lon], 4)
 
       // OpenStreetMapタイル
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -84,16 +84,6 @@ export default function TyphoonMap({ position, forecastPath }: Props) {
         }).addTo(map)
       }
 
-      // 現在地 + 全予報ポイントのboundsを計算して自動ズーム
-      const allPoints: [number, number][] = [
-        [position.lat, position.lon],
-        ...path.map(p => [p.lat, p.lon] as [number, number]),
-      ]
-      const bounds = L.latLngBounds(allPoints)
-      map.fitBounds(bounds, {
-        padding: [60, 60],
-        maxZoom: 6,
-      })
     }).catch(err => {
       console.error('[TyphoonMap] Leaflet load failed:', err)
     })
