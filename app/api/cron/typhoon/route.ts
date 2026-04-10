@@ -86,9 +86,18 @@ function parseTyphoonBlock(xml: string, typhoonNumber: number, typhoonName: stri
     const dtValue = dtTypeMatch[2]
 
     // 中心位置（度）を抽出
+    // 実況ブロック: <jmx_eb:Coordinate type="中心位置（度）">
+    // 予報ブロック: <jmx_eb:BasePoint type="中心位置（度）"> （ProbabilityCircle 内）
+    let coord: { lat: number; lon: number } | null = null
     const coordMatch = block.match(/<jmx_eb:Coordinate[^>]*type="中心位置（度）">([^<]+)</)
-    if (!coordMatch) continue
-    const coord = parseCoordinate(coordMatch[1])
+    if (coordMatch) {
+      coord = parseCoordinate(coordMatch[1])
+    } else {
+      const basePointMatch = block.match(/<jmx_eb:BasePoint[^>]*type="中心位置（度）">([^<]+)</)
+      if (basePointMatch) {
+        coord = parseCoordinate(basePointMatch[1])
+      }
+    }
     if (!coord) continue
 
     // 中心気圧

@@ -49,7 +49,8 @@ export default function TyphoonMap({ position, forecastPath }: Props) {
       // 予報円（+24h / +48h / +72h）— 半径は仮値
       const radii = [150000, 250000, 350000]
       const labels = ['+24h', '+48h', '+72h']
-      forecastPath.slice(0, 3).forEach((point, i) => {
+      const path = forecastPath ?? []
+      path.slice(0, 3).forEach((point, i) => {
         L.circle([point.lat, point.lon], {
           radius: radii[i],
           color: '#EC4899',
@@ -71,10 +72,10 @@ export default function TyphoonMap({ position, forecastPath }: Props) {
       })
 
       // 進路ライン（破線）
-      if (forecastPath.length > 0) {
+      if (path.length > 0) {
         const pathPoints: [number, number][] = [
           [position.lat, position.lon],
-          ...forecastPath.map(p => [p.lat, p.lon] as [number, number]),
+          ...path.map(p => [p.lat, p.lon] as [number, number]),
         ]
         L.polyline(pathPoints, {
           color: '#0284C7',
