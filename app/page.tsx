@@ -10,6 +10,7 @@ import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import AreaTabs from '@/components/AreaTabs'
 import HamburgerMenu from '@/components/HamburgerMenu'
 import AiCommentLoading from '@/components/AiCommentLoading'
+import TyphoonBanner from '@/components/TyphoonBanner'
 
 type DateTab = 'today' | 'tomorrow' | 'weekly'
 const DOW_JA = ['日', '月', '火', '水', '木', '金', '土']
@@ -330,6 +331,7 @@ export default function TopPage() {
           )
         ) : (
           <>
+            <TyphoonBanner />
             {/* Recommendation banner */}
             {!loading && bestSlot && (
               <div style={{
