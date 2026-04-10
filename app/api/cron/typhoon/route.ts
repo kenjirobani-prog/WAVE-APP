@@ -8,7 +8,7 @@ export const maxDuration = 60
 // 日本の代表座標（東京）
 const JAPAN_LAT = 35.6895
 const JAPAN_LON = 139.6917
-const THRESHOLD_KM = 3000
+const THRESHOLD_KM = 4000
 
 // Haversine公式で2点間の距離（km）を計算
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
