@@ -1,0 +1,194 @@
+'use client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import BackButton from '@/components/BackButton'
+import TyphoonMap from '@/components/typhoon/TyphoonMap'
+import AreaCommentCard from '@/components/typhoon/AreaCommentCard'
+import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore'
+
+interface ForecastPoint {
+  lat: number
+  lon: number
+  time: string
+  pressure: number
+  windSpeed: number
+}
+
+interface Typhoon {
+  name: string
+  number: number
+  position: { lat: number; lon: number }
+  pressure: number
+  windSpeed: number
+  maxWindGust?: number
+  forecastPath: ForecastPoint[]
+  isActive: boolean
+  updatedAt?: string
+}
+
+interface AreaComment {
+  text: string
+  generatedAt?: string
+}
+
+function formatUpdatedAt(iso?: string): string {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const hh = String(d.getHours()).padStart(2, '0')
+    const mi = String(d.getMinutes()).padStart(2, '0')
+    return `${mm}/${dd} ${hh}:${mi} 更新`
+  } catch {
+    return ''
+  }
+}
+
+export default function TyphoonDetailClient({ year, typhoonId }: { year: string; typhoonId: string }) {
+  const [typhoon, setTyphoon] = useState<Typhoon | null>(null)
+  const [areaComments, setAreaComments] = useState<Record<string, AreaComment>>({})
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        await ensureAnonymousAuth()
+        const db = getDb()
+
+        // 台風本体
+        const tRef = doc(db, 'typhoons', year, 'list', typhoonId)
+        const tSnap = await getDoc(tRef)
+        if (!tSnap.exists()) {
+          setNotFound(true)
+          return
+        }
+        const d = tSnap.data()
+        setTyphoon({
+          name: d.name ?? '',
+          number: d.number ?? 0,
+          position: d.position ?? { lat: 0, lon: 0 },
+          pressure: d.pressure ?? 0,
+          windSpeed: d.windSpeed ?? 0,
+          maxWindGust: d.maxWindGust,
+          forecastPath: d.forecastPath ?? [],
+          isActive: d.isActive ?? false,
+          updatedAt: d.updatedAt,
+        })
+
+        // エリア別コメント
+        const cRef = collection(db, 'typhoons', year, 'list', typhoonId, 'areaComments')
+        const cSnap = await getDocs(cRef)
+        const comments: Record<string, AreaComment> = {}
+        cSnap.forEach(c => {
+          const data = c.data()
+          comments[c.id] = {
+            text: data.text ?? '',
+            generatedAt: data.generatedAt,
+          }
+        })
+        setAreaComments(comments)
+      } catch {
+        setNotFound(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [year, typhoonId])
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#f0f9ff]">
+        <p className="text-sm text-[#8899aa]">読み込み中...</p>
+      </div>
+    )
+  }
+
+  if (notFound || !typhoon) {
+    return (
+      <div className="flex-1 flex flex-col bg-[#f0f9ff]">
+        <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <BackButton />
+            <span style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>台風情報</span>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center p-8">
+          <p className="text-sm text-[#8899aa]">台風データが見つかりませんでした。</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
+      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <BackButton />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <Link href={`/typhoon/${year}`} style={{ textDecoration: 'none' }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>{year}年 台風</span>
+              </Link>
+              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>🌀 {typhoon.name}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-auto pb-4 px-4 pt-4 space-y-4">
+        {/* ① 台風基本情報カード */}
+        <section className="bg-white border border-[#eef1f4] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-[#0a1628]">台風{typhoon.number}号 基本情報</h2>
+            {typhoon.updatedAt && (
+              <span className="text-[10px] text-[#8899aa]">{formatUpdatedAt(typhoon.updatedAt)}</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
+              <p className="text-[9px] text-[#8899aa]">現在位置</p>
+              <p className="text-sm font-semibold text-[#0a1628]">
+                {typhoon.position.lat.toFixed(1)}°N / {typhoon.position.lon.toFixed(1)}°E
+              </p>
+            </div>
+            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
+              <p className="text-[9px] text-[#8899aa]">中心気圧</p>
+              <p className="text-sm font-semibold text-[#0a1628]">{typhoon.pressure} hPa</p>
+            </div>
+            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
+              <p className="text-[9px] text-[#8899aa]">最大風速</p>
+              <p className="text-sm font-semibold text-[#0a1628]">{typhoon.windSpeed} m/s</p>
+            </div>
+            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
+              <p className="text-[9px] text-[#8899aa]">最大瞬間風速</p>
+              <p className="text-sm font-semibold text-[#0a1628]">
+                {typhoon.maxWindGust ? `${typhoon.maxWindGust} m/s` : '—'}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ② SVG進路マップ */}
+        <section className="bg-white border border-[#eef1f4] rounded-xl p-4">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">進路予報</h2>
+          <TyphoonMap current={typhoon.position} forecastPath={typhoon.forecastPath} />
+        </section>
+
+        {/* ③ エリア別影響コメント */}
+        <section>
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">エリア別うねり影響</h2>
+          <div className="grid grid-cols-1 gap-3">
+            <AreaCommentCard area="湘南" comment={areaComments.shonan} />
+            <AreaCommentCard area="千葉" comment={areaComments.chiba} />
+            <AreaCommentCard area="茨城" comment={areaComments.ibaraki} />
+          </div>
+        </section>
+      </main>
+    </div>
+  )
+}
