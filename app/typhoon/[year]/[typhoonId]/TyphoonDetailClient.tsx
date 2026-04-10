@@ -51,6 +51,7 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
   const [areaComments, setAreaComments] = useState<Record<string, AreaComment>>({})
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -63,7 +64,9 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
         const tRef = doc(db, 'typhoons', year, 'list', typhoonId)
         const tSnap = await getDoc(tRef)
         if (!tSnap.exists()) {
+          console.warn(`[typhoon-detail] Document not found: typhoons/${year}/list/${typhoonId}`)
           setNotFound(true)
+          setLoading(false)
           return
         }
         const d = tSnap.data()
@@ -79,20 +82,26 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
           updatedAt: d.updatedAt,
         })
 
-        // エリア別コメント
-        const cRef = collection(db, 'typhoons', year, 'list', typhoonId, 'areaComments')
-        const cSnap = await getDocs(cRef)
-        const comments: Record<string, AreaComment> = {}
-        cSnap.forEach(c => {
-          const data = c.data()
-          comments[c.id] = {
-            text: data.text ?? '',
-            generatedAt: data.generatedAt,
-          }
-        })
-        setAreaComments(comments)
-      } catch {
-        setNotFound(true)
+        // エリア別コメント（サブコレクションが存在しない場合はスキップ）
+        try {
+          const cRef = collection(db, 'typhoons', year, 'list', typhoonId, 'areaComments')
+          const cSnap = await getDocs(cRef)
+          const comments: Record<string, AreaComment> = {}
+          cSnap.forEach(c => {
+            const data = c.data()
+            comments[c.id] = {
+              text: data.text ?? '',
+              generatedAt: data.generatedAt,
+            }
+          })
+          setAreaComments(comments)
+        } catch (commentErr) {
+          console.warn('[typhoon-detail] areaComments fetch failed:', commentErr)
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        console.error('[typhoon-detail] load error:', msg)
+        setErrorMsg(msg)
       } finally {
         setLoading(false)
       }
@@ -117,8 +126,13 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
             <span style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>台風情報</span>
           </div>
         </header>
-        <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 gap-2">
           <p className="text-sm text-[#8899aa]">台風データが見つかりませんでした。</p>
+          <p className="text-[10px] text-[#c0ccd8]">path: typhoons/{year}/list/{typhoonId}</p>
+          {errorMsg && <p className="text-[10px] text-red-400">{errorMsg}</p>}
+          <Link href={`/typhoon/${year}`} className="text-xs text-sky-700 font-semibold mt-2">
+            ← {year}年の台風一覧に戻る
+          </Link>
         </div>
       </div>
     )
