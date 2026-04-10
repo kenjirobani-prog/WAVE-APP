@@ -1,12 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, setDoc } from 'firebase/firestore'
 
 export const maxDuration = 30
 
-export async function POST() {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Not allowed in production' }, { status: 403 })
+async function handle(request: NextRequest) {
+  // CRON_SECRETで認証
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret) {
+    const { searchParams } = new URL(request.url)
+    const secret = searchParams.get('secret')
+    const authHeader = request.headers.get('authorization')
+    if (secret !== cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
   }
 
   try {
@@ -47,7 +54,11 @@ export async function POST() {
   }
 }
 
+export async function POST(request: NextRequest) {
+  return handle(request)
+}
+
 // GET も許可（ブラウザから直接叩けるように）
-export async function GET() {
-  return POST()
+export async function GET(request: NextRequest) {
+  return handle(request)
 }
