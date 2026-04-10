@@ -11,18 +11,6 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        surface: "var(--surface)",
-        border: "var(--border)",
-        hover: "var(--hover)",
-        'text-primary': "var(--text-primary)",
-        'text-secondary': "var(--text-secondary)",
-        'text-muted': "var(--text-muted)",
-        accent: "var(--accent)",
-        star: "var(--star)",
-      },
-      fontFamily: {
-        serif: ['Georgia', '"Times New Roman"', '"Yu Mincho"', '"Hiragino Mincho ProN"', 'serif'],
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Hiragino Sans"', '"Yu Gothic"', 'system-ui', 'sans-serif'],
       },
       keyframes: {
         'bounce-x': {
