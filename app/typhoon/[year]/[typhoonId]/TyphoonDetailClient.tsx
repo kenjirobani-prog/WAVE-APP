@@ -28,6 +28,7 @@ interface Typhoon {
   forecastPath: ForecastPoint[]
   isActive: boolean
   updatedAt?: string
+  startedAt?: string
 }
 
 interface AreaComment {
@@ -35,7 +36,7 @@ interface AreaComment {
   generatedAt?: string
 }
 
-function formatUpdatedAt(iso?: string): string {
+function formatDateTime(iso?: string): string {
   if (!iso) return ''
   try {
     const d = new Date(iso)
@@ -43,10 +44,15 @@ function formatUpdatedAt(iso?: string): string {
     const dd = String(d.getDate()).padStart(2, '0')
     const hh = String(d.getHours()).padStart(2, '0')
     const mi = String(d.getMinutes()).padStart(2, '0')
-    return `${mm}/${dd} ${hh}:${mi} 更新`
+    return `${mm}/${dd} ${hh}:${mi}`
   } catch {
     return ''
   }
+}
+
+function formatUpdatedAt(iso?: string): string {
+  const t = formatDateTime(iso)
+  return t ? `${t} 更新` : ''
 }
 
 export default function TyphoonDetailClient({ year, typhoonId }: { year: string; typhoonId: string }) {
@@ -85,6 +91,7 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
           forecastPath: d.forecastPath ?? [],
           isActive: d.isActive ?? false,
           updatedAt: d.updatedAt,
+          startedAt: d.startedAt,
         })
 
         // エリア別コメント（サブコレクションが存在しない場合はスキップ）
@@ -191,6 +198,12 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
               <p className="text-[9px] text-[#8899aa]">大きさ</p>
               <p className="text-sm font-semibold text-[#0a1628]">{typhoon.size || '-'}</p>
             </div>
+            {typhoon.startedAt && (
+              <div className="bg-[#f0f9ff] rounded-lg p-2.5" style={{ gridColumn: '1 / -1' }}>
+                <p className="text-[9px] text-[#8899aa]">発生時刻</p>
+                <p className="text-sm font-semibold text-[#0a1628]">{formatDateTime(typhoon.startedAt)} 発生</p>
+              </div>
+            )}
           </div>
         </section>
 

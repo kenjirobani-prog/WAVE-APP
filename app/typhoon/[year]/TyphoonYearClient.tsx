@@ -17,6 +17,9 @@ interface Typhoon {
   isActive: boolean
   isWithin800km: boolean
   updatedAt?: string
+  startedAt?: string
+  intensity?: string
+  size?: string
 }
 
 export default function TyphoonYearClient({ year }: { year: string }) {
@@ -44,6 +47,9 @@ export default function TyphoonYearClient({ year }: { year: string }) {
             isActive: d.isActive ?? false,
             isWithin800km: d.isWithin800km ?? false,
             updatedAt: d.updatedAt,
+            startedAt: d.startedAt,
+            intensity: d.intensity,
+            size: d.size,
           })
         })
         setTyphoons(results)

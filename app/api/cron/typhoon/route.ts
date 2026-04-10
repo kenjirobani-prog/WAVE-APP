@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
 import type { TyphoonData, ForecastPoint } from '@/types/typhoon'
 
 export const maxDuration = 60
@@ -258,6 +258,18 @@ export async function GET(request: NextRequest) {
       const typhoonId = `T${year.slice(2)}${String(t.number).padStart(2, '0')}`
       const within = isWithinThreshold(t.current.lat, t.current.lon, t.forecastPath)
       const docRef = doc(db, 'typhoons', year, 'list', typhoonId)
+
+      // 既存ドキュメントがあれば startedAt を維持、なければ現在時刻をセット
+      let startedAt: string
+      try {
+        const existing = await getDoc(docRef)
+        startedAt = existing.exists() && existing.data()?.startedAt
+          ? existing.data()!.startedAt
+          : new Date().toISOString()
+      } catch {
+        startedAt = new Date().toISOString()
+      }
+
       await setDoc(docRef, {
         name: t.name,
         nameKana: t.nameKana,
@@ -271,10 +283,11 @@ export async function GET(request: NextRequest) {
         forecastPath: t.forecastPath,
         isActive: true,
         isWithin800km: within, // フィールド名は互換性維持
+        startedAt,
         updatedAt: new Date().toISOString(),
       })
       savedIds.push(typhoonId)
-      console.log(`[typhoon] Saved ${typhoonId} within${THRESHOLD_KM}km=${within}`)
+      console.log(`[typhoon] Saved ${typhoonId} within${THRESHOLD_KM}km=${within} startedAt=${startedAt}`)
     }
 
     return NextResponse.json({

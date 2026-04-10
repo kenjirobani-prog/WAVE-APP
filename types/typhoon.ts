@@ -10,6 +10,7 @@ export interface TyphoonData {
   isActive: boolean
   isWithin800km: boolean
   updatedAt: Date
+  startedAt?: string  // ISO8601形式
 }
 
 export interface ForecastPoint {

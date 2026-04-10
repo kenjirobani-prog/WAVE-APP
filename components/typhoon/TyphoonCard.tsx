@@ -14,27 +14,33 @@ interface Props {
     intensity?: string
     size?: string
     updatedAt?: string
+    startedAt?: string
   }
 }
 
-function formatUpdatedAt(iso?: string): string {
+function formatDateTime(iso?: string): string {
   if (!iso) return ''
   const d = new Date(iso)
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
   const hh = String(d.getHours()).padStart(2, '0')
   const mi = String(d.getMinutes()).padStart(2, '0')
-  return `${mm}/${dd} ${hh}:${mi} 更新`
+  return `${mm}/${dd} ${hh}:${mi}`
 }
 
 export default function TyphoonCard({ year, typhoon }: Props) {
   return (
     <div className="bg-white border border-[#eef1f4] rounded-xl p-4 mb-3">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-start justify-between mb-3">
         <h3 className="text-base font-bold text-[#0a1628]">{typhoon.name}</h3>
-        {typhoon.updatedAt && (
-          <span className="text-[10px] text-[#8899aa]">{formatUpdatedAt(typhoon.updatedAt)}</span>
-        )}
+        <div className="text-right">
+          {typhoon.updatedAt && (
+            <p className="text-[10px] text-[#8899aa]">{formatDateTime(typhoon.updatedAt)} 更新</p>
+          )}
+          {typhoon.startedAt && (
+            <p className="text-[10px] text-[#c0ccd8]">{formatDateTime(typhoon.startedAt)} 発生</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="bg-[#f0f9ff] rounded-lg p-2" style={{ gridColumn: '1 / -1' }}>
