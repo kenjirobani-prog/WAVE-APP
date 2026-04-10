@@ -87,7 +87,7 @@ export default function RootLayout({
           })}}
         />
       </head>
-      <body className={`${inter.className} min-h-screen bg-[#f0f9ff]`}>
+      <body className={`${inter.className} min-h-screen`} style={{ background: 'var(--background)' }}>
         <div className="max-w-md mx-auto min-h-screen flex flex-col">
           {children}
         </div>

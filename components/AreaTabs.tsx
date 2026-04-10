@@ -14,18 +14,19 @@ export default function AreaTabs() {
   const activeKey = AREAS.find(a => a.href === pathname)?.key ?? 'shonan'
 
   return (
-    <div className="bg-white border-b border-[#eef1f4]" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+    <div style={{ background: 'var(--surface)', borderBottom: '0.5px solid var(--border)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
       <div style={{ display: 'flex', minWidth: 'max-content' }}>
         {AREAS.map(a => (
           <Link key={a.key} href={a.href}
             style={{
               flex: 1,
-              padding: '10px 16px',
+              padding: '12px 18px',
+              fontFamily: 'var(--font-sans)',
               fontSize: 14,
-              fontWeight: activeKey === a.key ? 700 : 500,
-              color: activeKey === a.key ? '#0284c7' : '#8899aa',
+              fontWeight: activeKey === a.key ? 600 : 400,
+              color: activeKey === a.key ? 'var(--text-primary)' : 'var(--text-muted)',
               background: 'none',
-              borderBottom: activeKey === a.key ? '2px solid #0284c7' : '2px solid transparent',
+              borderBottom: activeKey === a.key ? '2px solid var(--accent)' : '2px solid transparent',
               textDecoration: 'none',
               whiteSpace: 'nowrap',
               textAlign: 'center',

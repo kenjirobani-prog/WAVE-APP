@@ -40,7 +40,7 @@ export default function HamburgerMenu() {
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 10, alignSelf: 'flex-end', marginBottom: 2 }}
         aria-label="メニューを開く"
       >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" strokeWidth="2" strokeLinecap="round">
           <line x1="3" y1="5" x2="21" y2="5" />
           <line x1="3" y1="12" x2="21" y2="12" />
           <line x1="3" y1="19" x2="21" y2="19" />

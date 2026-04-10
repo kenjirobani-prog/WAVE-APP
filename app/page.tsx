@@ -243,20 +243,18 @@ export default function TopPage() {
   const targetDate = tab !== 'weekly' ? getTargetDate(tab) : today
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--background)' }}>
       {/* Header */}
-      <header className="header-gradient" style={{ padding: '16px 1rem 1rem', color: '#fff' }}>
+      <header style={{ background: 'var(--surface)', borderBottom: '0.5px solid var(--border)', padding: '20px 24px 18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em' }}>jpwaveforecast.com</div>
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.6 }}>
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', lineHeight: 1.1, margin: 0 }}>AI 波予報</h1>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', marginTop: 4 }}>jpwaveforecast.com</p>
+            <div style={{ marginTop: 10 }}>
+              <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
                 更新時刻：{UPDATE_HOURS_JST.join(', ')}時
               </p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0, fontWeight: 500, lineHeight: 1.6 }}>
                 次回更新：{getNextUpdateTime()}
               </p>
             </div>
@@ -268,31 +266,26 @@ export default function TopPage() {
       <AreaTabs />
 
       {/* Date tabs */}
-      <div className="bg-white border-b border-[#eef1f4] px-3 flex items-center gap-1 py-2">
-        <button
-          onClick={() => setTab('today')}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            tab === 'today' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'
-          }`}
-        >
-          今日 {formatMD(today)}
-        </button>
-        <button
-          onClick={() => setTab('tomorrow')}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            tab === 'tomorrow' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'
-          }`}
-        >
-          明日 {formatMD(tomorrow)}
-        </button>
-        <button
-          onClick={() => setTab('weekly')}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            tab === 'weekly' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'
-          }`}
-        >
-          週間
-        </button>
+      <div className="px-4 flex items-center gap-1 py-3" style={{ background: 'var(--surface)', borderBottom: '0.5px solid var(--border)' }}>
+        {([
+          { key: 'today' as const, label: `今日 ${formatMD(today)}` },
+          { key: 'tomorrow' as const, label: `明日 ${formatMD(tomorrow)}` },
+          { key: 'weekly' as const, label: '週間' },
+        ]).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className="flex-1 py-2.5 text-sm rounded-md transition-colors"
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontWeight: tab === t.key ? 600 : 400,
+              background: tab === t.key ? 'var(--hover)' : 'transparent',
+              color: tab === t.key ? 'var(--text-primary)' : 'var(--text-muted)',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-4">

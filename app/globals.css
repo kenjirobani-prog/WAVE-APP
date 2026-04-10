@@ -3,17 +3,69 @@
 @tailwind utilities;
 
 :root {
-  --background: #f0f9ff;
-  --foreground: #0a1628;
+  /* Notion × Navy Blue design tokens */
+  --background: #f7f6f3;           /* Notion off-white */
+  --surface: #ffffff;
+  --border: #e8e4dd;
+  --hover: #f0ede8;
+
+  --text-primary: #1a3a5c;         /* Deep navy */
+  --text-secondary: #2d6a9f;       /* Medium blue */
+  --text-muted: #7aaecf;           /* Light blue */
+
+  --accent: #2d6a9f;               /* Blue accent */
+  --star: #e8a020;                 /* Amber (only exception) */
+
+  /* Font stacks */
+  --font-serif: Georgia, 'Times New Roman', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
+
+  --foreground: var(--text-primary);
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-weight: 400;
 }
 
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+h4, h5, h6 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Legacy header gradient — keep for backward compat but tone down */
 .header-gradient {
-  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%);
+  background: var(--surface);
+  border-bottom: 0.5px solid var(--border);
+  color: var(--text-primary);
+}
+
+/* Notion-style card */
+.notion-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  box-shadow: none;
+  transition: background 0.15s ease;
+}
+
+.notion-card:hover {
+  background: var(--hover);
+}
+
+/* Subtle divider */
+.notion-divider {
+  border-top: 0.5px solid var(--border);
 }
 
 @keyframes livePulse {
