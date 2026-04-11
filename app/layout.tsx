@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
+import Footer from '@/components/Footer'
 import './globals.css'
 
 const inter = Inter({
@@ -90,6 +91,7 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen bg-[#f0f9ff]`}>
         <div className="max-w-md mx-auto min-h-screen flex flex-col">
           {children}
+          <Footer />
         </div>
         <Analytics />
       </body>
