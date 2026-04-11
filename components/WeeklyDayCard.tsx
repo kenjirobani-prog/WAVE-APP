@@ -61,18 +61,27 @@ export default function WeeklyDayCard({ date, bestStars, isCloseout, comment, ge
       </div>
 
       {/* 下段：コメント（あれば） */}
-      {comment && (
-        <div style={{ background: '#E6F1FB', padding: '10px 14px' }}>
-          <p style={{ fontSize: 13, color: '#0C447C', lineHeight: 1.6, margin: 0 }}>
-            {comment}
-          </p>
-          {generatedAt && (
-            <p style={{ fontSize: 11, color: '#185FA5', marginTop: 4, marginBottom: 0 }}>
-              {formatUpdatedAt(generatedAt)}
+      {comment && (() => {
+        const isDanger =
+          comment.includes('入水厳禁') ||
+          comment.includes('絶対に') ||
+          comment.includes('危険')
+        const bg = isDanger ? '#FCEBEB' : '#E6F1FB'
+        const mainColor = isDanger ? '#A32D2D' : '#0C447C'
+        const subColor = isDanger ? '#791F1F' : '#185FA5'
+        return (
+          <div style={{ background: bg, padding: '10px 14px' }}>
+            <p style={{ fontSize: 13, color: mainColor, lineHeight: 1.6, margin: 0 }}>
+              {comment}
             </p>
-          )}
-        </div>
-      )}
+            {generatedAt && (
+              <p style={{ fontSize: 11, color: subColor, marginTop: 4, marginBottom: 0 }}>
+                {formatUpdatedAt(generatedAt)}
+              </p>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }

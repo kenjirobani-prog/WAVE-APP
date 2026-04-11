@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
-import { doc, setDoc } from 'firebase/firestore'
+import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
 
 export const maxDuration = 90
 
@@ -96,10 +96,71 @@ async function fetchWeeklySurfData(lat: number, lon: number): Promise<DailyWaveS
   return summaries.slice(0, 7)
 }
 
+// 台風データ型
+interface TyphoonDoc {
+  id: string
+  name: string
+  nameKana?: string
+  number: number
+  position: { lat: number; lon: number }
+  pressure: number
+  windSpeed: number
+  forecastPath?: Array<{ lat: number; lon: number; time: string; pressure: number; windSpeed: number }>
+}
+
+// 東京を基準に台風までの距離（km）を計算
+const TOKYO = { lat: 35.6895, lon: 139.6917 }
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function typhoonStageLabel(distanceKm: number): string {
+  if (distanceKm < 500) return '非常に近い（500km以内）'
+  if (distanceKm < 1500) return '近い（500〜1,500km）'
+  if (distanceKm < 3000) return 'うねりが届き始める（1,500〜3,000km）'
+  return '遠い（3,000km超）'
+}
+
+// Firestoreからアクティブな台風を取得
+async function fetchActiveTyphoons(db: import('firebase/firestore').Firestore): Promise<TyphoonDoc[]> {
+  try {
+    const year = String(new Date().getFullYear())
+    const ref = collection(db, 'typhoons', year, 'list')
+    const q = query(ref, where('isActive', '==', true))
+    const snap = await getDocs(q)
+    const results: TyphoonDoc[] = []
+    snap.forEach(d => {
+      const data = d.data()
+      results.push({
+        id: d.id,
+        name: data.name ?? '',
+        nameKana: data.nameKana,
+        number: data.number ?? 0,
+        position: data.position ?? { lat: 0, lon: 0 },
+        pressure: data.pressure ?? 0,
+        windSpeed: data.windSpeed ?? 0,
+        forecastPath: data.forecastPath,
+      })
+    })
+    return results
+  } catch (err) {
+    console.warn('[weekly-comments] fetchActiveTyphoons failed:', err)
+    return []
+  }
+}
+
 // Claude API でコメント生成（Vision対応）
 async function generateWeeklyComments(
   areaData: Record<string, DailyWaveSummary[]>,
   chartImages: string[],
+  activeTyphoons: TyphoonDoc[],
 ): Promise<Record<string, Record<string, string>> | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
@@ -117,6 +178,46 @@ async function generateWeeklyComments(
     .map(([key, days]) => summarizeArea(AREAS[key].name, days))
     .join('\n\n')
 
+  // 台風コンテキストの構築
+  let typhoonContext = ''
+  if (activeTyphoons.length > 0) {
+    const typhoonBlocks = activeTyphoons.map(t => {
+      const distance = haversineKm(t.position.lat, t.position.lon, TOKYO.lat, TOKYO.lon)
+      const stage = typhoonStageLabel(distance)
+      const forecastSummary = (t.forecastPath ?? []).slice(0, 5).map(p =>
+        `${p.time.slice(0, 16)}: (${p.lat.toFixed(1)}, ${p.lon.toFixed(1)}) ${p.pressure}hPa`
+      ).join(', ')
+      return `- 台風${t.number}号${t.nameKana ? `（${t.nameKana}）` : ''}
+  現在位置：北緯${t.position.lat}°・東経${t.position.lon}°
+  中心気圧：${t.pressure}hPa / 最大風速：${t.windSpeed}m/s
+  東京からの距離：約${Math.round(distance / 100) * 100}km（${stage}）
+  進路予報：${forecastSummary || 'なし'}`
+    }).join('\n\n')
+
+    typhoonContext = `
+【現在発生中の台風】
+${typhoonBlocks}
+
+台風によるうねりの影響を各日のコメントに必ず反映すること。
+距離段階に応じて以下の表現例を参考に書き分けること：
+
+・遠い（3,000km超）:
+  「台風○号のうねりが届き始める可能性あり」
+  「台風からのうねりに期待。周期が長くなる兆候あり」
+・うねりが届き始める（1,500〜3,000km）:
+  「台風うねりが到達。周期12〜14秒のグランドスウェル期待」
+  「台風うねりでサイズアップ。朝イチが狙い目」
+・近い（500〜1,500km）:
+  「台風接近によりサイズが急激にアップ。上級者以外は注意」
+  「強烈なクローズアウト気味。無理な入水は避けること」
+・非常に近い（500km以内）:
+  「台風が非常に近く危険。絶対に海に近づかないこと」
+  「暴風・高波・離岸流の危険あり。入水厳禁」
+
+安全に関わる情報（入水厳禁・危険）は最優先で明記すること。
+`
+  }
+
   const prompt = `あなたはサーフィン波予報の専門家です。
 気象予報士の視点で、天気図と波浪数値データを読み取り、
 サーファーにとって実用的な波への影響コメントを生成します。
@@ -130,9 +231,12 @@ async function generateWeeklyComments(
   例：「朝イチ狙い目」「オンショアで面荒れ」「グランドスウェル期待」
   「ショートボーダー向き」「ロングボード日和」など
 - 気象用語は使わず、サーフィン文化に沿った表現にする
+- 台風情報がある場合は必ずコメントに反映する
+- 安全に関わる情報（入水禁止・危険）は最優先で明記する
 
 【数値データ】
 ${dataText}
+${typhoonContext}
 
 以下のJSON形式で出力してください。他の文字（マークダウンコードブロック含む）は一切含めないこと。dateキーは上記データのYYYY-MM-DD形式と完全一致させること：
 {
@@ -207,6 +311,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Firestore匿名認証（台風データ取得・保存の両方で必要）
+    await ensureAnonymousAuth()
+    const db = getDb()
+
+    // アクティブな台風を取得
+    const activeTyphoons = await fetchActiveTyphoons(db)
+    console.log(`[weekly-comments] Active typhoons: ${activeTyphoons.length}`)
+
     // 気象庁天気図を取得（失敗してもコメント生成は続行）
     const chartImages = await Promise.all(WEATHER_CHART_URLS.map(imageToBase64))
     const validCharts = chartImages.filter((c): c is string => !!c)
@@ -221,14 +333,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Claudeでコメント生成
-    const comments = await generateWeeklyComments(areaData, validCharts)
+    const comments = await generateWeeklyComments(areaData, validCharts, activeTyphoons)
     if (!comments) {
       return NextResponse.json({ error: 'Comment generation failed' }, { status: 500 })
     }
-
-    // Firestoreに保存: weeklyComments/{area} に 7日分をmapで保存
-    await ensureAnonymousAuth()
-    const db = getDb()
     const generatedAt = new Date().toISOString()
     let savedCount = 0
     for (const [area, days] of Object.entries(comments)) {
