@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import type { TyphoonData, ForecastPoint } from '@/types/typhoon'
-import { shouldMentionTyphoon, getTyphoonComment, distanceToTokyoKm } from '@/lib/typhoon/mention'
+import { getTyphoonStage, getStagePrompt, distanceToTokyoKm } from '@/lib/typhoon/mention'
 
 export const maxDuration = 90
 
@@ -225,7 +225,8 @@ async function generateAreaComments(typhoon: ParsedTyphoon, swellData: Record<st
   }
 
   const distanceKm = distanceToTokyoKm({ position: typhoon.current, pressure: typhoon.current.pressure })
-  const commentHint = getTyphoonComment(distanceKm, typhoon.current.pressure)
+  const stage = getTyphoonStage(distanceKm, typhoon.current.pressure)
+  const stagePrompt = getStagePrompt(stage, distanceKm, typhoon.current.pressure)
 
   const prompt = `あなたはサーフィン波予報の専門AIです。
 以下の台風情報とうねり予報をもとに、各エリアへの影響コメントを生成してください。
@@ -237,7 +238,10 @@ async function generateAreaComments(typhoon: ParsedTyphoon, swellData: Record<st
 - 中心気圧：${typhoon.current.pressure}hPa
 - 最大風速：${typhoon.current.windSpeed}m/s
 - 進路予報：${JSON.stringify(typhoon.forecastPath.map(p => ({ lat: p.lat, lon: p.lon, time: p.time, pressure: p.pressure })))}
-- 推奨コメント表現：${commentHint}
+
+【この台風の状態ステージ】${stage}
+【必ず守るべき表現方針】
+${stagePrompt}
 
 各エリアのうねり予報（0h/12h/24h/36h/48h/60h/72h 先）：
 ${Object.entries(swellData).map(([k, v]) => {
@@ -245,11 +249,14 @@ ${Object.entries(swellData).map(([k, v]) => {
   return `${AREA_COORDS[k].label}: 波高${v.waveHeight.map(n => n.toFixed(1)).join('/')}m, 周期${v.wavePeriod.map(n => n.toFixed(0)).join('/')}秒, 波向${v.waveDirection.map(n => Math.round(n)).join('/')}°`
 }).join('\n')}
 
-上記の推奨表現を参考に、各エリアのコメントを生成してください。安全に関わる情報（入水禁止・危険）は最優先で明記してください。
+重要な注意事項：
+- 上記の「表現方針」に厳密に従ってください。
+- ステージが WATCH / TOO_FAR の場合は、絶対に「うねりが到達している」「台風うねり期待」等の誤情報を出さないこと。
+- 安全に関わる情報（入水禁止・危険）は最優先で明記してください。
 
 以下のJSON形式で出力してください。他の文字（マークダウンコードブロック含む）は一切含めないこと：
 {
-  "shonan": "湘南へのコメント（150文字以内・うねり到達時間・期待波高・周期・サーファーへのアドバイスを含む）",
+  "shonan": "湘南へのコメント（150文字以内）",
   "chiba": "千葉へのコメント（80文字以内・簡潔に）",
   "ibaraki": "茨城へのコメント（80文字以内・簡潔に）"
 }`
@@ -439,21 +446,13 @@ export async function GET(request: NextRequest) {
       savedIds.push(typhoonId)
       console.log(`[typhoon] Saved ${typhoonId} within${THRESHOLD_KM}km=${within} startedAt=${startedAt}`)
 
-      // エリア別AIコメント生成（距離3000km以内 かつ 970hPa以下 の台風のみ）
-      const mentionable = shouldMentionTyphoon({
-        position: t.current,
-        pressure: t.current.pressure,
-      })
-      if (mentionable) {
-        try {
-          await generateAndSaveAreaComments(db, year, typhoonId, t)
-          console.log(`[typhoon] Area comments generated for ${typhoonId}`)
-        } catch (commentErr) {
-          const msg = commentErr instanceof Error ? commentErr.message : String(commentErr)
-          console.error(`[typhoon] Area comments failed for ${typhoonId}: ${msg}`)
-        }
-      } else {
-        console.log(`[typhoon] Skipped area comments for ${typhoonId} (not mentionable)`)
+      // エリア別AIコメント生成（距離・気圧に応じてstageを切り替えて常に生成）
+      try {
+        await generateAndSaveAreaComments(db, year, typhoonId, t)
+        console.log(`[typhoon] Area comments generated for ${typhoonId}`)
+      } catch (commentErr) {
+        const msg = commentErr instanceof Error ? commentErr.message : String(commentErr)
+        console.error(`[typhoon] Area comments failed for ${typhoonId}: ${msg}`)
       }
     }
 

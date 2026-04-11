@@ -56,3 +56,41 @@ export function getTyphoonComment(distanceKm: number, pressure: number): string 
   }
   return ''
 }
+
+/**
+ * 台風の状態ステージを判定
+ * DANGER: 500km以内 — 入水禁止
+ * CLOSE: 1,000km以内 — 接近・上級者のみ
+ * SWELL_ARRIVED: 1,700km以内 + 950hPa以下 — うねり到達
+ * SWELL_STARTING: 1,700km以内 + 970hPa以下 — うねり届き始め
+ * WATCH: 3,000km以内 + 970hPa以下 — 遠方・注視
+ * TOO_FAR: それ以外 — 影響なし
+ */
+export type TyphoonStage = 'DANGER' | 'CLOSE' | 'SWELL_ARRIVED' | 'SWELL_STARTING' | 'WATCH' | 'TOO_FAR'
+
+export function getTyphoonStage(distanceKm: number, pressure: number): TyphoonStage {
+  if (distanceKm <= 500) return 'DANGER'
+  if (distanceKm <= 1000) return 'CLOSE'
+  if (distanceKm <= 1700 && pressure <= 950) return 'SWELL_ARRIVED'
+  if (distanceKm <= 1700 && pressure <= 970) return 'SWELL_STARTING'
+  if (distanceKm <= 3000 && pressure <= 970) return 'WATCH'
+  return 'TOO_FAR'
+}
+
+export function getStagePrompt(stage: TyphoonStage, distanceKm: number, pressure: number): string {
+  const d = Math.round(distanceKm)
+  switch (stage) {
+    case 'DANGER':
+      return `台風が非常に近く（${d}km）、各エリアとも入水厳禁・危険であることを強調してください。`
+    case 'CLOSE':
+      return `台風が接近中（${d}km）、サイズが急激に上がっており上級者以外は危険であることを伝えてください。`
+    case 'SWELL_ARRIVED':
+      return `台風からのうねりが各エリアに到達しています（距離${d}km）。周期の長いグランドスウェルによるサイズアップを具体的に伝えてください。`
+    case 'SWELL_STARTING':
+      return `台風からのうねりが届き始める可能性があります（距離${d}km）。今後のサイズ・周期変化に注目するよう伝えてください。`
+    case 'WATCH':
+      return `台風はまだ遠方（${d}km）にあります。現時点でうねりは届いていません。台風が北緯20度（約1,700km）まで北上し、950hPa以下に発達した段階でうねりへの期待が高まることを伝えてください。今後の進路・発達に注目するよう促すにとどめてください。`
+    case 'TOO_FAR':
+      return `台風はまだ非常に遠方（${d}km）かつ勢力も${pressure}hPaと弱めです。現時点では各エリアへのうねり影響はありません。台風の存在には触れず、通常の波予報コメントのみ生成してください。`
+  }
+}
