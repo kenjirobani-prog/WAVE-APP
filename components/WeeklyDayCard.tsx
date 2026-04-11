@@ -1,5 +1,4 @@
 'use client'
-import StarRating from './StarRating'
 
 const DOW_JA = ['日', '月', '火', '水', '木', '金', '土']
 
@@ -30,58 +29,94 @@ function formatUpdatedAt(iso?: string): string {
   }
 }
 
+function getDayColor(dayOfWeek: number): string {
+  if (dayOfWeek === 0) return '#E24B4A' // 日曜
+  if (dayOfWeek === 6) return '#378ADD' // 土曜
+  return '#0a1628'
+}
+
+function renderStars(score: number): string {
+  const filled = Math.max(0, Math.min(5, Math.round(score)))
+  return '★'.repeat(filled) + '☆'.repeat(5 - filled)
+}
+
 export default function WeeklyDayCard({ date, bestStars, isCloseout, comment, generatedAt }: Props) {
   const dow = DOW_JA[date.getDay()]
-  const dowColor =
-    date.getDay() === 0 ? '#ef4444' : date.getDay() === 6 ? '#3b82f6' : '#0a1628'
+  const dayColor = getDayColor(date.getDay())
 
   return (
     <div
       style={{
         background: 'white',
-        border: isCloseout ? '2px solid #ef4444' : '0.5px solid #eef1f4',
+        border: isCloseout ? '1px solid #ef4444' : '0.5px solid #e2e8f0',
         borderRadius: 12,
         overflow: 'hidden',
-        marginBottom: 8,
+        marginBottom: 12,
       }}
     >
-      {/* 上段：日付・星 */}
-      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: 48 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: dowColor, lineHeight: 1.1 }}>{dow}</div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{formatMD(date)}</div>
-        </div>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+      {/* 上部：日付・星 */}
+      <div style={{ padding: '14px 16px 10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div
+              style={{
+                fontSize: 32,
+                fontWeight: 500,
+                lineHeight: 1,
+                color: dayColor,
+              }}
+            >
+              {dow}
+            </div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>
+              {formatMD(date)}
+            </div>
+          </div>
           {isCloseout ? (
-            <span className="text-xs font-bold text-red-500">終日クローズアウト</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', marginTop: 4 }}>
+              終日クローズアウト
+            </span>
           ) : (
-            <StarRating stars={bestStars} size="md" />
+            <div
+              style={{
+                color: '#f59e0b',
+                fontSize: 15,
+                letterSpacing: '1px',
+                marginTop: 4,
+              }}
+            >
+              {renderStars(bestStars)}
+            </div>
           )}
         </div>
       </div>
 
-      {/* 下段：コメント（あれば） */}
-      {comment && (() => {
-        const isDanger =
-          comment.includes('入水厳禁') ||
-          comment.includes('絶対に') ||
-          comment.includes('危険')
-        const bg = isDanger ? '#FCEBEB' : '#E6F1FB'
-        const mainColor = isDanger ? '#A32D2D' : '#0C447C'
-        const subColor = isDanger ? '#791F1F' : '#185FA5'
-        return (
-          <div style={{ background: bg, padding: '10px 14px' }}>
-            <p style={{ fontSize: 13, color: mainColor, lineHeight: 1.6, margin: 0 }}>
+      {/* 区切り線＋コメント（コメントある日のみ） */}
+      {comment && (
+        <>
+          <div style={{ height: '0.5px', background: '#e2e8f0', margin: '0 16px' }} />
+          <div style={{ padding: '10px 16px 13px' }}>
+            <p style={{
+              fontSize: 13,
+              color: '#185FA5',
+              lineHeight: 1.65,
+              margin: 0,
+            }}>
               {comment}
             </p>
             {generatedAt && (
-              <p style={{ fontSize: 11, color: subColor, marginTop: 4, marginBottom: 0 }}>
+              <p style={{
+                fontSize: 11,
+                color: '#93c5fd',
+                marginTop: 5,
+                marginBottom: 0,
+              }}>
                 {formatUpdatedAt(generatedAt)}
               </p>
             )}
           </div>
-        )
-      })()}
+        </>
+      )}
     </div>
   )
 }
