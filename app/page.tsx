@@ -13,7 +13,7 @@ import AreaTabs from '@/components/AreaTabs'
 import HamburgerMenu from '@/components/HamburgerMenu'
 import AiCommentLoading from '@/components/AiCommentLoading'
 import TyphoonBanner from '@/components/TyphoonBanner'
-import WeeklyCommentRow from '@/components/WeeklyCommentRow'
+import WeeklyDayCard from '@/components/WeeklyDayCard'
 
 type DateTab = 'today' | 'tomorrow' | 'weekly'
 const DOW_JA = ['日', '月', '火', '水', '木', '金', '土']
@@ -323,38 +323,17 @@ export default function TopPage() {
           weeklyLoading ? (
             <WeeklyListSkeleton />
           ) : (
-            weeklyData.map((day, idx) => {
-              const dow = DOW_JA[day.date.getDay()]
-              const dowColor = day.date.getDay() === 0 ? '#ef4444' : day.date.getDay() === 6 ? '#3b82f6' : '#0a1628'
-              return (
-                <div key={day.dateStr}>
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: day.isCloseout ? '2px solid #ef4444' : '0.5px solid #eef1f4',
-                      borderRadius: 12,
-                      padding: '12px 16px',
-                    }}
-                    className="flex items-center"
-                  >
-                    <div style={{ width: 48 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: dowColor, lineHeight: 1.1 }}>{dow}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{formatMD(day.date)}</div>
-                    </div>
-                    <div className="flex-1 flex items-center justify-end">
-                      {day.isCloseout ? (
-                        <span className="text-xs font-bold text-red-500">終日クローズアウト</span>
-                      ) : (
-                        <StarRating stars={day.bestStars} size="md" />
-                      )}
-                    </div>
-                  </div>
-                  {idx < weeklyData.length - 1 && (
-                    <WeeklyCommentRow text={weeklyComments[day.dateStr]} generatedAt={weeklyCommentsAt ?? undefined} />
-                  )}
-                </div>
-              )
-            })
+            weeklyData.map(day => (
+              <WeeklyDayCard
+                key={day.dateStr}
+                date={day.date}
+                dateStr={day.dateStr}
+                bestStars={day.bestStars}
+                isCloseout={day.isCloseout}
+                comment={weeklyComments[day.dateStr]}
+                generatedAt={weeklyCommentsAt ?? undefined}
+              />
+            ))
           )
         ) : (
           <>

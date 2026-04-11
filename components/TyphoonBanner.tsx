@@ -36,20 +36,55 @@ export default function TyphoonBanner() {
 
   if (typhoons.length === 0) return null
 
-  const label = typhoons.length === 1
-    ? `台風${typhoons[0].number}号が発生中`
-    : `台風${typhoons.map(t => `${t.number}号`).join('・')}が発生中`
-
   const year = new Date().getFullYear()
+  const tagLabel = typhoons.length === 1
+    ? `台風${typhoons[0].number}号`
+    : typhoons.map(t => `台風${t.number}号`).join('・')
 
   return (
-    <Link href={`/typhoon/${year}`}>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between active:scale-[0.98] transition-transform" style={{ cursor: 'pointer' }}>
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-blue-600 text-sm font-medium shrink-0">{label}</span>
-          <span className="text-blue-500 text-sm truncate">— 進路や影響を確認する</span>
+    <Link href={`/typhoon/${year}`} style={{ display: 'block', marginBottom: 12 }}>
+      <div style={{
+        background: 'white',
+        border: '0.5px solid #85B7EB',
+        borderRadius: 10,
+        padding: '10px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        cursor: 'pointer',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+          <span style={{
+            background: '#E6F1FB',
+            color: '#0C447C',
+            fontSize: 11,
+            fontWeight: 500,
+            padding: '2px 8px',
+            borderRadius: 20,
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}>
+            {tagLabel}
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: '#0a1628' }}>
+            発生中 — 進路や影響を確認する
+          </span>
         </div>
-        <span className="text-blue-400 text-sm shrink-0 ml-2">→</span>
+        <div style={{
+          width: 26,
+          height: 26,
+          borderRadius: '50%',
+          background: '#378ADD',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M4 2l4 4-4 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
       </div>
     </Link>
   )
