@@ -6,6 +6,7 @@ import { calculateScore, classifyWind, windTypeLabel, compassLabel, getStarRatin
 import type { WaveCondition } from '@/lib/wave/types'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
 import StarRating from '@/components/StarRating'
+import { getWaveSizeLabel } from '@/lib/wave/waveSize'
 import TideCurve from '@/components/TideCurve'
 import TideCardStrip from '@/components/TideCardStrip'
 import TideStatusBar from '@/components/TideStatusBar'
@@ -90,6 +91,7 @@ function seasonLabel(s: string): string {
 interface TimeSlotData {
   stars: number
   isCloseout: boolean
+  waveHeight: number
 }
 
 const PREFERRED_SIZE_M = 0.8  // 基準: 腰サイズ
@@ -130,9 +132,9 @@ export default function SpotDetailContent({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-  const [morningSlot, setMorningSlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
-  const [middaySlot, setMiddaySlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
-  const [eveningSlot, setEveningSlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false })
+  const [morningSlot, setMorningSlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false, waveHeight: 0 })
+  const [middaySlot, setMiddaySlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false, waveHeight: 0 })
+  const [eveningSlot, setEveningSlot] = useState<TimeSlotData>({ stars: 1, isCloseout: false, waveHeight: 0 })
 
   const [windyLoaded, setWindyLoaded] = useState(false)
 
@@ -155,12 +157,13 @@ export default function SpotDetailContent({ id }: { id: string }) {
 
       // Compute time slot stars
       const slotHours = [6, 12, 16]
+      const slotMultiplier = spot.waveHeightMultiplier ?? 1.0
       const slotResults = slotHours.map(h => {
         const cond = conditions.find(c => (new Date(c.timestamp).getUTCHours() + 9) % 24 === h)
-        if (!cond) return { stars: 1, isCloseout: false }
+        if (!cond) return { stars: 1, isCloseout: false, waveHeight: 0 }
         const sc = calculateScore(cond, spot)
         const co = sc.reasonTags.includes('クローズアウト')
-        return { stars: getStarRating(sc.score, co), isCloseout: co }
+        return { stars: getStarRating(sc.score, co), isCloseout: co, waveHeight: cond.waveHeight * slotMultiplier }
       })
       setMorningSlot(slotResults[0])
       setMiddaySlot(slotResults[1])
@@ -258,7 +261,23 @@ export default function SpotDetailContent({ id }: { id: string }) {
                     {data.isCloseout ? (
                       <p className="text-xs font-bold text-red-500">クローズアウト</p>
                     ) : (
-                      <StarRating stars={data.stars} size="md" />
+                      <>
+                        <StarRating stars={data.stars} size="md" />
+                        {data.waveHeight > 0 && (
+                          <span style={{
+                            fontSize: '11px',
+                            color: '#64748b',
+                            background: '#f1f5f9',
+                            borderRadius: '20px',
+                            padding: '1px 8px',
+                            display: 'inline-block',
+                            marginTop: '3px',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {getWaveSizeLabel(data.waveHeight)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}

@@ -22,7 +22,8 @@ const WEEKLY_COMMENT_KEY = 'ibaraki'
 type DateTab = 'today' | 'tomorrow' | 'weekly'
 
 interface TimeSlotStars { morning: number; midday: number; evening: number }
-interface SpotCardData { spotId: string; stars: TimeSlotStars; isCloseout: boolean }
+interface TimeSlotWaveHeights { morning: number; midday: number; evening: number }
+interface SpotCardData { spotId: string; stars: TimeSlotStars; waveHeights: TimeSlotWaveHeights; isCloseout: boolean }
 interface WeeklyDayData { date: Date; dateStr: string; bestStars: number; isCloseout: boolean }
 
 const TIME_SLOT_HOURS = { morning: 6, midday: 12, evening: 16 }
@@ -44,15 +45,17 @@ function findConditionAtHour(conditions: WaveCondition[], targetHour: number): W
 }
 
 function computeSpotStars(conditions: WaveCondition[], spot: typeof SPOTS[number]) {
+  const multiplier = spot.waveHeightMultiplier ?? 1.0
   const slots = (['morning', 'midday', 'evening'] as const).map(slot => {
     const cond = findConditionAtHour(conditions, TIME_SLOT_HOURS[slot])
-    if (!cond) return { slot, stars: 1, closeout: false }
+    if (!cond) return { slot, stars: 1, closeout: false, waveHeight: 0 }
     const score = calculateScore(cond, spot)
     const closeout = score.reasonTags.includes('クローズアウト')
-    return { slot, stars: getStarRating(score.score, closeout), closeout }
+    return { slot, stars: getStarRating(score.score, closeout), closeout, waveHeight: cond.waveHeight * multiplier }
   })
   return {
     stars: { morning: slots[0].stars, midday: slots[1].stars, evening: slots[2].stars },
+    waveHeights: { morning: slots[0].waveHeight, midday: slots[1].waveHeight, evening: slots[2].waveHeight },
     isCloseout: slots.every(s => s.closeout),
   }
 }
@@ -145,10 +148,10 @@ export default function IbarakiPage() {
           const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
           if (!res.ok) throw new Error()
           const data = await res.json()
-          const { stars, isCloseout } = computeSpotStars(data.conditions ?? [], spot)
-          results.push({ spotId: spot.id, stars, isCloseout })
+          const { stars, waveHeights, isCloseout } = computeSpotStars(data.conditions ?? [], spot)
+          results.push({ spotId: spot.id, stars, waveHeights, isCloseout })
           if (!isCloseout) allStars.push(stars)
-        } catch { results.push({ spotId: spot.id, stars: { morning: 1, midday: 1, evening: 1 }, isCloseout: false }) }
+        } catch { results.push({ spotId: spot.id, stars: { morning: 1, midday: 1, evening: 1 }, waveHeights: { morning: 0, midday: 0, evening: 0 }, isCloseout: false }) }
       }))
       results.sort((a, b) => (SPOTS.find(s => s.id === a.spotId)?.order ?? 99) - (SPOTS.find(s => s.id === b.spotId)?.order ?? 99))
       setSpotCards(results)
@@ -268,7 +271,7 @@ export default function IbarakiPage() {
             ) : (
               spotCards.map(card => {
                 const spot = SPOTS.find(s => s.id === card.spotId)!
-                return <SpotCard key={card.spotId} spot={spot} stars={card.stars} isCloseout={card.isCloseout} date={targetDate} />
+                return <SpotCard key={card.spotId} spot={spot} stars={card.stars} waveHeights={card.waveHeights} isCloseout={card.isCloseout} date={targetDate} />
               })
             )}
           </>

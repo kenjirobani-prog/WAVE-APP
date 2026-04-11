@@ -24,9 +24,16 @@ interface TimeSlotStars {
   evening: number
 }
 
+interface TimeSlotWaveHeights {
+  morning: number
+  midday: number
+  evening: number
+}
+
 interface SpotCardData {
   spotId: string
   stars: TimeSlotStars
+  waveHeights: TimeSlotWaveHeights
   isCloseout: boolean
 }
 
@@ -74,13 +81,19 @@ function findConditionAtHour(conditions: WaveCondition[], targetHour: number): W
 function computeSpotStars(
   conditions: WaveCondition[],
   spot: typeof SPOTS[number],
-): { stars: TimeSlotStars; isCloseout: boolean } {
+): { stars: TimeSlotStars; waveHeights: TimeSlotWaveHeights; isCloseout: boolean } {
+  const multiplier = spot.waveHeightMultiplier ?? 1.0
   const slots = (['morning', 'midday', 'evening'] as const).map(slot => {
     const cond = findConditionAtHour(conditions, TIME_SLOT_HOURS[slot])
-    if (!cond) return { slot, stars: 1, closeout: false }
+    if (!cond) return { slot, stars: 1, closeout: false, waveHeight: 0 }
     const score = calculateScore(cond, spot)
     const closeout = score.reasonTags.includes('クローズアウト')
-    return { slot, stars: getStarRating(score.score, closeout), closeout }
+    return {
+      slot,
+      stars: getStarRating(score.score, closeout),
+      closeout,
+      waveHeight: cond.waveHeight * multiplier,
+    }
   })
   const allCloseout = slots.every(s => s.closeout)
   return {
@@ -88,6 +101,11 @@ function computeSpotStars(
       morning: slots[0].stars,
       midday: slots[1].stars,
       evening: slots[2].stars,
+    },
+    waveHeights: {
+      morning: slots[0].waveHeight,
+      midday: slots[1].waveHeight,
+      evening: slots[2].waveHeight,
     },
     isCloseout: allCloseout,
   }
@@ -188,11 +206,16 @@ export default function TopPage() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             const conditions: WaveCondition[] = data.conditions ?? []
-            const { stars, isCloseout } = computeSpotStars(conditions, spot)
-            results.push({ spotId: spot.id, stars, isCloseout })
+            const { stars, waveHeights, isCloseout } = computeSpotStars(conditions, spot)
+            results.push({ spotId: spot.id, stars, waveHeights, isCloseout })
             if (!isCloseout) allStars.push(stars)
           } catch {
-            results.push({ spotId: spot.id, stars: { morning: 1, midday: 1, evening: 1 }, isCloseout: false })
+            results.push({
+              spotId: spot.id,
+              stars: { morning: 1, midday: 1, evening: 1 },
+              waveHeights: { morning: 0, midday: 0, evening: 0 },
+              isCloseout: false,
+            })
           }
         })
       )
@@ -386,6 +409,7 @@ export default function TopPage() {
                     key={card.spotId}
                     spot={spot}
                     stars={card.stars}
+                    waveHeights={card.waveHeights}
                     isCloseout={card.isCloseout}
                     date={targetDate}
                   />
