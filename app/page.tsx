@@ -1,5 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
+import { doc, getDoc } from 'firebase/firestore'
 import { SPOTS } from '@/data/spots'
 import { calculateScore, getStarRating } from '@/lib/wave/scoring'
 import type { WaveCondition } from '@/lib/wave/types'
@@ -11,6 +13,7 @@ import AreaTabs from '@/components/AreaTabs'
 import HamburgerMenu from '@/components/HamburgerMenu'
 import AiCommentLoading from '@/components/AiCommentLoading'
 import TyphoonBanner from '@/components/TyphoonBanner'
+import WeeklyCommentRow from '@/components/WeeklyCommentRow'
 
 type DateTab = 'today' | 'tomorrow' | 'weekly'
 const DOW_JA = ['日', '月', '火', '水', '木', '金', '土']
@@ -110,6 +113,8 @@ export default function TopPage() {
   const [dailyComment, setDailyComment] = useState<string | null>(null)
   const [dailyCommentAt, setDailyCommentAt] = useState<string | null>(null)
   const [dailyCommentLoading, setDailyCommentLoading] = useState(false)
+  const [weeklyComments, setWeeklyComments] = useState<Record<string, string>>({})
+  const [weeklyCommentsAt, setWeeklyCommentsAt] = useState<string | null>(null)
 
   const today = new Date(); today.setHours(12, 0, 0, 0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
@@ -146,6 +151,24 @@ export default function TopPage() {
     if (tab !== 'weekly') return
     if (weeklyData.length > 0) return
     loadWeeklyForecast()
+  }, [tab])
+
+  // 週間AIコメント取得
+  useEffect(() => {
+    if (tab !== 'weekly') return
+    async function loadComments() {
+      try {
+        await ensureAnonymousAuth()
+        const db = getDb()
+        const snap = await getDoc(doc(db, 'weeklyComments', 'shonan'))
+        if (snap.exists()) {
+          const data = snap.data()
+          setWeeklyComments(data.days ?? {})
+          setWeeklyCommentsAt(data.generatedAt ?? null)
+        }
+      } catch {}
+    }
+    loadComments()
   }, [tab])
 
   async function loadForecast(targetDate: Date) {
@@ -300,31 +323,35 @@ export default function TopPage() {
           weeklyLoading ? (
             <WeeklyListSkeleton />
           ) : (
-            weeklyData.map(day => {
+            weeklyData.map((day, idx) => {
               const dow = DOW_JA[day.date.getDay()]
               const dowColor = day.date.getDay() === 0 ? '#ef4444' : day.date.getDay() === 6 ? '#3b82f6' : '#0a1628'
               return (
-                <div
-                  key={day.dateStr}
-                  style={{
-                    background: '#fff',
-                    border: day.isCloseout ? '2px solid #ef4444' : '0.5px solid #eef1f4',
-                    borderRadius: 12,
-                    padding: '12px 16px',
-                  }}
-                  className="flex items-center"
-                >
-                  <div style={{ width: 48 }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: dowColor, lineHeight: 1.1 }}>{dow}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{formatMD(day.date)}</div>
+                <div key={day.dateStr}>
+                  <div
+                    style={{
+                      background: '#fff',
+                      border: day.isCloseout ? '2px solid #ef4444' : '0.5px solid #eef1f4',
+                      borderRadius: 12,
+                      padding: '12px 16px',
+                    }}
+                    className="flex items-center"
+                  >
+                    <div style={{ width: 48 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: dowColor, lineHeight: 1.1 }}>{dow}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{formatMD(day.date)}</div>
+                    </div>
+                    <div className="flex-1 flex items-center justify-end">
+                      {day.isCloseout ? (
+                        <span className="text-xs font-bold text-red-500">終日クローズアウト</span>
+                      ) : (
+                        <StarRating stars={day.bestStars} size="md" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 flex items-center justify-end">
-                    {day.isCloseout ? (
-                      <span className="text-xs font-bold text-red-500">終日クローズアウト</span>
-                    ) : (
-                      <StarRating stars={day.bestStars} size="md" />
-                    )}
-                  </div>
+                  {idx < weeklyData.length - 1 && (
+                    <WeeklyCommentRow text={weeklyComments[day.dateStr]} generatedAt={weeklyCommentsAt ?? undefined} />
+                  )}
                 </div>
               )
             })
