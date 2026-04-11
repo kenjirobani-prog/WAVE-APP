@@ -29,7 +29,8 @@ export default function TyphoonMap({ position, forecastPath }: Props) {
         document.head.appendChild(link)
       }
 
-      map = L.map(mapRef.current).setView([position.lat, position.lon], 4)
+      // 日本列島と西太平洋全体が見える固定ビュー
+      map = L.map(mapRef.current).setView([24.0, 138.0], 4)
 
       // OpenStreetMapタイル
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
