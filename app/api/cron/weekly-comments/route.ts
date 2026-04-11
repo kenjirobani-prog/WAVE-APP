@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
+import { shouldMentionTyphoon, getTyphoonComment, distanceToTokyoKm } from '@/lib/typhoon/mention'
 
 export const maxDuration = 90
 
@@ -108,26 +109,6 @@ interface TyphoonDoc {
   forecastPath?: Array<{ lat: number; lon: number; time: string; pressure: number; windSpeed: number }>
 }
 
-// 東京を基準に台風までの距離（km）を計算
-const TOKYO = { lat: 35.6895, lon: 139.6917 }
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function typhoonStageLabel(distanceKm: number): string {
-  if (distanceKm < 500) return '非常に近い（500km以内）'
-  if (distanceKm < 1500) return '近い（500〜1,500km）'
-  if (distanceKm < 3000) return 'うねりが届き始める（1,500〜3,000km）'
-  return '遠い（3,000km超）'
-}
-
 // Firestoreからアクティブな台風を取得
 async function fetchActiveTyphoons(db: import('firebase/firestore').Firestore): Promise<TyphoonDoc[]> {
   try {
@@ -178,43 +159,32 @@ async function generateWeeklyComments(
     .map(([key, days]) => summarizeArea(AREAS[key].name, days))
     .join('\n\n')
 
-  // 台風コンテキストの構築
+  // 台風コンテキストの構築（距離3000km以内 かつ 970hPa以下 の台風のみ）
+  const mentionableTyphoons = activeTyphoons.filter(t =>
+    shouldMentionTyphoon({ position: t.position, pressure: t.pressure })
+  )
   let typhoonContext = ''
-  if (activeTyphoons.length > 0) {
-    const typhoonBlocks = activeTyphoons.map(t => {
-      const distance = haversineKm(t.position.lat, t.position.lon, TOKYO.lat, TOKYO.lon)
-      const stage = typhoonStageLabel(distance)
+  if (mentionableTyphoons.length > 0) {
+    const typhoonBlocks = mentionableTyphoons.map(t => {
+      const distance = distanceToTokyoKm({ position: t.position, pressure: t.pressure })
+      const commentHint = getTyphoonComment(distance, t.pressure)
       const forecastSummary = (t.forecastPath ?? []).slice(0, 5).map(p =>
         `${p.time.slice(0, 16)}: (${p.lat.toFixed(1)}, ${p.lon.toFixed(1)}) ${p.pressure}hPa`
       ).join(', ')
       return `- 台風${t.number}号${t.nameKana ? `（${t.nameKana}）` : ''}
   現在位置：北緯${t.position.lat}°・東経${t.position.lon}°
+  日本からの距離：約${Math.round(distance)}km
   中心気圧：${t.pressure}hPa / 最大風速：${t.windSpeed}m/s
-  東京からの距離：約${Math.round(distance / 100) * 100}km（${stage}）
-  進路予報：${forecastSummary || 'なし'}`
+  進路予報：${forecastSummary || 'なし'}
+  推奨コメント表現：${commentHint}`
     }).join('\n\n')
 
     typhoonContext = `
-【現在発生中の台風】
+【現在発生中の台風（うねりへの影響あり）】
 ${typhoonBlocks}
 
-台風によるうねりの影響を各日のコメントに必ず反映すること。
-距離段階に応じて以下の表現例を参考に書き分けること：
-
-・遠い（3,000km超）:
-  「台風○号のうねりが届き始める可能性あり」
-  「台風からのうねりに期待。周期が長くなる兆候あり」
-・うねりが届き始める（1,500〜3,000km）:
-  「台風うねりが到達。周期12〜14秒のグランドスウェル期待」
-  「台風うねりでサイズアップ。朝イチが狙い目」
-・近い（500〜1,500km）:
-  「台風接近によりサイズが急激にアップ。上級者以外は注意」
-  「強烈なクローズアウト気味。無理な入水は避けること」
-・非常に近い（500km以内）:
-  「台風が非常に近く危険。絶対に海に近づかないこと」
-  「暴風・高波・離岸流の危険あり。入水厳禁」
-
-安全に関わる情報（入水厳禁・危険）は最優先で明記すること。
+上記の推奨表現を参考に、各日のコメントに台風の影響を反映してください。
+安全に関わる情報（入水禁止・危険）は最優先で明記してください。
 `
   }
 

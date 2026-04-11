@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import type { TyphoonData, ForecastPoint } from '@/types/typhoon'
+import { shouldMentionTyphoon, getTyphoonComment, distanceToTokyoKm } from '@/lib/typhoon/mention'
 
 export const maxDuration = 90
 
@@ -223,21 +224,28 @@ async function generateAreaComments(typhoon: ParsedTyphoon, swellData: Record<st
     return null
   }
 
+  const distanceKm = distanceToTokyoKm({ position: typhoon.current, pressure: typhoon.current.pressure })
+  const commentHint = getTyphoonComment(distanceKm, typhoon.current.pressure)
+
   const prompt = `あなたはサーフィン波予報の専門AIです。
 以下の台風情報とうねり予報をもとに、各エリアへの影響コメントを生成してください。
 
 台風情報：
 - 台風名：${typhoon.name} (${typhoon.nameKana})
 - 現在位置：${typhoon.current.lat}°N / ${typhoon.current.lon}°E
+- 日本（東京）からの距離：約${Math.round(distanceKm)}km
 - 中心気圧：${typhoon.current.pressure}hPa
 - 最大風速：${typhoon.current.windSpeed}m/s
 - 進路予報：${JSON.stringify(typhoon.forecastPath.map(p => ({ lat: p.lat, lon: p.lon, time: p.time, pressure: p.pressure })))}
+- 推奨コメント表現：${commentHint}
 
 各エリアのうねり予報（0h/12h/24h/36h/48h/60h/72h 先）：
 ${Object.entries(swellData).map(([k, v]) => {
   if (!v) return `${AREA_COORDS[k].label}: データなし`
   return `${AREA_COORDS[k].label}: 波高${v.waveHeight.map(n => n.toFixed(1)).join('/')}m, 周期${v.wavePeriod.map(n => n.toFixed(0)).join('/')}秒, 波向${v.waveDirection.map(n => Math.round(n)).join('/')}°`
 }).join('\n')}
+
+上記の推奨表現を参考に、各エリアのコメントを生成してください。安全に関わる情報（入水禁止・危険）は最優先で明記してください。
 
 以下のJSON形式で出力してください。他の文字（マークダウンコードブロック含む）は一切含めないこと：
 {
@@ -431,8 +439,12 @@ export async function GET(request: NextRequest) {
       savedIds.push(typhoonId)
       console.log(`[typhoon] Saved ${typhoonId} within${THRESHOLD_KM}km=${within} startedAt=${startedAt}`)
 
-      // エリア別AIコメント生成（isActive かつ within 判定済みの台風のみ）
-      if (within) {
+      // エリア別AIコメント生成（距離3000km以内 かつ 970hPa以下 の台風のみ）
+      const mentionable = shouldMentionTyphoon({
+        position: t.current,
+        pressure: t.current.pressure,
+      })
+      if (mentionable) {
         try {
           await generateAndSaveAreaComments(db, year, typhoonId, t)
           console.log(`[typhoon] Area comments generated for ${typhoonId}`)
@@ -440,6 +452,8 @@ export async function GET(request: NextRequest) {
           const msg = commentErr instanceof Error ? commentErr.message : String(commentErr)
           console.error(`[typhoon] Area comments failed for ${typhoonId}: ${msg}`)
         }
+      } else {
+        console.log(`[typhoon] Skipped area comments for ${typhoonId} (not mentionable)`)
       }
     }
 

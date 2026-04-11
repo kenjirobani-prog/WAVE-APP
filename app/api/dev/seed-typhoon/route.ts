@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, deleteDoc } from 'firebase/firestore'
 
 export const maxDuration = 30
 
@@ -61,5 +61,34 @@ export async function POST(request: NextRequest) {
 // GET も許可（ブラウザから直接叩けるように）
 export async function GET(request: NextRequest) {
   return handle(request)
+}
+
+// DELETE: テストデータの削除
+export async function DELETE(request: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret) {
+    const { searchParams } = new URL(request.url)
+    const secret = searchParams.get('secret')
+    const authHeader = request.headers.get('authorization')
+    if (secret !== cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
+
+  try {
+    await ensureAnonymousAuth()
+    const db = getDb()
+    const year = String(new Date().getFullYear())
+    const typhoonId = 'typhoon-test-4'
+    await deleteDoc(doc(db, 'typhoons', year, 'list', typhoonId))
+    return NextResponse.json({
+      success: true,
+      deleted: `typhoons/${year}/list/${typhoonId}`,
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[seed-typhoon] delete error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }
 
