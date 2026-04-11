@@ -177,18 +177,28 @@ export default function ChibaSouthPage() {
     const result: WeeklyDayData[] = []
     for (const day of days) {
       const dateStr = toDateStr(day)
-      let dayBestStars = 1; let dayAllCloseout = true
+      const spotStarsList: TimeSlotStars[] = []
+      let dayAllCloseout = true
       await Promise.all(activeSpots.map(async spot => {
         try {
           const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
           if (!res.ok) return
           const data = await res.json()
           const { stars, isCloseout } = computeSpotStars(data.conditions ?? [], spot)
-          const spotMax = Math.max(stars.morning, stars.midday, stars.evening)
-          if (spotMax > dayBestStars) dayBestStars = spotMax
-          if (!isCloseout) dayAllCloseout = false
+          if (!isCloseout) {
+            spotStarsList.push(stars)
+            dayAllCloseout = false
+          }
         } catch {}
       }))
+      // 今日・明日タブのバナーと同じロジック: 全スポット平均→最良時間帯
+      let dayBestStars = 1
+      if (spotStarsList.length > 0) {
+        const avgMorning = spotStarsList.reduce((s, st) => s + st.morning, 0) / spotStarsList.length
+        const avgMidday = spotStarsList.reduce((s, st) => s + st.midday, 0) / spotStarsList.length
+        const avgEvening = spotStarsList.reduce((s, st) => s + st.evening, 0) / spotStarsList.length
+        dayBestStars = Math.round(Math.max(avgMorning, avgMidday, avgEvening))
+      }
       result.push({ date: day, dateStr, bestStars: dayBestStars, isCloseout: dayAllCloseout })
     }
     setWeeklyData(result)

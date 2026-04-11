@@ -261,7 +261,7 @@ export default function TopPage() {
 
     for (const day of days) {
       const dateStr = toDateStr(day)
-      let dayBestStars = 1
+      const spotStarsList: TimeSlotStars[] = []
       let dayAllCloseout = true
 
       await Promise.all(
@@ -272,12 +272,23 @@ export default function TopPage() {
             const data = await res.json()
             const conditions: WaveCondition[] = data.conditions ?? []
             const { stars, isCloseout } = computeSpotStars(conditions, spot)
-            const spotMax = Math.max(stars.morning, stars.midday, stars.evening)
-            if (spotMax > dayBestStars) dayBestStars = spotMax
-            if (!isCloseout) dayAllCloseout = false
+            if (!isCloseout) {
+              spotStarsList.push(stars)
+              dayAllCloseout = false
+            }
           } catch {}
         })
       )
+
+      // 今日・明日タブの「おすすめ」バナーと同じロジック:
+      // エリア内の全スポットを時間帯ごとに平均 → 最も良い時間帯の平均を採用
+      let dayBestStars = 1
+      if (spotStarsList.length > 0) {
+        const avgMorning = spotStarsList.reduce((s, st) => s + st.morning, 0) / spotStarsList.length
+        const avgMidday = spotStarsList.reduce((s, st) => s + st.midday, 0) / spotStarsList.length
+        const avgEvening = spotStarsList.reduce((s, st) => s + st.evening, 0) / spotStarsList.length
+        dayBestStars = Math.round(Math.max(avgMorning, avgMidday, avgEvening))
+      }
 
       result.push({ date: day, dateStr, bestStars: dayBestStars, isCloseout: dayAllCloseout })
     }
