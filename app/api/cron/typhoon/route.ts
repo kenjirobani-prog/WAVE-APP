@@ -3,7 +3,7 @@ import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import type { TyphoonData, ForecastPoint } from '@/types/typhoon'
 
-export const maxDuration = 60
+export const maxDuration = 90
 
 // 日本の代表座標（東京）
 const JAPAN_LAT = 35.6895
@@ -176,6 +176,148 @@ function extractTyphoonMetadata(xml: string): { number: number; nameKana: string
   return { number, nameKana, intensity, size }
 }
 
+// ==========================================
+// エリア別AIコメント生成
+// ==========================================
+
+const AREA_COORDS: Record<string, { lat: number; lon: number; label: string }> = {
+  shonan:  { lat: 35.33, lon: 139.45, label: '湘南' },
+  chiba:   { lat: 35.50, lon: 140.43, label: '千葉' },
+  ibaraki: { lat: 36.31, lon: 140.58, label: '茨城' },
+}
+
+interface SwellForecast {
+  hours: number[]
+  waveHeight: number[]
+  wavePeriod: number[]
+  waveDirection: number[]
+}
+
+// Open-Meteo Marine API から72時間のうねり予報を取得
+async function fetchSwellForecast(lat: number, lon: number): Promise<SwellForecast | null> {
+  const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,wave_direction&forecast_days=3&timezone=Asia/Tokyo`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const data = await res.json()
+    const h = data?.hourly
+    if (!h || !Array.isArray(h.time)) return null
+    // 0h, 12h, 24h, 36h, 48h, 60h, 72h の7ポイントを抽出
+    const picks = [0, 12, 24, 36, 48, 60, 72]
+    return {
+      hours: picks,
+      waveHeight: picks.map(i => h.wave_height?.[i] ?? 0),
+      wavePeriod: picks.map(i => h.wave_period?.[i] ?? 0),
+      waveDirection: picks.map(i => h.wave_direction?.[i] ?? 0),
+    }
+  } catch {
+    return null
+  }
+}
+
+// Claude API 呼び出し（エリア別コメント生成）
+async function generateAreaComments(typhoon: ParsedTyphoon, swellData: Record<string, SwellForecast | null>): Promise<Record<string, string> | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    console.error('[typhoon] ANTHROPIC_API_KEY not set')
+    return null
+  }
+
+  const prompt = `あなたはサーフィン波予報の専門AIです。
+以下の台風情報とうねり予報をもとに、各エリアへの影響コメントを生成してください。
+
+台風情報：
+- 台風名：${typhoon.name} (${typhoon.nameKana})
+- 現在位置：${typhoon.current.lat}°N / ${typhoon.current.lon}°E
+- 中心気圧：${typhoon.current.pressure}hPa
+- 最大風速：${typhoon.current.windSpeed}m/s
+- 進路予報：${JSON.stringify(typhoon.forecastPath.map(p => ({ lat: p.lat, lon: p.lon, time: p.time, pressure: p.pressure })))}
+
+各エリアのうねり予報（0h/12h/24h/36h/48h/60h/72h 先）：
+${Object.entries(swellData).map(([k, v]) => {
+  if (!v) return `${AREA_COORDS[k].label}: データなし`
+  return `${AREA_COORDS[k].label}: 波高${v.waveHeight.map(n => n.toFixed(1)).join('/')}m, 周期${v.wavePeriod.map(n => n.toFixed(0)).join('/')}秒, 波向${v.waveDirection.map(n => Math.round(n)).join('/')}°`
+}).join('\n')}
+
+以下のJSON形式で出力してください。他の文字（マークダウンコードブロック含む）は一切含めないこと：
+{
+  "shonan": "湘南へのコメント（150文字以内・うねり到達時間・期待波高・周期・サーファーへのアドバイスを含む）",
+  "chiba": "千葉へのコメント（80文字以内・簡潔に）",
+  "ibaraki": "茨城へのコメント（80文字以内・簡潔に）"
+}`
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 25000)
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+    clearTimeout(timeout)
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error(`[typhoon] Claude API error ${res.status}: ${errText.slice(0, 200)}`)
+      return null
+    }
+    const result = await res.json()
+    const text = result?.content?.[0]?.text ?? ''
+    // JSONを抽出（モデルが```json ... ```で囲む場合もあるので対処）
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return null
+    const parsed = JSON.parse(jsonMatch[0])
+    return {
+      shonan: parsed.shonan ?? '',
+      chiba: parsed.chiba ?? '',
+      ibaraki: parsed.ibaraki ?? '',
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[typhoon] Claude generation failed:', msg)
+    return null
+  }
+}
+
+// Open-Meteo + Claudeでコメントを生成してFirestoreに保存
+async function generateAndSaveAreaComments(
+  db: import('firebase/firestore').Firestore,
+  year: string,
+  typhoonId: string,
+  typhoon: ParsedTyphoon,
+): Promise<void> {
+  // 各エリアのうねりデータを並列取得
+  const swellEntries = await Promise.all(
+    Object.entries(AREA_COORDS).map(async ([key, coord]) => {
+      const forecast = await fetchSwellForecast(coord.lat, coord.lon)
+      return [key, forecast] as const
+    })
+  )
+  const swellData: Record<string, SwellForecast | null> = Object.fromEntries(swellEntries)
+
+  const comments = await generateAreaComments(typhoon, swellData)
+  if (!comments) {
+    console.warn(`[typhoon] No comments generated for ${typhoonId}`)
+    return
+  }
+
+  const generatedAt = new Date().toISOString()
+  for (const [key, text] of Object.entries(comments)) {
+    if (!text) continue
+    const ref = doc(db, 'typhoons', year, 'list', typhoonId, 'areaComments', key)
+    await setDoc(ref, { text, generatedAt })
+    console.log(`[typhoon] Saved comment: ${typhoonId}/areaComments/${key}`)
+  }
+}
+
 export async function GET(request: NextRequest) {
   // Vercel Cron認証
   const cronSecret = process.env.CRON_SECRET
@@ -288,6 +430,17 @@ export async function GET(request: NextRequest) {
       })
       savedIds.push(typhoonId)
       console.log(`[typhoon] Saved ${typhoonId} within${THRESHOLD_KM}km=${within} startedAt=${startedAt}`)
+
+      // エリア別AIコメント生成（isActive かつ within 判定済みの台風のみ）
+      if (within) {
+        try {
+          await generateAndSaveAreaComments(db, year, typhoonId, t)
+          console.log(`[typhoon] Area comments generated for ${typhoonId}`)
+        } catch (commentErr) {
+          const msg = commentErr instanceof Error ? commentErr.message : String(commentErr)
+          console.error(`[typhoon] Area comments failed for ${typhoonId}: ${msg}`)
+        }
+      }
     }
 
     return NextResponse.json({
