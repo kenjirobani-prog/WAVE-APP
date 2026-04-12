@@ -109,18 +109,21 @@ export async function GET(request: NextRequest) {
     }
 
     // 日次AIコメント生成（forecastCache更新直後に常に実行）
-    // 最新のスケジュール時間帯のキーで保存し、クライアントと整合させる
+    // 各エリアは自分のエリアのコメントのみ生成（他エリアの未更新データを参照しない）
+    const AREA_LABELS: Record<string, string> = {
+      shonan: '湘南', 'chiba-north': '千葉北', 'chiba-south': '千葉南', ibaraki: '茨城',
+    }
+    const areaLabel = AREA_LABELS[area] ?? '湘南'
     const jstHour = (new Date().getUTCHours() + 9) % 24
     const commentResults: { target: string; hour: number; status: string }[] = []
     const baseUrl = request.url.replace(/\/api\/cron\/update-forecast.*$/, '')
 
     for (const target of ['today', 'tomorrow'] as CommentTarget[]) {
-      // 現在時刻以下で最も近いスケジュール時間を取得（常に生成する）
       const scheduleHours = COMMENT_SCHEDULES[target] as readonly number[]
       const latestHour = scheduleHours.filter(h => h <= jstHour).pop() ?? scheduleHours[0]
       try {
-        const url = `${baseUrl}/api/daily-comment?target=${target}&hour=${padHour(latestHour)}&force=1`
-        console.log(`[Cron] Generating ${target} comment for schedule ${latestHour}h (actual ${jstHour}h)...`)
+        const url = `${baseUrl}/api/daily-comment?target=${target}&hour=${padHour(latestHour)}&areaLabel=${encodeURIComponent(areaLabel)}&force=1`
+        console.log(`[Cron] Generating ${target}/${areaLabel} comment for schedule ${latestHour}h...`)
         const res = await fetch(url)
         const data = await res.json()
         commentResults.push({ target, hour: latestHour, status: data.comment ? 'ok' : `error: ${data.error}` })

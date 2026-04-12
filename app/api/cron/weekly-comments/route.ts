@@ -213,6 +213,7 @@ async function fetchActiveTyphoons(db: import('firebase/firestore').Firestore): 
 // Claude API でコメント生成（Vision対応）
 async function generateWeeklyComments(
   areaData: Record<string, DailyWaveSummary[]>,
+  areaScores: Record<string, Record<string, WeeklyDayScore>>,
   chartImages: string[],
   activeTyphoons: TyphoonDoc[],
 ): Promise<Record<string, Record<string, string>> | null> {
@@ -222,14 +223,17 @@ async function generateWeeklyComments(
     return null
   }
 
-  const summarizeArea = (name: string, days: DailyWaveSummary[]) => {
-    return `${name}:\n` + days.map(d =>
-      `  ${d.date}: 朝6時[波高${d.waveHeightMorning}m 風${d.windSpeedMorning}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon}m 風${d.windSpeedNoon}m/s/${d.windDirNoon}°] 日最大風速${d.windSpeedMax}m/s 周期${d.wavePeriodMean}s うねり${d.swellHeightMean}m/${d.swellPeriodMean}s/${d.swellDirectionMean}°`
-    ).join('\n')
+  const summarizeArea = (areaKey: string, name: string, days: DailyWaveSummary[]) => {
+    const scores = areaScores[areaKey] ?? {}
+    return `${name}:\n` + days.map(d => {
+      const s = scores[d.date]
+      const scoreTag = s ? (s.isCloseout ? ' 【終日クローズアウト・★1】' : ` ★${s.bestStars}`) : ''
+      return `  ${d.date}${scoreTag}: 朝6時[波高${d.waveHeightMorning}m 風${d.windSpeedMorning}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon}m 風${d.windSpeedNoon}m/s/${d.windDirNoon}°] 日最大風速${d.windSpeedMax}m/s 周期${d.wavePeriodMean}s うねり${d.swellHeightMean}m/${d.swellPeriodMean}s/${d.swellDirectionMean}°`
+    }).join('\n')
   }
 
   const dataText = Object.entries(areaData)
-    .map(([key, days]) => summarizeArea(AREAS[key].name, days))
+    .map(([key, days]) => summarizeArea(key, AREAS[key].name, days))
     .join('\n\n')
 
   // 台風コンテキストの構築（距離3000km以内 かつ 970hPa以下 の台風のみ）
@@ -304,6 +308,7 @@ ${typhoonBlocks}
 - 台風情報がある場合は必ずコメントに反映する
 - 安全に関わる情報（危険・海に近づかないでください）は最優先で明記する
 - 「入水」という言葉は絶対に使わないこと。代わりに「海に入る」「サーフィンする」「パドルアウト」「海に近づかないでください」「サーフィンは控えて」などの自然な表現を使う
+- 【終日クローズアウト・★1】と表示されている日は、必ず「海に近づかないでください」「サーフィンは絶対に控えてください」等の警告を含めること。「上級者向け」「チャレンジング」等の肯定的な表現は使わないこと
 
 【数値データ】
 ${dataText}
@@ -409,7 +414,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Claudeでコメント生成（StormGlassデータベース）
-    const comments = await generateWeeklyComments(areaData, validCharts, activeTyphoons)
+    const comments = await generateWeeklyComments(areaData, areaScores, validCharts, activeTyphoons)
     if (!comments) {
       return NextResponse.json({ error: 'Comment generation failed' }, { status: 500 })
     }

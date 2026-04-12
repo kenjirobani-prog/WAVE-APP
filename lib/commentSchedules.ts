@@ -1,5 +1,5 @@
 export const COMMENT_SCHEDULES = {
-  today: [4, 9, 12, 15],        // 今日タブの生成時刻（JST）← ここを変えるだけで追加・変更可能
+  today: [4, 9, 12, 15, 18],    // 今日タブの生成時刻（JST）
   tomorrow: [4, 9, 12, 15, 18], // 明日タブの生成時刻（JST）
 } as const
 

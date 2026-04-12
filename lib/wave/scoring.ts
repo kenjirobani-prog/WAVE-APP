@@ -7,7 +7,7 @@ export const CLOSEOUT_WAVE_HEIGHT_WIND = 2.0  // m：強風との複合条件
 export const CLOSEOUT_WIND_SPEED = 10         // m/s：複合条件の風速閾値
 
 export function isCloseout(waveHeight: number, windSpeed: number, windDir: number): boolean {
-  if (waveHeight > CLOSEOUT_WAVE_HEIGHT) return true
+  if (waveHeight >= CLOSEOUT_WAVE_HEIGHT) return true
   if (windSpeed >= 25) return true  // 暴風: 風向きに関わらずサーフィン不可
   if (waveHeight > CLOSEOUT_WAVE_HEIGHT_WIND && windSpeed > CLOSEOUT_WIND_SPEED) {
     const windClass = classifyWind(windDir, windSpeed)

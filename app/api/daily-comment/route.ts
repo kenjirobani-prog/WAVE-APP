@@ -14,14 +14,7 @@ function toJstDateStr(): string {
   return jst.toISOString().split('T')[0]
 }
 
-// 今日のコメント更新スロット（JST）
-const COMMENT_HOURS_JST = [4, 6, 10, 14]
-
-function getLatestCommentHour(): number {
-  const jstHour = (new Date().getUTCHours() + 9) % 24
-  const past = COMMENT_HOURS_JST.filter(h => h <= jstHour)
-  return past.length === 0 ? 14 : past[past.length - 1]
-}
+// getLatestCommentHour は廃止 — COMMENT_SCHEDULES を唯一の正とする
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -44,9 +37,8 @@ export async function GET(request: NextRequest) {
   }
 
   const dateStr = toJstDateStr()
-  const cacheKey = target === 'today'
-    ? `dailyComment_today_${areaLabel}_${dateStr}_${getLatestCommentHour()}`
-    : `dailyComment_${areaLabel}_${target}_${hour}`
+  // cacheKeyはCOMMENT_SCHEDULESのhourを使用（定数統一）
+  const cacheKey = `dailyComment_${areaLabel}_${target}_${hour}`
 
   try {
     // Firestoreキャッシュ確認
