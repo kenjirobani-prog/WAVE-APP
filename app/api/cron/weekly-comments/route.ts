@@ -44,6 +44,13 @@ interface DailyWaveSummary {
   swellHeightMean: number
   swellPeriodMean: number
   swellDirectionMean: number
+  // 朝6時・昼12時の時間帯別データ（今日タブと整合させるため）
+  windSpeedMorning: number   // 朝6時の風速
+  windDirMorning: number     // 朝6時の風向
+  windSpeedNoon: number      // 昼12時の風速
+  windDirNoon: number        // 昼12時の風向
+  waveHeightMorning: number  // 朝6時の波高
+  waveHeightNoon: number     // 昼12時の波高
 }
 
 // Open-Meteo Marine + Forecast API から 7日分のサーフィン関連データを取得
@@ -78,6 +85,14 @@ async function fetchWeeklySurfData(lat: number, lon: number): Promise<DailyWaveS
 
   const avg = (arr: number[], idx: number[]) => idx.reduce((s, i) => s + (arr[i] ?? 0), 0) / idx.length
   const max = (arr: number[], idx: number[]) => Math.max(...idx.map(i => arr[i] ?? 0))
+  // 特定時刻(JST)のindexを取得（Open-MeteoはJST文字列 "2026-04-12T06:00" を返す）
+  const atHour = (arr: number[], idx: number[], hour: number) => {
+    const target = idx.find(i => {
+      const h = parseInt(times[i]?.split('T')[1]?.split(':')[0] ?? '-1', 10)
+      return h === hour
+    })
+    return target !== undefined ? (arr[target] ?? 0) : 0
+  }
 
   const summaries: DailyWaveSummary[] = []
   for (const [date, idx] of groups) {
@@ -92,6 +107,12 @@ async function fetchWeeklySurfData(lat: number, lon: number): Promise<DailyWaveS
       swellHeightMean: Math.round(avg(sh, idx) * 10) / 10,
       swellPeriodMean: Math.round(avg(sp, idx) * 10) / 10,
       swellDirectionMean: Math.round(avg(sd, idx)),
+      windSpeedMorning: Math.round(atHour(ws, idx, 6) * 10) / 10,
+      windDirMorning: Math.round(atHour(wdr, idx, 6)),
+      windSpeedNoon: Math.round(atHour(ws, idx, 12) * 10) / 10,
+      windDirNoon: Math.round(atHour(wdr, idx, 12)),
+      waveHeightMorning: Math.round(atHour(wh, idx, 6) * 10) / 10,
+      waveHeightNoon: Math.round(atHour(wh, idx, 12) * 10) / 10,
     })
   }
   return summaries.slice(0, 7)
@@ -151,7 +172,7 @@ async function generateWeeklyComments(
 
   const summarizeArea = (name: string, days: DailyWaveSummary[]) => {
     return `${name}:\n` + days.map(d =>
-      `  ${d.date}: 波高${d.waveHeightMean}m(最大${d.waveHeightMax}m) 周期${d.wavePeriodMean}s 波向${d.waveDirectionMean}° うねり${d.swellHeightMean}m/${d.swellPeriodMean}s/${d.swellDirectionMean}° 風${d.windSpeedMax}m/s/${d.windDirectionMean}°`
+      `  ${d.date}: 朝6時[波高${d.waveHeightMorning}m 風${d.windSpeedMorning}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon}m 風${d.windSpeedNoon}m/s/${d.windDirNoon}°] 日最大風速${d.windSpeedMax}m/s 周期${d.wavePeriodMean}s うねり${d.swellHeightMean}m/${d.swellPeriodMean}s/${d.swellDirectionMean}°`
     ).join('\n')
   }
 
@@ -196,6 +217,7 @@ ${typhoonBlocks}
 - 80〜100文字程度で記述する
 - 低気圧・高気圧・前線の動きとうねり・風波への具体的な影響を書く
 - 「何時頃が狙い目か」または「どの条件のサーファーに向くか」を必ず含める
+- 風速・波高は「朝6時」「昼12時」の時間帯別データを使うこと（「日最大風速」は安全警告の判断にのみ使用し、コメント本文の風速は朝6時または昼12時の値を使う）
 - 波高・周期・風速などの具体的な数値を1つ以上含める
 - サーファー目線の実用的な表現を使う
   例：「朝イチ狙い目」「オンショアで面荒れ」「グランドスウェル期待」
