@@ -272,22 +272,30 @@ export default function TopPage() {
             if (!res.ok) return
             const data = await res.json()
             const conditions: WaveCondition[] = data.conditions ?? []
+            if (conditions.length === 0) return
+
             // 代表時間帯: 昼12時のデータを使用
             const noonCond = findConditionAtHour(conditions, 12)
             if (!noonCond) return
             validCount++
-            const score = calculateScore(noonCond, spot)
-            const co = score.reasonTags.includes('クローズアウト') || score.reasonTags.includes('暴風（入水不可）')
+
+            // 1日の最大風速を取得（AIコメントと整合させるため）
+            const dayMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
+
+            // 昼12時のコンディションで採点するが、風速は1日の最大値を使用
+            const scoreCond = { ...noonCond, windSpeed: Math.max(noonCond.windSpeed, dayMaxWind) }
+            const sc = calculateScore(scoreCond, spot)
+            const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（入水不可）')
             if (co) {
               closeoutCount++
             } else {
-              spotScores.push(getStarRating(score.score, false))
+              spotScores.push(getStarRating(sc.score, false))
             }
           } catch {}
         })
       )
 
-      // エリア内全スポット（12時時点）のクローズアウト判定
+      // エリア内全スポットのクローズアウト判定
       const dayAllCloseout = validCount > 0 && closeoutCount === validCount
       // 入水可能なスポットの平均★（クローズアウトスポットは除外）
       const dayBestStars = spotScores.length > 0

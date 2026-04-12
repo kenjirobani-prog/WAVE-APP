@@ -186,10 +186,13 @@ export default function ChibaNorthPage() {
           if (!res.ok) return
           const data = await res.json()
           const conditions: WaveCondition[] = data.conditions ?? []
+          if (conditions.length === 0) return
           const noonCond = findConditionAtHour(conditions, 12)
           if (!noonCond) return
           validCount++
-          const sc = calculateScore(noonCond, spot)
+          const dayMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
+          const scoreCond = { ...noonCond, windSpeed: Math.max(noonCond.windSpeed, dayMaxWind) }
+          const sc = calculateScore(scoreCond, spot)
           const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（入水不可）')
           if (co) {
             closeoutCount++
