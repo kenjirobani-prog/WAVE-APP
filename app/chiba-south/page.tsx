@@ -180,6 +180,7 @@ export default function ChibaSouthPage() {
       const spotScores: number[] = []
       let closeoutCount = 0
       let validCount = 0
+      let dayMaxWindAll = 0
       await Promise.all(activeSpots.map(async spot => {
         try {
           const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
@@ -190,8 +191,9 @@ export default function ChibaSouthPage() {
           const noonCond = findConditionAtHour(conditions, 12)
           if (!noonCond) return
           validCount++
-          const dayMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
-          const scoreCond = { ...noonCond, windSpeed: Math.max(noonCond.windSpeed, dayMaxWind) }
+          const spotMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
+          if (spotMaxWind > dayMaxWindAll) dayMaxWindAll = spotMaxWind
+          const scoreCond = { ...noonCond, windSpeed: Math.max(noonCond.windSpeed, spotMaxWind) }
           const sc = calculateScore(scoreCond, spot)
           const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（入水不可）')
           if (co) {
@@ -201,10 +203,10 @@ export default function ChibaSouthPage() {
           }
         } catch {}
       }))
-      const dayAllCloseout = validCount > 0 && closeoutCount === validCount
-      const dayBestStars = spotScores.length > 0
-        ? Math.round(spotScores.reduce((a, b) => a + b, 0) / spotScores.length)
-        : 1
+      const forceCloseout = dayMaxWindAll >= 25
+      const dayAllCloseout = forceCloseout || (validCount > 0 && closeoutCount === validCount)
+      const dayBestStars = (dayAllCloseout || spotScores.length === 0) ? 1
+        : Math.round(spotScores.reduce((a, b) => a + b, 0) / spotScores.length)
       result.push({ date: day, dateStr, bestStars: dayBestStars, isCloseout: dayAllCloseout })
     }
     setWeeklyData(result)

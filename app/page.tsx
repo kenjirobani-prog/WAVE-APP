@@ -264,6 +264,7 @@ export default function TopPage() {
       const spotScores: number[] = []
       let closeoutCount = 0
       let validCount = 0
+      let dayMaxWindAll = 0  // 全スポットを通じた1日の最大風速
 
       await Promise.all(
         activeSpots.map(async spot => {
@@ -280,10 +281,11 @@ export default function TopPage() {
             validCount++
 
             // 1日の最大風速を取得（AIコメントと整合させるため）
-            const dayMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
+            const spotMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
+            if (spotMaxWind > dayMaxWindAll) dayMaxWindAll = spotMaxWind
 
             // 昼12時のコンディションで採点するが、風速は1日の最大値を使用
-            const scoreCond = { ...noonCond, windSpeed: Math.max(noonCond.windSpeed, dayMaxWind) }
+            const scoreCond = { ...noonCond, windSpeed: Math.max(noonCond.windSpeed, spotMaxWind) }
             const sc = calculateScore(scoreCond, spot)
             const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（入水不可）')
             if (co) {
@@ -295,12 +297,11 @@ export default function TopPage() {
         })
       )
 
-      // エリア内全スポットのクローズアウト判定
-      const dayAllCloseout = validCount > 0 && closeoutCount === validCount
-      // 入水可能なスポットの平均★（クローズアウトスポットは除外）
-      const dayBestStars = spotScores.length > 0
-        ? Math.round(spotScores.reduce((a, b) => a + b, 0) / spotScores.length)
-        : 1
+      // 暴風判定: いずれかのスポットで25m/s以上ならエリア全体をクローズアウト
+      const forceCloseout = dayMaxWindAll >= 25
+      const dayAllCloseout = forceCloseout || (validCount > 0 && closeoutCount === validCount)
+      const dayBestStars = (dayAllCloseout || spotScores.length === 0) ? 1
+        : Math.round(spotScores.reduce((a, b) => a + b, 0) / spotScores.length)
 
       result.push({ date: day, dateStr, bestStars: dayBestStars, isCloseout: dayAllCloseout })
     }
