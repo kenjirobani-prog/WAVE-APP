@@ -457,10 +457,35 @@ export function calculateScore(
     }
   }
 
+  // 暴風ペナルティ: 風速が15m/s以上のとき風向きに関わらず総合スコアを強制的に抑制
+  // 波高が良くても暴風下では入水不可能なため、総合スコアを上限でキャップする
+  // - 25m/s以上: クローズアウト扱い（★1固定）
+  // - 20m/s以上: スコア上限30（★2相当）
+  // - 15m/s以上: スコア上限50（★2〜3相当）
+  const ws = condition.windSpeed
+  let cappedTotal = total
+  if (ws >= 25) {
+    tags.unshift('暴風（入水不可）')
+    return {
+      spotId: spot.id,
+      score: 0,
+      grade: '×',
+      breakdown,
+      reasonTags: tags,
+    }
+  }
+  if (ws >= 20) {
+    tags.unshift('暴風')
+    cappedTotal = Math.min(cappedTotal, 30)
+  } else if (ws >= 15) {
+    tags.unshift('強風')
+    cappedTotal = Math.min(cappedTotal, 50)
+  }
+
   return {
     spotId: spot.id,
-    score: Math.round(total),
-    grade: scoreToGrade(total),
+    score: Math.round(cappedTotal),
+    grade: scoreToGrade(cappedTotal),
     breakdown,
     reasonTags: tags,
   }

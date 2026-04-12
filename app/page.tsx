@@ -261,8 +261,9 @@ export default function TopPage() {
 
     for (const day of days) {
       const dateStr = toDateStr(day)
-      const spotStarsList: TimeSlotStars[] = []
-      let dayAllCloseout = true
+      const spotScores: number[] = []
+      let closeoutCount = 0
+      let validCount = 0
 
       await Promise.all(
         activeSpots.map(async spot => {
@@ -271,24 +272,27 @@ export default function TopPage() {
             if (!res.ok) return
             const data = await res.json()
             const conditions: WaveCondition[] = data.conditions ?? []
-            const { stars, isCloseout } = computeSpotStars(conditions, spot)
-            if (!isCloseout) {
-              spotStarsList.push(stars)
-              dayAllCloseout = false
+            // 代表時間帯: 昼12時のデータを使用
+            const noonCond = findConditionAtHour(conditions, 12)
+            if (!noonCond) return
+            validCount++
+            const score = calculateScore(noonCond, spot)
+            const co = score.reasonTags.includes('クローズアウト') || score.reasonTags.includes('暴風（入水不可）')
+            if (co) {
+              closeoutCount++
+            } else {
+              spotScores.push(getStarRating(score.score, false))
             }
           } catch {}
         })
       )
 
-      // 今日・明日タブの「おすすめ」バナーと同じロジック:
-      // エリア内の全スポットを時間帯ごとに平均 → 最も良い時間帯の平均を採用
-      let dayBestStars = 1
-      if (spotStarsList.length > 0) {
-        const avgMorning = spotStarsList.reduce((s, st) => s + st.morning, 0) / spotStarsList.length
-        const avgMidday = spotStarsList.reduce((s, st) => s + st.midday, 0) / spotStarsList.length
-        const avgEvening = spotStarsList.reduce((s, st) => s + st.evening, 0) / spotStarsList.length
-        dayBestStars = Math.round(Math.max(avgMorning, avgMidday, avgEvening))
-      }
+      // エリア内全スポット（12時時点）のクローズアウト判定
+      const dayAllCloseout = validCount > 0 && closeoutCount === validCount
+      // 入水可能なスポットの平均★（クローズアウトスポットは除外）
+      const dayBestStars = spotScores.length > 0
+        ? Math.round(spotScores.reduce((a, b) => a + b, 0) / spotScores.length)
+        : 1
 
       result.push({ date: day, dateStr, bestStars: dayBestStars, isCloseout: dayAllCloseout })
     }

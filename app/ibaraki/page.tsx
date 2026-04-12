@@ -177,28 +177,31 @@ export default function IbarakiPage() {
     const result: WeeklyDayData[] = []
     for (const day of days) {
       const dateStr = toDateStr(day)
-      const spotStarsList: TimeSlotStars[] = []
-      let dayAllCloseout = true
+      const spotScores: number[] = []
+      let closeoutCount = 0
+      let validCount = 0
       await Promise.all(activeSpots.map(async spot => {
         try {
           const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
           if (!res.ok) return
           const data = await res.json()
-          const { stars, isCloseout } = computeSpotStars(data.conditions ?? [], spot)
-          if (!isCloseout) {
-            spotStarsList.push(stars)
-            dayAllCloseout = false
+          const conditions: WaveCondition[] = data.conditions ?? []
+          const noonCond = findConditionAtHour(conditions, 12)
+          if (!noonCond) return
+          validCount++
+          const sc = calculateScore(noonCond, spot)
+          const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（入水不可）')
+          if (co) {
+            closeoutCount++
+          } else {
+            spotScores.push(getStarRating(sc.score, false))
           }
         } catch {}
       }))
-      // 今日・明日タブのバナーと同じロジック: 全スポット平均→最良時間帯
-      let dayBestStars = 1
-      if (spotStarsList.length > 0) {
-        const avgMorning = spotStarsList.reduce((s, st) => s + st.morning, 0) / spotStarsList.length
-        const avgMidday = spotStarsList.reduce((s, st) => s + st.midday, 0) / spotStarsList.length
-        const avgEvening = spotStarsList.reduce((s, st) => s + st.evening, 0) / spotStarsList.length
-        dayBestStars = Math.round(Math.max(avgMorning, avgMidday, avgEvening))
-      }
+      const dayAllCloseout = validCount > 0 && closeoutCount === validCount
+      const dayBestStars = spotScores.length > 0
+        ? Math.round(spotScores.reduce((a, b) => a + b, 0) / spotScores.length)
+        : 1
       result.push({ date: day, dateStr, bestStars: dayBestStars, isCloseout: dayAllCloseout })
     }
     setWeeklyData(result)
