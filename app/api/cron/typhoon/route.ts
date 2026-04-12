@@ -3,6 +3,7 @@ import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import type { TyphoonData, ForecastPoint } from '@/types/typhoon'
 import { getTyphoonStage, getStagePrompt, distanceToTokyoKm } from '@/lib/typhoon/mention'
+import { fetchStormGlass, hoursToConditions } from '@/lib/wave/adapters/stormglass'
 
 export const maxDuration = 90
 
@@ -194,24 +195,26 @@ interface SwellForecast {
   waveDirection: number[]
 }
 
-// Open-Meteo Marine API から72時間のうねり予報を取得
-async function fetchSwellForecast(lat: number, lon: number): Promise<SwellForecast | null> {
-  const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,wave_direction&forecast_days=3&timezone=Asia/Tokyo`
+// StormGlassから72時間のうねり予報を取得
+async function fetchSwellFromStormGlass(lat: number, lon: number): Promise<SwellForecast | null> {
   try {
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const data = await res.json()
-    const h = data?.hourly
-    if (!h || !Array.isArray(h.time)) return null
+    const now = new Date()
+    const end = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+    const hours = await fetchStormGlass(lat, lon, now, end)
+    if (hours.length === 0) return null
+
+    const conditions = hoursToConditions('_swell', hours)
+
     // 0h, 12h, 24h, 36h, 48h, 60h, 72h の7ポイントを抽出
     const picks = [0, 12, 24, 36, 48, 60, 72]
     return {
       hours: picks,
-      waveHeight: picks.map(i => h.wave_height?.[i] ?? 0),
-      wavePeriod: picks.map(i => h.wave_period?.[i] ?? 0),
-      waveDirection: picks.map(i => h.wave_direction?.[i] ?? 0),
+      waveHeight: picks.map(i => conditions[i]?.waveHeight ?? 0),
+      wavePeriod: picks.map(i => conditions[i]?.wavePeriod ?? 0),
+      waveDirection: picks.map(i => conditions[i]?.swellDir ?? 0),
     }
-  } catch {
+  } catch (err) {
+    console.error('[typhoon] StormGlass swell fetch failed:', err)
     return null
   }
 }
@@ -310,10 +313,10 @@ async function generateAndSaveAreaComments(
   typhoonId: string,
   typhoon: ParsedTyphoon,
 ): Promise<void> {
-  // 各エリアのうねりデータを並列取得
+  // 各エリアのうねりデータをStormGlassから並列取得
   const swellEntries = await Promise.all(
     Object.entries(AREA_COORDS).map(async ([key, coord]) => {
-      const forecast = await fetchSwellForecast(coord.lat, coord.lon)
+      const forecast = await fetchSwellFromStormGlass(coord.lat, coord.lon)
       return [key, forecast] as const
     })
   )
