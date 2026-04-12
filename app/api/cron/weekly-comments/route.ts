@@ -85,13 +85,16 @@ async function fetchWeeklySurfData(lat: number, lon: number): Promise<DailyWaveS
 
   const avg = (arr: number[], idx: number[]) => idx.reduce((s, i) => s + (arr[i] ?? 0), 0) / idx.length
   const max = (arr: number[], idx: number[]) => Math.max(...idx.map(i => arr[i] ?? 0))
-  // 特定時刻(JST)のindexを取得（Open-MeteoはJST文字列 "2026-04-12T06:00" を返す）
-  const atHour = (arr: number[], idx: number[], hour: number) => {
-    const target = idx.find(i => {
+  // 3時間窓の平均を取得（単一時刻の予報モデル変動を平滑化）
+  // 朝: 5-7時の平均、昼: 11-13時の平均
+  const avgWindow = (arr: number[], idx: number[], centerHour: number) => {
+    const windowHours = [centerHour - 1, centerHour, centerHour + 1]
+    const matched = idx.filter(i => {
       const h = parseInt(times[i]?.split('T')[1]?.split(':')[0] ?? '-1', 10)
-      return h === hour
+      return windowHours.includes(h)
     })
-    return target !== undefined ? (arr[target] ?? 0) : 0
+    if (matched.length === 0) return 0
+    return matched.reduce((s, i) => s + (arr[i] ?? 0), 0) / matched.length
   }
 
   const summaries: DailyWaveSummary[] = []
@@ -107,12 +110,12 @@ async function fetchWeeklySurfData(lat: number, lon: number): Promise<DailyWaveS
       swellHeightMean: Math.round(avg(sh, idx) * 10) / 10,
       swellPeriodMean: Math.round(avg(sp, idx) * 10) / 10,
       swellDirectionMean: Math.round(avg(sd, idx)),
-      windSpeedMorning: Math.round(atHour(ws, idx, 6) * 10) / 10,
-      windDirMorning: Math.round(atHour(wdr, idx, 6)),
-      windSpeedNoon: Math.round(atHour(ws, idx, 12) * 10) / 10,
-      windDirNoon: Math.round(atHour(wdr, idx, 12)),
-      waveHeightMorning: Math.round(atHour(wh, idx, 6) * 10) / 10,
-      waveHeightNoon: Math.round(atHour(wh, idx, 12) * 10) / 10,
+      windSpeedMorning: Math.round(avgWindow(ws, idx, 6) * 10) / 10,
+      windDirMorning: Math.round(avgWindow(wdr, idx, 6)),
+      windSpeedNoon: Math.round(avgWindow(ws, idx, 12) * 10) / 10,
+      windDirNoon: Math.round(avgWindow(wdr, idx, 12)),
+      waveHeightMorning: Math.round(avgWindow(wh, idx, 6) * 10) / 10,
+      waveHeightNoon: Math.round(avgWindow(wh, idx, 12) * 10) / 10,
     })
   }
   return summaries.slice(0, 7)
