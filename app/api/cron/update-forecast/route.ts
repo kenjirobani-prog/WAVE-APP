@@ -108,23 +108,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 日次AIコメント生成
+    // 日次AIコメント生成（forecastCache更新直後に常に実行）
+    // 最新のスケジュール時間帯のキーで保存し、クライアントと整合させる
     const jstHour = (new Date().getUTCHours() + 9) % 24
     const commentResults: { target: string; hour: number; status: string }[] = []
     const baseUrl = request.url.replace(/\/api\/cron\/update-forecast.*$/, '')
 
     for (const target of ['today', 'tomorrow'] as CommentTarget[]) {
-      if ((COMMENT_SCHEDULES[target] as readonly number[]).includes(jstHour)) {
-        try {
-          const url = `${baseUrl}/api/daily-comment?target=${target}&hour=${padHour(jstHour)}`
-          console.log(`[Cron] Generating ${target} comment for ${jstHour}h...`)
-          const res = await fetch(url)
-          const data = await res.json()
-          commentResults.push({ target, hour: jstHour, status: data.comment ? 'ok' : `error: ${data.error}` })
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err)
-          commentResults.push({ target, hour: jstHour, status: `error: ${msg}` })
-        }
+      // 現在時刻以下で最も近いスケジュール時間を取得（常に生成する）
+      const scheduleHours = COMMENT_SCHEDULES[target] as readonly number[]
+      const latestHour = scheduleHours.filter(h => h <= jstHour).pop() ?? scheduleHours[0]
+      try {
+        const url = `${baseUrl}/api/daily-comment?target=${target}&hour=${padHour(latestHour)}&force=1`
+        console.log(`[Cron] Generating ${target} comment for schedule ${latestHour}h (actual ${jstHour}h)...`)
+        const res = await fetch(url)
+        const data = await res.json()
+        commentResults.push({ target, hour: latestHour, status: data.comment ? 'ok' : `error: ${data.error}` })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        commentResults.push({ target, hour: latestHour, status: `error: ${msg}` })
       }
     }
 

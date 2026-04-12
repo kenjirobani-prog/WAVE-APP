@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
   const hour = searchParams.get('hour')
   const spotName = searchParams.get('spotName') ?? '各スポット'
   const areaLabel = searchParams.get('areaLabel') ?? '湘南'
+  const forceRegenerate = searchParams.get('force') === '1'
 
   if (!target || !['today', 'tomorrow'].includes(target)) {
     return NextResponse.json({ error: 'target must be "today" or "tomorrow"' }, { status: 400 })
@@ -54,17 +55,21 @@ export async function GET(request: NextRequest) {
     const cacheRef = doc(db, 'dailyComment', `${dateStr}_${cacheKey}`)
 
     try {
-      const cached = await getDoc(cacheRef)
-      if (cached.exists()) {
-        const data = cached.data()
-        console.log(`[daily-comment] Cache HIT: ${dateStr}_${cacheKey}`)
-        return NextResponse.json({
-          comment: data.comment,
-          generatedAt: data.generatedAt,
-          target,
-          hour,
-          cached: true,
-        })
+      if (!forceRegenerate) {
+        const cached = await getDoc(cacheRef)
+        if (cached.exists()) {
+          const data = cached.data()
+          console.log(`[daily-comment] Cache HIT: ${dateStr}_${cacheKey}`)
+          return NextResponse.json({
+            comment: data.comment,
+            generatedAt: data.generatedAt,
+            target,
+            hour,
+            cached: true,
+          })
+        }
+      } else {
+        console.log(`[daily-comment] Force regenerate: ${dateStr}_${cacheKey}`)
       }
     } catch (cacheErr) {
       console.error('[daily-comment] Cache read error:', cacheErr)
@@ -198,8 +203,12 @@ export async function GET(request: NextRequest) {
    例：「朝は面がキレイですが昼から南風でオンショアに変わり、夕方には波が崩れやすくなります」
 ③ おすすめスポットを名前で挙げる（※星3以上かつ波高0.7m以上の良好な時間帯がある場合のみ。全スポットが小波・クローズアウトの場合はスポット名を挙げず「今日は全体的に厳しい」と伝える）
 
+【波サイズの表現（必ずこの対応表を使うこと）】
+0.3m未満→ひざ以下 / 0.3〜0.5m→ひざ / 0.5〜0.7m→ひざ〜腰 / 0.7〜0.9m→腰 / 0.9〜1.1m→腰〜腹 / 1.1〜1.3m→腹 / 1.3〜1.5m→腹〜胸 / 1.5〜1.8m→胸 / 1.8〜2.1m→胸〜肩 / 2.1〜2.5m→肩〜頭 / 2.5〜3.0m→頭 / 3.0〜3.5m→頭オーバー / 3.5m以上→ダブルオーバー
+波高の数値を述べる際は必ず上記の日本語表現も併記すること。例：「波高0.5m（ひざ〜腰サイズ）」
+
 ルール:
-- 波のサイズは「ひざ」「腰」「腹」「胸」「肩」「頭」などの日本式サイズ表記を使い、初心者向けに大きい/小さいの補足を添えてください。
+- 波のサイズは上記の対応表に従った日本式サイズ表記を使い、初心者向けに大きい/小さいの補足を添えてください。
 - 風の種類は各スポットの地形・海岸線方向を考慮して計算済みの値を渡しています。自分で風向きから再解釈せず、渡された「風の種類」をそのまま使ってください。
 - 風や周期の専門用語を使う場合は必ずカッコ書きで簡単な説明を添えてください。例：「オフショア（陸から海への風で波面が整う）」「周期12秒（うねりが強くパワーのある波）」
 - 具体的な数値（波高◯m、周期◯秒、風速◯m/s、時間帯）をできるだけ盛り込んでください。

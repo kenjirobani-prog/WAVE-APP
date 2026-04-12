@@ -183,22 +183,12 @@ export default function SpotDetailContent({ id }: { id: string }) {
       const applyMult = (c: WaveCondition): WaveCondition =>
         m !== 1.0 ? { ...c, waveHeight: c.waveHeight * m } : c
 
-      // Next day conditions for chart
-      const baseDate = dateParam ? new Date(`${dateParam}T12:00:00+09:00`) : new Date()
-      const nextDate = new Date(baseDate)
-      nextDate.setDate(nextDate.getDate() + 1)
-      let nextConditions: WaveCondition[] = []
-      try {
-        const res2 = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${toDateStr(nextDate)}`)
-        if (res2.ok) { const data2 = await res2.json(); nextConditions = data2.conditions ?? [] }
-      } catch {}
-
+      // 当日の4〜23時のデータのみ表示（翌日0-3時はstaleキャッシュの可能性があるため除外）
       const isToday = !dateParam || dateParam === toDateStr(new Date())
       const accessHour = (new Date().getUTCHours() + 9) % 24
       const startHour = !isToday ? 4 : accessHour >= 3 && accessHour <= 8 ? 4 : accessHour >= 9 && accessHour <= 14 ? 9 : 15
       const fromStart = conditions.filter(c => { const h = (new Date(c.timestamp).getUTCHours() + 9) % 24; return h >= startHour }).map(applyMult)
-      const to3 = nextConditions.filter(c => { const h = (new Date(c.timestamp).getUTCHours() + 9) % 24; return h <= 3 }).map(applyMult)
-      setHourly([...fromStart, ...to3])
+      setHourly(fromStart)
       if (representative) setCurrent(applyMult(representative))
 
       const series = conditions.map(c => ({
