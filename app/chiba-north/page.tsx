@@ -188,18 +188,27 @@ export default function ChibaNorthPage() {
           const data = await res.json()
           const conditions: WaveCondition[] = data.conditions ?? []
           if (conditions.length === 0) return
+          const mornCond = findConditionAtHour(conditions, 6)
           const noonCond = findConditionAtHour(conditions, 12)
-          if (!noonCond) return
+          if (!mornCond && !noonCond) return
           validCount++
           const spotMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
           if (spotMaxWind > dayMaxWindAll) dayMaxWindAll = spotMaxWind
-          const scoreCond = { ...noonCond, windSpeed: Math.max(noonCond.windSpeed, spotMaxWind) }
-          const sc = calculateScore(scoreCond, spot)
-          const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（入水不可）')
-          if (co) {
+          const slotStars: number[] = []
+          let slotCloseout = 0
+          let slotCount = 0
+          for (const cond of [mornCond, noonCond]) {
+            if (!cond) continue
+            slotCount++
+            const scoreCond = { ...cond, windSpeed: Math.max(cond.windSpeed, spotMaxWind) }
+            const sc = calculateScore(scoreCond, spot)
+            const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（入水不可）')
+            if (co) { slotCloseout++ } else { slotStars.push(getStarRating(sc.score, false)) }
+          }
+          if (slotCloseout === slotCount) {
             closeoutCount++
-          } else {
-            spotScores.push(getStarRating(sc.score, false))
+          } else if (slotStars.length > 0) {
+            spotScores.push(Math.round(slotStars.reduce((a, b) => a + b, 0) / slotStars.length))
           }
         } catch {}
       }))
