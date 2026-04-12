@@ -38,7 +38,7 @@ async function imageToBase64(url: string): Promise<string | null> {
 }
 
 interface DailyWaveSummary {
-  date: string       // YYYY-MM-DD (JST)
+  date: string
   waveHeightMax: number
   waveHeightMean: number
   wavePeriodMean: number
@@ -48,84 +48,15 @@ interface DailyWaveSummary {
   swellHeightMean: number
   swellPeriodMean: number
   swellDirectionMean: number
-  // 朝6時・昼12時の時間帯別データ（今日タブと整合させるため）
-  windSpeedMorning: number   // 朝6時の風速
-  windDirMorning: number     // 朝6時の風向
-  windSpeedNoon: number      // 昼12時の風速
-  windDirNoon: number        // 昼12時の風向
-  waveHeightMorning: number  // 朝6時の波高
-  waveHeightNoon: number     // 昼12時の波高
+  windSpeedMorning: number
+  windDirMorning: number
+  windSpeedNoon: number
+  windDirNoon: number
+  waveHeightMorning: number
+  waveHeightNoon: number
 }
 
-// Open-Meteo Marine + Forecast API から 7日分のサーフィン関連データを取得
-async function fetchWeeklySurfData(lat: number, lon: number): Promise<DailyWaveSummary[]> {
-  const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction&forecast_days=7&timezone=Asia/Tokyo`
-  const windUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m&forecast_days=7&timezone=Asia/Tokyo`
-
-  const [marineRes, windRes] = await Promise.all([fetch(marineUrl), fetch(windUrl)])
-  if (!marineRes.ok || !windRes.ok) return []
-  const marine = await marineRes.json()
-  const wind = await windRes.json()
-
-  const times: string[] = marine?.hourly?.time ?? []
-  if (times.length === 0) return []
-
-  const wh: number[] = marine.hourly.wave_height ?? []
-  const wp: number[] = marine.hourly.wave_period ?? []
-  const wd: number[] = marine.hourly.wave_direction ?? []
-  const sh: number[] = marine.hourly.swell_wave_height ?? []
-  const sp: number[] = marine.hourly.swell_wave_period ?? []
-  const sd: number[] = marine.hourly.swell_wave_direction ?? []
-  const ws: number[] = wind.hourly.wind_speed_10m ?? []
-  const wdr: number[] = wind.hourly.wind_direction_10m ?? []
-
-  // 日付ごとにグルーピング
-  const groups = new Map<string, number[]>()
-  times.forEach((t, i) => {
-    const date = t.slice(0, 10)
-    if (!groups.has(date)) groups.set(date, [])
-    groups.get(date)!.push(i)
-  })
-
-  const avg = (arr: number[], idx: number[]) => idx.reduce((s, i) => s + (arr[i] ?? 0), 0) / idx.length
-  const max = (arr: number[], idx: number[]) => Math.max(...idx.map(i => arr[i] ?? 0))
-  // 3時間窓の平均を取得（単一時刻の予報モデル変動を平滑化）
-  // 朝: 5-7時の平均、昼: 11-13時の平均
-  const avgWindow = (arr: number[], idx: number[], centerHour: number) => {
-    const windowHours = [centerHour - 1, centerHour, centerHour + 1]
-    const matched = idx.filter(i => {
-      const h = parseInt(times[i]?.split('T')[1]?.split(':')[0] ?? '-1', 10)
-      return windowHours.includes(h)
-    })
-    if (matched.length === 0) return 0
-    return matched.reduce((s, i) => s + (arr[i] ?? 0), 0) / matched.length
-  }
-
-  const summaries: DailyWaveSummary[] = []
-  for (const [date, idx] of groups) {
-    summaries.push({
-      date,
-      waveHeightMax: Math.round(max(wh, idx) * 10) / 10,
-      waveHeightMean: Math.round(avg(wh, idx) * 10) / 10,
-      wavePeriodMean: Math.round(avg(wp, idx) * 10) / 10,
-      waveDirectionMean: Math.round(avg(wd, idx)),
-      windSpeedMax: Math.round(max(ws, idx) * 10) / 10,
-      windDirectionMean: Math.round(avg(wdr, idx)),
-      swellHeightMean: Math.round(avg(sh, idx) * 10) / 10,
-      swellPeriodMean: Math.round(avg(sp, idx) * 10) / 10,
-      swellDirectionMean: Math.round(avg(sd, idx)),
-      windSpeedMorning: Math.round(avgWindow(ws, idx, 6) * 10) / 10,
-      windDirMorning: Math.round(avgWindow(wdr, idx, 6)),
-      windSpeedNoon: Math.round(avgWindow(ws, idx, 12) * 10) / 10,
-      windDirNoon: Math.round(avgWindow(wdr, idx, 12)),
-      waveHeightMorning: Math.round(avgWindow(wh, idx, 6) * 10) / 10,
-      waveHeightNoon: Math.round(avgWindow(wh, idx, 12) * 10) / 10,
-    })
-  }
-  return summaries.slice(0, 7)
-}
-
-// --- StormGlassベースの週間スコア計算 ---
+// --- StormGlassベースの週間スコア+サマリ計算 ---
 
 function toJstDateStr(d: Date): string {
   const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000)
@@ -137,12 +68,18 @@ interface WeeklyDayScore {
   isCloseout: boolean
 }
 
-async function computeWeeklyScores(
+interface WeeklyAreaResult {
+  scores: Record<string, WeeklyDayScore>
+  summaries: DailyWaveSummary[]
+}
+
+async function computeWeeklyData(
   areaKey: string,
   areaCoord: { lat: number; lon: number; repSpotId: string },
-): Promise<Record<string, WeeklyDayScore>> {
+): Promise<WeeklyAreaResult> {
+  const empty: WeeklyAreaResult = { scores: {}, summaries: [] }
   const spot = SPOTS.find(s => s.id === areaCoord.repSpotId)
-  if (!spot) return {}
+  if (!spot) return empty
 
   const now = new Date()
   const start = new Date(`${toJstDateStr(now)}T00:00:00+09:00`)
@@ -155,7 +92,7 @@ async function computeWeeklyScores(
     console.log(`[weekly-comments] StormGlass ${areaKey}: ${hours.length} hours`)
   } catch (err) {
     console.error(`[weekly-comments] StormGlass fetch failed for ${areaKey}:`, err)
-    return {}
+    return empty
   }
 
   // WaveConditionに変換
@@ -170,51 +107,67 @@ async function computeWeeklyScores(
     byDate.get(dateKey)!.push(c)
   }
 
-  const result: Record<string, WeeklyDayScore> = {}
+  const scores: Record<string, WeeklyDayScore> = {}
+  const summaries: DailyWaveSummary[] = []
+
   for (const [dateStr, dayConds] of byDate) {
-    // 朝6時・昼12時のコンディションを取得
     const findAtHour = (h: number) => dayConds.find(c => {
       const jstH = (new Date(c.timestamp).getUTCHours() + 9) % 24
       return jstH === h
     })
     const mornCond = findAtHour(6)
     const noonCond = findAtHour(12)
-
-    // 1日の最大風速
     const dayMaxWind = Math.max(...dayConds.map(c => c.windSpeed ?? 0))
 
-    // 25m/s以上は強制クローズアウト
+    // --- スコア計算 ---
     if (dayMaxWind >= 25) {
-      result[dateStr] = { bestStars: 1, isCloseout: true }
-      continue
-    }
-
-    // 朝・昼のスコアを計算
-    const slotStars: number[] = []
-    let closeoutCount = 0
-    let slotCount = 0
-    for (const cond of [mornCond, noonCond]) {
-      if (!cond) continue
-      slotCount++
-      const scoreCond = { ...cond, windSpeed: Math.max(cond.windSpeed, dayMaxWind) }
-      const sc = calculateScore(scoreCond, spot)
-      const isCo = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（サーフィン不可）')
-      if (isCo) {
-        closeoutCount++
-      } else {
-        slotStars.push(getStarRating(sc.score, false))
+      scores[dateStr] = { bestStars: 1, isCloseout: true }
+    } else {
+      const slotStars: number[] = []
+      let closeoutCount = 0
+      let slotCount = 0
+      for (const cond of [mornCond, noonCond]) {
+        if (!cond) continue
+        slotCount++
+        const scoreCond = { ...cond, windSpeed: Math.max(cond.windSpeed, dayMaxWind) }
+        const sc = calculateScore(scoreCond, spot)
+        const isCo = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（サーフィン不可）')
+        if (isCo) { closeoutCount++ } else { slotStars.push(getStarRating(sc.score, false)) }
+      }
+      const allCloseout = slotCount > 0 && closeoutCount === slotCount
+      scores[dateStr] = {
+        bestStars: allCloseout || slotStars.length === 0 ? 1 : Math.round(slotStars.reduce((a, b) => a + b, 0) / slotStars.length),
+        isCloseout: allCloseout,
       }
     }
 
-    const allCloseout = slotCount > 0 && closeoutCount === slotCount
-    const bestStars = allCloseout || slotStars.length === 0
-      ? 1
-      : Math.round(slotStars.reduce((a, b) => a + b, 0) / slotStars.length)
+    // --- コメント用サマリ（同一StormGlassデータから生成） ---
+    const avg = (accessor: (c: WaveCondition) => number) =>
+      dayConds.reduce((s, c) => s + accessor(c), 0) / dayConds.length
+    const max = (accessor: (c: WaveCondition) => number) =>
+      Math.max(...dayConds.map(accessor))
 
-    result[dateStr] = { bestStars, isCloseout: allCloseout }
+    summaries.push({
+      date: dateStr,
+      waveHeightMax: Math.round(max(c => c.waveHeight) * 10) / 10,
+      waveHeightMean: Math.round(avg(c => c.waveHeight) * 10) / 10,
+      wavePeriodMean: Math.round(avg(c => c.wavePeriod) * 10) / 10,
+      waveDirectionMean: Math.round(avg(c => c.swellDir)),
+      windSpeedMax: Math.round(dayMaxWind * 10) / 10,
+      windDirectionMean: Math.round(avg(c => c.windDir)),
+      swellHeightMean: Math.round(avg(c => c.swellWaveHeight ?? c.waveHeight) * 10) / 10,
+      swellPeriodMean: Math.round(avg(c => c.wavePeriod) * 10) / 10,
+      swellDirectionMean: Math.round(avg(c => c.swellDir)),
+      windSpeedMorning: Math.round((mornCond?.windSpeed ?? 0) * 10) / 10,
+      windDirMorning: Math.round(mornCond?.windDir ?? 0),
+      windSpeedNoon: Math.round((noonCond?.windSpeed ?? 0) * 10) / 10,
+      windDirNoon: Math.round(noonCond?.windDir ?? 0),
+      waveHeightMorning: Math.round((mornCond?.waveHeight ?? 0) * 10) / 10,
+      waveHeightNoon: Math.round((noonCond?.waveHeight ?? 0) * 10) / 10,
+    })
   }
 
-  return result
+  return { scores, summaries }
 }
 
 // 台風データ型
@@ -416,25 +369,20 @@ export async function GET(request: NextRequest) {
     const validCharts = chartImages.filter((c): c is string => !!c)
     console.log(`[weekly-comments] Fetched ${validCharts.length}/2 weather charts`)
 
-    // 3エリア分のOpen-Meteoデータ + StormGlassスコアを並行取得
+    // 3エリア分をStormGlassから一括取得（スコア+コメント用データを同一ソースから生成）
     const areaData: Record<string, DailyWaveSummary[]> = {}
     const areaScores: Record<string, Record<string, WeeklyDayScore>> = {}
 
     await Promise.all(
       Object.entries(AREAS).map(async ([key, coord]) => {
-        // Open-Meteo（コメント用の波浪サマリ）
-        const days = await fetchWeeklySurfData(coord.lat, coord.lon)
-        areaData[key] = days
-        console.log(`[weekly-comments] ${coord.name}: ${days.length} days (Open-Meteo)`)
-
-        // StormGlass（スコア計算用）
-        const scores = await computeWeeklyScores(key, coord)
+        const { scores, summaries } = await computeWeeklyData(key, coord)
         areaScores[key] = scores
-        console.log(`[weekly-comments] ${coord.name}: ${Object.keys(scores).length} days scored (StormGlass)`)
+        areaData[key] = summaries
+        console.log(`[weekly-comments] ${coord.name}: ${summaries.length} days, ${Object.keys(scores).length} scores (StormGlass)`)
       })
     )
 
-    // Claudeでコメント生成
+    // Claudeでコメント生成（StormGlassデータベース）
     const comments = await generateWeeklyComments(areaData, validCharts, activeTyphoons)
     if (!comments) {
       return NextResponse.json({ error: 'Comment generation failed' }, { status: 500 })
