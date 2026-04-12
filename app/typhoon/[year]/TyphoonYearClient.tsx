@@ -89,8 +89,33 @@ export default function TyphoonYearClient({ year }: { year: string }) {
           <p className="text-sm text-[#8899aa] text-center py-8">データを取得できませんでした。</p>
         ) : activeTyphoons.length > 0 ? (
           <section>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-blue-700 font-medium text-sm">現在、日本へのうねり影響が見込まれる台風があります</p>
+            <div style={{
+              background: 'white',
+              border: '0.5px solid #85B7EB',
+              borderRadius: 10,
+              padding: '10px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 16,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                <span style={{
+                  background: '#E6F1FB',
+                  color: '#0C447C',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  padding: '2px 8px',
+                  borderRadius: 20,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}>
+                  台風情報
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#0a1628' }}>
+                  現在、日本へのうねり影響が見込まれる台風があります
+                </span>
+              </div>
             </div>
             {activeTyphoons.map(t => (
               <TyphoonCard key={t.id} year={year} typhoon={t} />

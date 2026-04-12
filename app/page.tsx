@@ -294,7 +294,7 @@ export default function TopPage() {
               slotCount++
               const scoreCond = { ...cond, windSpeed: Math.max(cond.windSpeed, spotMaxWind) }
               const sc = calculateScore(scoreCond, spot)
-              const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（入水不可）')
+              const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（サーフィン不可）')
               if (co) {
                 slotCloseout++
               } else {

@@ -40,10 +40,10 @@ export function shouldMentionTyphoon(typhoon: MentionableTyphoon): boolean {
  */
 export function getTyphoonComment(distanceKm: number, pressure: number): string {
   if (distanceKm <= 500) {
-    return '台風が非常に近く危険。絶対に海に近づかないこと。暴風・高波・離岸流に注意。'
+    return '台風が非常に近く危険。絶対に海に近づかないでください。暴風・高波・離岸流に注意。'
   }
   if (distanceKm <= 1000) {
-    return '台風接近によりサイズが急激にアップ。上級者以外は入水を控えること。'
+    return '台風接近によりサイズが急激にアップ。上級者以外は海に入らないでください。'
   }
   if (distanceKm <= 1700 && pressure <= 950) {
     return '台風うねりが到達。周期の長いグランドスウェルに期待。朝イチが狙い目。'
@@ -59,7 +59,7 @@ export function getTyphoonComment(distanceKm: number, pressure: number): string 
 
 /**
  * 台風の状態ステージを判定
- * DANGER: 500km以内 — 入水禁止
+ * DANGER: 500km以内 — 海に近づかないでください
  * CLOSE: 1,000km以内 — 接近・上級者のみ
  * SWELL_ARRIVED: 1,700km以内 + 950hPa以下 — うねり到達
  * SWELL_STARTING: 1,700km以内 + 970hPa以下 — うねり届き始め
@@ -81,7 +81,7 @@ export function getStagePrompt(stage: TyphoonStage, distanceKm: number, pressure
   const d = Math.round(distanceKm)
   switch (stage) {
     case 'DANGER':
-      return `台風が非常に近く（${d}km）、各エリアとも入水厳禁・危険であることを強調してください。`
+      return `台風が非常に近く（${d}km）、各エリアとも絶対に海に近づかないよう強調してください。`
     case 'CLOSE':
       return `台風が接近中（${d}km）、サイズが急激に上がっており上級者以外は危険であることを伝えてください。`
     case 'SWELL_ARRIVED':
