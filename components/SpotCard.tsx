@@ -1,7 +1,6 @@
 'use client'
 import Link from 'next/link'
 import type { Spot } from '@/types'
-import StarRating from './StarRating'
 import { getWaveSizeLabel } from '@/lib/wave/waveSize'
 
 interface TimeSlotStars {
@@ -31,70 +30,99 @@ function toDateString(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-function SizePill({ height }: { height?: number }) {
-  if (height == null) return null
-  return (
-    <span
-      style={{
-        fontSize: '11px',
-        color: '#64748b',
-        background: '#f1f5f9',
-        borderRadius: '20px',
-        padding: '1px 8px',
-        display: 'inline-block',
-        marginTop: '3px',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {getWaveSizeLabel(height)}
-    </span>
-  )
+function renderStars(score: number): string {
+  const filled = Math.max(0, Math.min(5, Math.round(score)))
+  return '★'.repeat(filled) + '☆'.repeat(5 - filled)
 }
 
 export default function SpotCard({ spot, stars, waveHeights, isCloseout, date }: Props) {
   const href = date ? `/spot/${spot.id}?date=${toDateString(date)}` : `/spot/${spot.id}`
 
+  const timeSlots = [
+    { label: '朝', stars: stars.morning, waveHeight: waveHeights?.morning },
+    { label: '昼', stars: stars.midday, waveHeight: waveHeights?.midday },
+    { label: '夕', stars: stars.evening, waveHeight: waveHeights?.evening },
+  ]
+
   return (
-    <Link href={href}>
+    <Link href={href} style={{ textDecoration: 'none' }}>
       <div
-        className={`rounded-xl p-4 active:scale-[0.98] ${
-          isCloseout
-            ? 'bg-white border-2 border-red-400'
-            : 'bg-white border border-[#eef1f4] hover:border-sky-200 hover:bg-[#f0f9ff]'
-        }`}
-        style={{ borderRadius: 12, cursor: 'pointer', transition: 'background 0.15s ease' }}
+        style={{
+          background: 'white',
+          border: isCloseout ? '2px solid #f87171' : '0.5px solid #e2e8f0',
+          borderRadius: 12,
+          padding: '12px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          cursor: 'pointer',
+          marginBottom: 8,
+          transition: 'background 0.15s ease',
+        }}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0 pt-1">
-            <h2 className="text-base font-bold text-[#0a1628] truncate">{spot.name}</h2>
-          </div>
-          <div className="flex items-start gap-2 shrink-0">
-            {isCloseout ? (
-              <span className="text-xs font-bold text-red-500 pt-1">終日クローズアウト</span>
-            ) : (
-              <div className="flex gap-3">
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[9px] text-[#94a3b8] font-semibold">朝</span>
-                  <StarRating stars={stars.morning} size="sm" />
-                  <SizePill height={waveHeights?.morning} />
-                </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[9px] text-[#94a3b8] font-semibold">昼</span>
-                  <StarRating stars={stars.midday} size="sm" />
-                  <SizePill height={waveHeights?.midday} />
-                </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[9px] text-[#94a3b8] font-semibold">夕</span>
-                  <StarRating stars={stars.evening} size="sm" />
-                  <SizePill height={waveHeights?.evening} />
-                </div>
+        {/* スポット名 */}
+        <span style={{
+          fontSize: 15,
+          fontWeight: 600,
+          color: '#0a1628',
+          minWidth: 72,
+          whiteSpace: 'nowrap',
+        }}>
+          {spot.name}
+        </span>
+
+        {/* 朝・昼・夕 */}
+        {isCloseout ? (
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', flex: 1, textAlign: 'center' }}>
+            終日クローズアウト
+          </span>
+        ) : (
+          <div style={{ display: 'flex', gap: 16, flex: 1, justifyContent: 'center' }}>
+            {timeSlots.map(slot => (
+              <div key={slot.label} style={{
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', gap: 3,
+              }}>
+                <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>
+                  {slot.label}
+                </span>
+                <span style={{ color: '#f59e0b', fontSize: 11, letterSpacing: '0.5px' }}>
+                  {renderStars(slot.stars)}
+                </span>
+                {slot.waveHeight != null && slot.waveHeight > 0 && (
+                  <span style={{
+                    fontSize: 10,
+                    color: '#64748b',
+                    background: '#f1f5f9',
+                    borderRadius: 20,
+                    padding: '1px 7px',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {getWaveSizeLabel(slot.waveHeight)}
+                  </span>
+                )}
               </div>
-            )}
+            ))}
           </div>
-        </div>
-        <div className="flex items-center justify-end gap-1 pt-2 border-t border-[#D0D8E0] mt-2">
-          <span className="text-xs font-medium text-[#1A7A6E]">詳細を見る</span>
-          <span className="text-sm text-[#1A7A6E] animate-bounce-x">›</span>
+        )}
+
+        {/* ▶ボタン */}
+        <div style={{
+          width: 32,
+          height: 32,
+          borderRadius: '50%',
+          background: '#378ADD',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          animation: 'pulseRight 1s ease-in-out infinite',
+        }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M4 2l4 4-4 4" stroke="white" strokeWidth="1.8"
+                  strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
       </div>
     </Link>
