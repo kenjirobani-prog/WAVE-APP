@@ -87,10 +87,12 @@ export default function ChibaSouthPage() {
   const today = new Date(); today.setHours(12,0,0,0)
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
 
-  // 週間AIコメント取得
+  // 週間コメント+スコアをFirestoreから一括取得
   useEffect(() => {
     if (tab !== 'weekly') return
-    async function loadComments() {
+    if (weeklyData.length > 0) return
+    async function loadWeeklyFromCache() {
+      setWeeklyLoading(true)
       try {
         await ensureAnonymousAuth()
         const db = getDb()
@@ -99,10 +101,20 @@ export default function ChibaSouthPage() {
           const data = snap.data()
           setWeeklyComments(data.days ?? {})
           setWeeklyCommentsAt(data.generatedAt ?? null)
+          const stars: Record<string, { bestStars: number; isCloseout: boolean }> = data.stars ?? {}
+          const base = new Date(); base.setHours(12,0,0,0)
+          const result: WeeklyDayData[] = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(base); d.setDate(d.getDate()+i)
+            const dateStr = toDateStr(d)
+            const ds = stars[dateStr]
+            return { date: d, dateStr, bestStars: ds?.bestStars ?? 1, isCloseout: ds?.isCloseout ?? false }
+          })
+          setWeeklyData(result)
         }
       } catch {}
+      setWeeklyLoading(false)
     }
-    loadComments()
+    loadWeeklyFromCache()
   }, [tab])
 
   // AIコメント取得
@@ -129,11 +141,6 @@ export default function ChibaSouthPage() {
   useEffect(() => {
     if (tab === 'weekly') return
     loadForecast(getTargetDate(tab))
-  }, [tab])
-
-  useEffect(() => {
-    if (tab !== 'weekly' || weeklyData.length > 0) return
-    loadWeeklyForecast()
   }, [tab])
 
   async function loadForecast(targetDate: Date) {
@@ -167,59 +174,6 @@ export default function ChibaSouthPage() {
       if (results.length === 0) setError('波データを取得できませんでした。')
     } catch { setError('データの取得に失敗しました。') }
     finally { setLoading(false) }
-  }
-
-  async function loadWeeklyForecast() {
-    setWeeklyLoading(true)
-    const base = new Date(); base.setHours(12,0,0,0)
-    const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(base); d.setDate(d.getDate()+i); return d })
-    const activeSpots = SPOTS.filter(s => s.isActive && s.area === AREA)
-    const result: WeeklyDayData[] = []
-    for (const day of days) {
-      const dateStr = toDateStr(day)
-      const spotScores: number[] = []
-      let closeoutCount = 0
-      let validCount = 0
-      let dayMaxWindAll = 0
-      await Promise.all(activeSpots.map(async spot => {
-        try {
-          const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
-          if (!res.ok) return
-          const data = await res.json()
-          const conditions: WaveCondition[] = data.conditions ?? []
-          if (conditions.length === 0) return
-          const mornCond = findConditionAtHour(conditions, 6)
-          const noonCond = findConditionAtHour(conditions, 12)
-          if (!mornCond && !noonCond) return
-          validCount++
-          const spotMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
-          if (spotMaxWind > dayMaxWindAll) dayMaxWindAll = spotMaxWind
-          const slotStars: number[] = []
-          let slotCloseout = 0
-          let slotCount = 0
-          for (const cond of [mornCond, noonCond]) {
-            if (!cond) continue
-            slotCount++
-            const scoreCond = { ...cond, windSpeed: Math.max(cond.windSpeed, spotMaxWind) }
-            const sc = calculateScore(scoreCond, spot)
-            const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（サーフィン不可）')
-            if (co) { slotCloseout++ } else { slotStars.push(getStarRating(sc.score, false)) }
-          }
-          if (slotCloseout === slotCount) {
-            closeoutCount++
-          } else if (slotStars.length > 0) {
-            spotScores.push(Math.round(slotStars.reduce((a, b) => a + b, 0) / slotStars.length))
-          }
-        } catch {}
-      }))
-      const forceCloseout = dayMaxWindAll >= 25
-      const dayAllCloseout = forceCloseout || (validCount > 0 && closeoutCount === validCount)
-      const dayBestStars = (dayAllCloseout || spotScores.length === 0) ? 1
-        : Math.round(spotScores.reduce((a, b) => a + b, 0) / spotScores.length)
-      result.push({ date: day, dateStr, bestStars: dayBestStars, isCloseout: dayAllCloseout })
-    }
-    setWeeklyData(result)
-    setWeeklyLoading(false)
   }
 
   const targetDate = tab !== 'weekly' ? getTargetDate(tab) : today

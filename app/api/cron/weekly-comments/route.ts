@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
 import { shouldMentionTyphoon, getTyphoonComment, distanceToTokyoKm } from '@/lib/typhoon/mention'
+import { fetchStormGlass, hoursToConditions } from '@/lib/wave/adapters/stormglass'
+import { calculateScore, getStarRating } from '@/lib/wave/scoring'
+import { SPOTS } from '@/data/spots'
+import type { WaveCondition } from '@/lib/wave/types'
 
 export const maxDuration = 90
 
@@ -9,10 +13,10 @@ export const maxDuration = 90
 // 週間エリア別AIコメント生成（毎朝6時 JST）
 // ==========================================
 
-const AREAS: Record<string, { lat: number; lon: number; name: string }> = {
-  shonan:  { lat: 35.33, lon: 139.45, name: '湘南' },
-  chiba:   { lat: 35.50, lon: 140.43, name: '千葉' },
-  ibaraki: { lat: 36.31, lon: 140.58, name: '茨城' },
+const AREAS: Record<string, { lat: number; lon: number; name: string; repSpotId: string }> = {
+  shonan:  { lat: 35.317, lon: 139.474, name: '湘南', repSpotId: 'kugenuma' },
+  chiba:   { lat: 35.336, lon: 140.395, name: '千葉', repSpotId: 'ichinomiya' },
+  ibaraki: { lat: 36.305, lon: 140.578, name: '茨城', repSpotId: 'oarai' },
 }
 
 // 気象庁 予想天気図PNG
@@ -119,6 +123,98 @@ async function fetchWeeklySurfData(lat: number, lon: number): Promise<DailyWaveS
     })
   }
   return summaries.slice(0, 7)
+}
+
+// --- StormGlassベースの週間スコア計算 ---
+
+function toJstDateStr(d: Date): string {
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000)
+  return jst.toISOString().split('T')[0]
+}
+
+interface WeeklyDayScore {
+  bestStars: number
+  isCloseout: boolean
+}
+
+async function computeWeeklyScores(
+  areaKey: string,
+  areaCoord: { lat: number; lon: number; repSpotId: string },
+): Promise<Record<string, WeeklyDayScore>> {
+  const spot = SPOTS.find(s => s.id === areaCoord.repSpotId)
+  if (!spot) return {}
+
+  const now = new Date()
+  const start = new Date(`${toJstDateStr(now)}T00:00:00+09:00`)
+  const endDate = new Date(start)
+  endDate.setDate(endDate.getDate() + 7)
+
+  let hours: Awaited<ReturnType<typeof fetchStormGlass>>
+  try {
+    hours = await fetchStormGlass(areaCoord.lat, areaCoord.lon, start, endDate)
+    console.log(`[weekly-comments] StormGlass ${areaKey}: ${hours.length} hours`)
+  } catch (err) {
+    console.error(`[weekly-comments] StormGlass fetch failed for ${areaKey}:`, err)
+    return {}
+  }
+
+  // WaveConditionに変換
+  const conditions = hoursToConditions(spot.id, hours)
+
+  // 日付ごとにグループ化
+  const byDate = new Map<string, WaveCondition[]>()
+  for (const c of conditions) {
+    const jst = new Date(new Date(c.timestamp).getTime() + 9 * 60 * 60 * 1000)
+    const dateKey = jst.toISOString().split('T')[0]
+    if (!byDate.has(dateKey)) byDate.set(dateKey, [])
+    byDate.get(dateKey)!.push(c)
+  }
+
+  const result: Record<string, WeeklyDayScore> = {}
+  for (const [dateStr, dayConds] of byDate) {
+    // 朝6時・昼12時のコンディションを取得
+    const findAtHour = (h: number) => dayConds.find(c => {
+      const jstH = (new Date(c.timestamp).getUTCHours() + 9) % 24
+      return jstH === h
+    })
+    const mornCond = findAtHour(6)
+    const noonCond = findAtHour(12)
+
+    // 1日の最大風速
+    const dayMaxWind = Math.max(...dayConds.map(c => c.windSpeed ?? 0))
+
+    // 25m/s以上は強制クローズアウト
+    if (dayMaxWind >= 25) {
+      result[dateStr] = { bestStars: 1, isCloseout: true }
+      continue
+    }
+
+    // 朝・昼のスコアを計算
+    const slotStars: number[] = []
+    let closeoutCount = 0
+    let slotCount = 0
+    for (const cond of [mornCond, noonCond]) {
+      if (!cond) continue
+      slotCount++
+      const scoreCond = { ...cond, windSpeed: Math.max(cond.windSpeed, dayMaxWind) }
+      const sc = calculateScore(scoreCond, spot)
+      const isCo = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（サーフィン不可）')
+      if (isCo) {
+        closeoutCount++
+      } else {
+        slotStars.push(getStarRating(sc.score, false))
+      }
+    }
+
+    const allCloseout = slotCount > 0 && closeoutCount === slotCount
+    const bestStars = allCloseout || slotStars.length === 0
+      ? 1
+      : Math.round(slotStars.reduce((a, b) => a + b, 0) / slotStars.length)
+
+    result[dateStr] = { bestStars, isCloseout: allCloseout }
+  }
+
+  return result
 }
 
 // 台風データ型
@@ -320,13 +416,23 @@ export async function GET(request: NextRequest) {
     const validCharts = chartImages.filter((c): c is string => !!c)
     console.log(`[weekly-comments] Fetched ${validCharts.length}/2 weather charts`)
 
-    // 3エリア分のOpen-Meteoデータを取得
+    // 3エリア分のOpen-Meteoデータ + StormGlassスコアを並行取得
     const areaData: Record<string, DailyWaveSummary[]> = {}
-    for (const [key, coord] of Object.entries(AREAS)) {
-      const days = await fetchWeeklySurfData(coord.lat, coord.lon)
-      areaData[key] = days
-      console.log(`[weekly-comments] ${coord.name}: ${days.length} days`)
-    }
+    const areaScores: Record<string, Record<string, WeeklyDayScore>> = {}
+
+    await Promise.all(
+      Object.entries(AREAS).map(async ([key, coord]) => {
+        // Open-Meteo（コメント用の波浪サマリ）
+        const days = await fetchWeeklySurfData(coord.lat, coord.lon)
+        areaData[key] = days
+        console.log(`[weekly-comments] ${coord.name}: ${days.length} days (Open-Meteo)`)
+
+        // StormGlass（スコア計算用）
+        const scores = await computeWeeklyScores(key, coord)
+        areaScores[key] = scores
+        console.log(`[weekly-comments] ${coord.name}: ${Object.keys(scores).length} days scored (StormGlass)`)
+      })
+    )
 
     // Claudeでコメント生成
     const comments = await generateWeeklyComments(areaData, validCharts, activeTyphoons)
@@ -339,10 +445,11 @@ export async function GET(request: NextRequest) {
       if (!AREAS[area]) continue
       await setDoc(doc(db, 'weeklyComments', area), {
         days,
+        stars: areaScores[area] ?? {},
         generatedAt,
       })
       savedCount++
-      console.log(`[weekly-comments] Saved weeklyComments/${area} (${Object.keys(days).length} days)`)
+      console.log(`[weekly-comments] Saved weeklyComments/${area} (${Object.keys(days).length} days, ${Object.keys(areaScores[area] ?? {}).length} scores)`)
     }
 
     return NextResponse.json({

@@ -168,7 +168,7 @@ interface StormGlassHour {
   seaLevel?: Record<string, number>
 }
 
-async function fetchStormGlass(lat: number, lng: number, start: Date, end: Date): Promise<StormGlassHour[]> {
+export async function fetchStormGlass(lat: number, lng: number, start: Date, end: Date): Promise<StormGlassHour[]> {
   const apiKey = process.env.STORMGLASS_API_KEY
   if (!apiKey) throw new Error('STORMGLASS_API_KEY not configured')
 
@@ -192,7 +192,7 @@ async function fetchStormGlass(lat: number, lng: number, start: Date, end: Date)
   }
 }
 
-function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateStr?: string, tideHourly?: number[], openMeteo?: OpenMeteoWeather): WaveCondition[] {
+export function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateStr?: string, tideHourly?: number[], openMeteo?: OpenMeteoWeather): WaveCondition[] {
   // 指定日のデータのみフィルタ（targetDateStrがあれば）
   const filtered = targetDateStr
     ? hours.filter(h => {

@@ -165,16 +165,12 @@ export default function TopPage() {
     loadForecast(getTargetDate(tab))
   }, [tab])
 
+  // 週間タブ: Firestoreキャッシュからコメント+スコアを一括取得
   useEffect(() => {
     if (tab !== 'weekly') return
     if (weeklyData.length > 0) return
-    loadWeeklyForecast()
-  }, [tab])
-
-  // 週間AIコメント取得
-  useEffect(() => {
-    if (tab !== 'weekly') return
-    async function loadComments() {
+    async function loadWeeklyFromCache() {
+      setWeeklyLoading(true)
       try {
         await ensureAnonymousAuth()
         const db = getDb()
@@ -183,10 +179,31 @@ export default function TopPage() {
           const data = snap.data()
           setWeeklyComments(data.days ?? {})
           setWeeklyCommentsAt(data.generatedAt ?? null)
+
+          // pre-computed stars from StormGlass (cron生成)
+          const stars: Record<string, { bestStars: number; isCloseout: boolean }> = data.stars ?? {}
+
+          // 7日分のWeeklyDayDataを構築
+          const base = new Date()
+          base.setHours(12, 0, 0, 0)
+          const result: WeeklyDayData[] = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(base)
+            d.setDate(d.getDate() + i)
+            const dateStr = toDateStr(d)
+            const dayScore = stars[dateStr]
+            return {
+              date: d,
+              dateStr,
+              bestStars: dayScore?.bestStars ?? 1,
+              isCloseout: dayScore?.isCloseout ?? false,
+            }
+          })
+          setWeeklyData(result)
         }
       } catch {}
+      setWeeklyLoading(false)
     }
-    loadComments()
+    loadWeeklyFromCache()
   }, [tab])
 
   async function loadForecast(targetDate: Date) {
@@ -244,85 +261,6 @@ export default function TopPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  async function loadWeeklyForecast() {
-    setWeeklyLoading(true)
-    const base = new Date()
-    base.setHours(12, 0, 0, 0)
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(base)
-      d.setDate(d.getDate() + i)
-      return d
-    })
-
-    const activeSpots = SPOTS.filter(s => s.isActive && s.area === 'shonan')
-    const result: WeeklyDayData[] = []
-
-    for (const day of days) {
-      const dateStr = toDateStr(day)
-      const spotScores: number[] = []
-      let closeoutCount = 0
-      let validCount = 0
-      let dayMaxWindAll = 0  // 全スポットを通じた1日の最大風速
-
-      await Promise.all(
-        activeSpots.map(async spot => {
-          try {
-            const res = await fetch(`/api/forecast?spotId=${spot.id}&type=daily&date=${dateStr}`)
-            if (!res.ok) return
-            const data = await res.json()
-            const conditions: WaveCondition[] = data.conditions ?? []
-            if (conditions.length === 0) return
-
-            // 代表時間帯: 朝6時・昼12時の2点でスコア計算（今日タブの朝〜昼と整合）
-            const mornCond = findConditionAtHour(conditions, 6)
-            const noonCond = findConditionAtHour(conditions, 12)
-            if (!mornCond && !noonCond) return
-            validCount++
-
-            // 1日の最大風速を取得（AIコメントと整合させるため）
-            const spotMaxWind = Math.max(...conditions.map(c => c.windSpeed ?? 0))
-            if (spotMaxWind > dayMaxWindAll) dayMaxWindAll = spotMaxWind
-
-            // 朝・昼それぞれスコアリングし、風速は1日の最大値でキャップ
-            const slotStars: number[] = []
-            let slotCloseout = 0
-            let slotCount = 0
-            for (const cond of [mornCond, noonCond]) {
-              if (!cond) continue
-              slotCount++
-              const scoreCond = { ...cond, windSpeed: Math.max(cond.windSpeed, spotMaxWind) }
-              const sc = calculateScore(scoreCond, spot)
-              const co = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（サーフィン不可）')
-              if (co) {
-                slotCloseout++
-              } else {
-                slotStars.push(getStarRating(sc.score, false))
-              }
-            }
-
-            // 朝・昼ともクローズアウトならスポット全体をクローズアウト扱い
-            if (slotCloseout === slotCount) {
-              closeoutCount++
-            } else if (slotStars.length > 0) {
-              spotScores.push(Math.round(slotStars.reduce((a, b) => a + b, 0) / slotStars.length))
-            }
-          } catch {}
-        })
-      )
-
-      // 暴風判定: いずれかのスポットで25m/s以上ならエリア全体をクローズアウト
-      const forceCloseout = dayMaxWindAll >= 25
-      const dayAllCloseout = forceCloseout || (validCount > 0 && closeoutCount === validCount)
-      const dayBestStars = (dayAllCloseout || spotScores.length === 0) ? 1
-        : Math.round(spotScores.reduce((a, b) => a + b, 0) / spotScores.length)
-
-      result.push({ date: day, dateStr, bestStars: dayBestStars, isCloseout: dayAllCloseout })
-    }
-
-    setWeeklyData(result)
-    setWeeklyLoading(false)
   }
 
   const targetDate = tab !== 'weekly' ? getTargetDate(tab) : today
