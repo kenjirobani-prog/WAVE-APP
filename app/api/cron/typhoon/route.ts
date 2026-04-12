@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import type { TyphoonData, ForecastPoint } from '@/types/typhoon'
-import { getTyphoonStage, getStagePrompt, distanceToTokyoKm } from '@/lib/typhoon/mention'
-import { fetchStormGlass, hoursToConditions } from '@/lib/wave/adapters/stormglass'
+import { distanceToTokyoKm } from '@/lib/typhoon/mention'
 
 export const maxDuration = 90
 
@@ -182,87 +181,84 @@ function extractTyphoonMetadata(xml: string): { number: number; nameKana: string
 // エリア別AIコメント生成
 // ==========================================
 
-const AREA_COORDS: Record<string, { lat: number; lon: number; label: string }> = {
-  shonan:  { lat: 35.33, lon: 139.45, label: '湘南' },
-  chiba:   { lat: 35.50, lon: 140.43, label: '千葉' },
-  ibaraki: { lat: 36.31, lon: 140.58, label: '茨城' },
+const TOKYO = { lat: 35.7, lon: 139.7 }
+const SWELL_DISTANCE_KM = 1700
+const SWELL_END_BUFFER_DAYS = 1.5
+
+function formatMdJa(d: Date): string {
+  return `${d.getMonth() + 1}月${d.getDate()}日`
 }
 
-interface SwellForecast {
-  hours: number[]
-  waveHeight: number[]
-  wavePeriod: number[]
-  waveDirection: number[]
+interface SwellWindow {
+  arrivalDate: string | null
+  departureDate: string | null
+  isArrived: boolean
+  currentDistKm: number
 }
 
-// StormGlassから72時間のうねり予報を取得
-async function fetchSwellFromStormGlass(lat: number, lon: number): Promise<SwellForecast | null> {
-  try {
-    const now = new Date()
-    const end = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
-    const hours = await fetchStormGlass(lat, lon, now, end)
-    if (hours.length === 0) return null
+function getSwellWindow(typhoon: ParsedTyphoon): SwellWindow {
+  const currentDist = haversineKm(typhoon.current.lat, typhoon.current.lon, TOKYO.lat, TOKYO.lon)
+  const isArrived = currentDist <= SWELL_DISTANCE_KM
 
-    const conditions = hoursToConditions('_swell', hours)
+  let arrivalDate: string | null = null
+  let departureDate: string | null = null
 
-    // 0h, 12h, 24h, 36h, 48h, 60h, 72h の7ポイントを抽出
-    const picks = [0, 12, 24, 36, 48, 60, 72]
-    return {
-      hours: picks,
-      waveHeight: picks.map(i => conditions[i]?.waveHeight ?? 0),
-      wavePeriod: picks.map(i => conditions[i]?.wavePeriod ?? 0),
-      waveDirection: picks.map(i => conditions[i]?.swellDir ?? 0),
+  for (const f of typhoon.forecastPath) {
+    const dist = haversineKm(f.lat, f.lon, TOKYO.lat, TOKYO.lon)
+    if (dist <= SWELL_DISTANCE_KM && !arrivalDate) {
+      arrivalDate = formatMdJa(new Date(f.time))
     }
-  } catch (err) {
-    console.error('[typhoon] StormGlass swell fetch failed:', err)
-    return null
+    if (dist <= SWELL_DISTANCE_KM) {
+      const buf = new Date(new Date(f.time).getTime() + SWELL_END_BUFFER_DAYS * 24 * 60 * 60 * 1000)
+      departureDate = formatMdJa(buf)
+    }
   }
+
+  if (isArrived && !arrivalDate) {
+    arrivalDate = formatMdJa(new Date())
+  }
+
+  return { arrivalDate, departureDate, isArrived, currentDistKm: Math.round(currentDist) }
 }
 
-// Claude API 呼び出し（エリア別コメント生成）
-async function generateAreaComments(typhoon: ParsedTyphoon, swellData: Record<string, SwellForecast | null>): Promise<Record<string, string> | null> {
+// Claude API 呼び出し（うねり到達・継続予測に特化）
+async function generateAreaComments(typhoon: ParsedTyphoon): Promise<Record<string, string> | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     console.error('[typhoon] ANTHROPIC_API_KEY not set')
     return null
   }
 
-  const distanceKm = distanceToTokyoKm({ position: typhoon.current, pressure: typhoon.current.pressure })
-  const stage = getTyphoonStage(distanceKm, typhoon.current.pressure)
-  const stagePrompt = getStagePrompt(stage, distanceKm, typhoon.current.pressure)
+  const sw = getSwellWindow(typhoon)
 
   const prompt = `あなたはサーフィン波予報の専門AIです。
-以下の台風情報とうねり予報をもとに、各エリアへの影響コメントを生成してください。
+台風のうねり到達予測を各エリアにシンプルに伝えてください。
 
-台風情報：
-- 台風名：${typhoon.name} (${typhoon.nameKana})
-- 現在位置：${typhoon.current.lat}°N / ${typhoon.current.lon}°E
-- 日本（東京）からの距離：約${Math.round(distanceKm)}km
+コメントのルール：
+- 80〜100文字程度
+- 「いつ頃からうねりが届くか」「いつまで続くか」を明確に書く
+- 具体的な日付を使う（例：4月18日頃から）
+- うねりが届いた後は「朝イチが狙い目」などサーファー向けアドバイスも1行
+- 台風が消滅・温帯低気圧化した後もうねりが残る場合はその旨を書く
+- 「入水」は使わない。「海に入る」「サーフィンする」を使う
+- 台風が非常に近い（500km以内）場合は「絶対に海に近づかないでください」と警告
+
+台風${typhoon.number}号の情報：
+- 現在位置：北緯${typhoon.current.lat}°・東経${typhoon.current.lon}°
+- 日本からの距離：約${sw.currentDistKm}km
 - 中心気圧：${typhoon.current.pressure}hPa
 - 最大風速：${typhoon.current.windSpeed}m/s
-- 進路予報：${JSON.stringify(typhoon.forecastPath.map(p => ({ lat: p.lat, lon: p.lon, time: p.time, pressure: p.pressure })))}
+- うねり到達予測日：${sw.arrivalDate ?? '未達（進路によっては届かない可能性あり）'}
+- うねり継続終了予測：${sw.departureDate ?? '未定'}
+- 現在うねり到達中：${sw.isArrived ? 'はい' : 'いいえ'}
 
-【この台風の状態ステージ】${stage}
-【必ず守るべき表現方針】
-${stagePrompt}
+各エリア（湘南・千葉・茨城）について、状況に応じたコメントを生成してください。
 
-各エリアのうねり予報（0h/12h/24h/36h/48h/60h/72h 先）：
-${Object.entries(swellData).map(([k, v]) => {
-  if (!v) return `${AREA_COORDS[k].label}: データなし`
-  return `${AREA_COORDS[k].label}: 波高${v.waveHeight.map(n => n.toFixed(1)).join('/')}m, 周期${v.wavePeriod.map(n => n.toFixed(0)).join('/')}秒, 波向${v.waveDirection.map(n => Math.round(n)).join('/')}°`
-}).join('\n')}
-
-重要な注意事項：
-- 上記の「表現方針」に厳密に従ってください。
-- ステージが WATCH / TOO_FAR の場合は、絶対に「うねりが到達している」「台風うねり期待」等の誤情報を出さないこと。
-- 安全に関わる情報（危険・海に近づかないでください）は最優先で明記してください。
-- 「入水」という言葉は絶対に使わないこと。代わりに「海に入る」「サーフィンする」「パドルアウト」「海に近づかないでください」「サーフィンは控えて」などの自然な表現を使う。
-
-以下のJSON形式で出力してください。他の文字（マークダウンコードブロック含む）は一切含めないこと：
+JSON形式で返してください。他の文字は含めないこと：
 {
-  "shonan": "湘南へのコメント（150文字以内）",
-  "chiba": "千葉へのコメント（80文字以内・簡潔に）",
-  "ibaraki": "茨城へのコメント（80文字以内・簡潔に）"
+  "shonan": "コメント",
+  "chiba": "コメント",
+  "ibaraki": "コメント"
 }`
 
   try {
@@ -290,7 +286,7 @@ ${Object.entries(swellData).map(([k, v]) => {
     }
     const result = await res.json()
     const text = result?.content?.[0]?.text ?? ''
-    // JSONを抽出（モデルが```json ... ```で囲む場合もあるので対処）
+    console.log(`[typhoon] Claude response: ${text.slice(0, 200)}`)
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return null
     const parsed = JSON.parse(jsonMatch[0])
@@ -306,35 +302,36 @@ ${Object.entries(swellData).map(([k, v]) => {
   }
 }
 
-// Open-Meteo + Claudeでコメントを生成してFirestoreに保存
+// コメントを生成してFirestoreに保存（swellWindow情報も含む）
 async function generateAndSaveAreaComments(
   db: import('firebase/firestore').Firestore,
   year: string,
   typhoonId: string,
   typhoon: ParsedTyphoon,
 ): Promise<void> {
-  // 各エリアのうねりデータをStormGlassから並列取得
-  const swellEntries = await Promise.all(
-    Object.entries(AREA_COORDS).map(async ([key, coord]) => {
-      const forecast = await fetchSwellFromStormGlass(coord.lat, coord.lon)
-      return [key, forecast] as const
-    })
-  )
-  const swellData: Record<string, SwellForecast | null> = Object.fromEntries(swellEntries)
-
-  const comments = await generateAreaComments(typhoon, swellData)
+  const comments = await generateAreaComments(typhoon)
   if (!comments) {
     console.warn(`[typhoon] No comments generated for ${typhoonId}`)
     return
   }
 
+  const swellWindow = getSwellWindow(typhoon)
   const generatedAt = new Date().toISOString()
+
   for (const [key, text] of Object.entries(comments)) {
     if (!text) continue
     const ref = doc(db, 'typhoons', year, 'list', typhoonId, 'areaComments', key)
     await setDoc(ref, { text, generatedAt })
     console.log(`[typhoon] Saved comment: ${typhoonId}/areaComments/${key}`)
   }
+
+  // swellWindow を台風ドキュメントに追加保存（バナー表示制御用）
+  const typhoonRef = doc(db, 'typhoons', year, 'list', typhoonId)
+  await setDoc(typhoonRef, {
+    swellArrivalDate: swellWindow.arrivalDate,
+    swellDepartureDate: swellWindow.departureDate,
+    swellArrived: swellWindow.isArrived,
+  }, { merge: true })
 }
 
 export async function GET(request: NextRequest) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
-import { shouldMentionTyphoon, getTyphoonComment, distanceToTokyoKm } from '@/lib/typhoon/mention'
+import { shouldMentionTyphoon, distanceToTokyoKm } from '@/lib/typhoon/mention'
 import { fetchStormGlass, hoursToConditions } from '@/lib/wave/adapters/stormglass'
 import { calculateScore, getStarRating } from '@/lib/wave/scoring'
 import { SPOTS } from '@/data/spots'
@@ -238,26 +238,52 @@ async function generateWeeklyComments(
   )
   let typhoonContext = ''
   if (mentionableTyphoons.length > 0) {
+    const SWELL_KM = 1700
+    const SWELL_BUFFER_DAYS = 1.5
     const typhoonBlocks = mentionableTyphoons.map(t => {
       const distance = distanceToTokyoKm({ position: t.position, pressure: t.pressure })
-      const commentHint = getTyphoonComment(distance, t.pressure)
-      const forecastSummary = (t.forecastPath ?? []).slice(0, 5).map(p =>
-        `${p.time.slice(0, 16)}: (${p.lat.toFixed(1)}, ${p.lon.toFixed(1)}) ${p.pressure}hPa`
-      ).join(', ')
+      const isArrived = distance <= SWELL_KM
+
+      // forecastPathからうねり到達・終了日を計算
+      let arrivalDate: string | null = null
+      let departureDate: string | null = null
+      const TOKYO = { lat: 35.7, lon: 139.7 }
+      for (const f of (t.forecastPath ?? [])) {
+        const fDist = Math.sqrt((f.lat - TOKYO.lat) ** 2 + (f.lon - TOKYO.lon) ** 2) * 111 // 簡易距離
+        const fDistKm = fDist // 粗い近似
+        // haversine再計算は不要（精度はforecastPath用途で十分）
+        const realDist = distanceToTokyoKm({ position: { lat: f.lat, lon: f.lon }, pressure: 0 })
+        if (realDist <= SWELL_KM && !arrivalDate) {
+          const d = new Date(f.time)
+          arrivalDate = `${d.getMonth() + 1}月${d.getDate()}日`
+        }
+        if (realDist <= SWELL_KM) {
+          const buf = new Date(new Date(f.time).getTime() + SWELL_BUFFER_DAYS * 24 * 60 * 60 * 1000)
+          departureDate = `${buf.getMonth() + 1}月${buf.getDate()}日`
+        }
+      }
+      if (isArrived && !arrivalDate) {
+        const now = new Date()
+        arrivalDate = `${now.getMonth() + 1}月${now.getDate()}日`
+      }
+
       return `- 台風${t.number}号${t.nameKana ? `（${t.nameKana}）` : ''}
-  現在位置：北緯${t.position.lat}°・東経${t.position.lon}°
   日本からの距離：約${Math.round(distance)}km
   中心気圧：${t.pressure}hPa / 最大風速：${t.windSpeed}m/s
-  進路予報：${forecastSummary || 'なし'}
-  推奨コメント表現：${commentHint}`
+  うねり到達予測：${arrivalDate ?? '未達'}
+  うねり終了予測：${departureDate ?? '未定'}
+  現在うねり到達中：${isArrived ? 'はい' : 'いいえ'}
+
+  ★重要：${arrivalDate ? `${arrivalDate}以降のコメントには必ず「台風${t.number}号のうねりが届き始める」旨を含めてください。` : 'うねりが届く見込みがない場合は台風に言及しないでください。'}
+  ${departureDate ? `${departureDate}頃までうねりが継続する見込みです。該当する日にちのコメントに必ず反映してください。` : ''}`
     }).join('\n\n')
 
     typhoonContext = `
 【現在発生中の台風（うねりへの影響あり）】
 ${typhoonBlocks}
 
-上記の推奨表現を参考に、各日のコメントに台風の影響を反映してください。
 安全に関わる情報（危険・海に近づかないでください等）は最優先で明記してください。
+台風うねりが届く日のコメントには必ず台風情報を含めてください。これは絶対に守ること。
 `
   }
 
