@@ -104,15 +104,14 @@ export default function MyPage() {
 
           {/* 6つの軸で星5段階評価 */}
           <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>6つの軸で100点満点 → ★1〜5の星で表示</p>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>5つの軸で100点満点 → ★1〜5の星で表示</p>
             <div className="grid grid-cols-3 gap-1.5 mb-3">
               {[
-                { label: '波高', score: '25点' },
+                { label: '波高', score: '28点' },
                 { label: '風', score: '22点' },
                 { label: 'うねり方向', score: '18点' },
-                { label: '波質', score: '20点' },
+                { label: '波質', score: '22点' },
                 { label: '潮位', score: '10点' },
-                { label: '天気', score: '5点' },
               ].map(item => (
                 <div key={item.label} style={{ background: '#f0f9ff', borderRadius: 8, padding: '8px 4px', textAlign: 'center' }}>
                   <p style={{ fontSize: 9, color: '#8899aa' }}>{item.label}</p>
@@ -121,14 +120,14 @@ export default function MyPage() {
               ))}
             </div>
             <div style={{ fontSize: 13, color: '#4a6fa5', lineHeight: 1.8, marginBottom: 8 }}>
-              <p style={{ margin: '0 0 4px' }}>★★★★★ 最高のコンディション（月1回出るかのレア）</p>
-              <p style={{ margin: '0 0 4px' }}>★★★★☆ 良いコンディション</p>
-              <p style={{ margin: '0 0 4px' }}>★★★☆☆ まずまず。楽しめます</p>
+              <p style={{ margin: '0 0 4px' }}>★★★★★ 最高のコンディション（半年に1回出るかのレア）</p>
+              <p style={{ margin: '0 0 4px' }}>★★★★☆ 良いコンディション（月1〜3回程度）</p>
+              <p style={{ margin: '0 0 4px' }}>★★★☆☆ 普通に楽しめる日の目安</p>
               <p style={{ margin: '0 0 4px' }}>★★☆☆☆ やや難しめ。上級者向け</p>
               <p style={{ margin: 0 }}>★☆☆☆☆ おすすめしません</p>
             </div>
             <p style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6 }}>
-              クローズアウト時は★1の赤字で表示されます。波質スコアは周期・セカンダリースウェル・クロスうねり干渉・波エネルギーを複合計算しています。
+              雨天時は-3点のペナルティが加算されます。クローズアウト時は★1の赤字で表示されます。波質スコアは周期・セカンダリースウェル・クロスうねり干渉・波エネルギーを複合計算しています。
             </p>
           </div>
 

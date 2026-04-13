@@ -48,7 +48,7 @@ export default function AboutPage() {
 
           <hr className="border-[#eef1f4] my-6" />
 
-          <h2 className="text-base font-bold mt-6 mb-2 text-[#0a1628]">6つの軸で100点満点 → ★1〜5の星で表示</h2>
+          <h2 className="text-base font-bold mt-6 mb-2 text-[#0a1628]">5つの軸で100点満点 → ★1〜5の星で表示</h2>
           <table className="w-full text-sm border-collapse mb-4">
             <thead>
               <tr>
@@ -58,12 +58,11 @@ export default function AboutPage() {
             </thead>
             <tbody>
               {[
-                ['波高', '25点'],
+                ['波高', '28点'],
                 ['風', '22点'],
                 ['うねり方向', '18点'],
-                ['波質', '20点'],
+                ['波質', '22点'],
                 ['潮位', '10点'],
-                ['天気', '5点'],
               ].map(([axis, score]) => (
                 <tr key={axis}>
                   <td className="border border-[#eef1f4] px-4 py-2 text-[#4a6fa5]">{axis}</td>
@@ -74,15 +73,15 @@ export default function AboutPage() {
           </table>
 
           <ul className="text-sm leading-8 text-[#4a6fa5] list-none pl-0 mb-4">
-            <li>★★★★★ 最高のコンディション（月1回出るかのレア）</li>
-            <li>★★★★☆ 良いコンディション</li>
-            <li>★★★☆☆ まずまず。楽しめます</li>
+            <li>★★★★★ 最高のコンディション（半年に1回出るかのレア）</li>
+            <li>★★★★☆ 良いコンディション（月1〜3回程度）</li>
+            <li>★★★☆☆ 普通に楽しめる日の目安</li>
             <li>★★☆☆☆ やや難しめ。上級者向け</li>
             <li>★☆☆☆☆ おすすめしません</li>
           </ul>
 
           <p className="text-sm leading-7 text-[#4a6fa5]">
-            クローズアウト時は★1の赤字で表示されます。波質スコアは周期・セカンダリースウェル・クロスうねり干渉・波エネルギーを複合計算しています。
+            雨天時は-3点のペナルティが加算されます。クローズアウト時は★1の赤字で表示されます。波質スコアは周期・セカンダリースウェル・クロスうねり干渉・波エネルギーを複合計算しています。
           </p>
 
           <hr className="border-[#eef1f4] my-6" />

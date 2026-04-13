@@ -116,13 +116,13 @@ export function compassLabel(dir: number): string {
   return labels[Math.round(dir / 45) % 8]
 }
 
-// 波高スコア（25点満点）— 基準: 腰サイズ（0.8m）
+// 波高スコア（28点満点）— 基準: 腰サイズ（0.8m）
 const PREFERRED_SIZE = 0.8
 function scoreWaveHeight(waveHeight: number): number {
   if (waveHeight <= 0.15) return 0               // フラット
-  if (waveHeight >= PREFERRED_SIZE) return 25    // 基準サイズ以上
-  if (waveHeight >= PREFERRED_SIZE - 0.2) return 18  // −20cm以内
-  if (waveHeight >= PREFERRED_SIZE - 0.4) return 8   // −20〜40cm
+  if (waveHeight >= PREFERRED_SIZE) return 28    // 基準サイズ以上
+  if (waveHeight >= PREFERRED_SIZE - 0.2) return 20  // −20cm以内
+  if (waveHeight >= PREFERRED_SIZE - 0.4) return 9   // −20〜40cm
   return 2                                        // −40cm超
 }
 
@@ -201,53 +201,53 @@ function scoreTideWithBathymetry(
   return Math.min(10, Math.max(0, base + trendBonus))
 }
 
-// 波質スコア（3ステップ設計・20点満点）
+// 波質スコア（3ステップ設計・22点満点）
 // 日本の海（周期5〜8秒が多い）に合わせた複合条件スコア
 
 function getBaseWaveQuality(period: number, windType: WindType): number {
   // キレた波帯（周期 ≥ 10秒）
   if (period >= 14) {
     // ピュアグランドスウェル（台風・遠洋低気圧）
-    if (windType === 'offshore')      return 20
-    if (windType === 'calm')          return 19
+    if (windType === 'offshore')      return 22
+    if (windType === 'calm')          return 21
+    if (windType === 'side-offshore') return 19
+    if (windType === 'side-onshore')  return 17
+    return 15 // onshore
+  }
+  if (period >= 10) {
+    // グランドスウェル〜良い周期
+    if (windType === 'offshore')      return 21
+    if (windType === 'calm')          return 20
+    if (windType === 'side-offshore') return 18
+    if (windType === 'side-onshore')  return 15
+    return 14 // onshore
+  }
+  // グッドウェーブ帯（周期 8〜9秒・風向き問わず）
+  if (period >= 8) {
+    if (windType === 'offshore')      return 19
+    if (windType === 'calm')          return 18
     if (windType === 'side-offshore') return 17
     if (windType === 'side-onshore')  return 15
     return 14 // onshore
   }
-  if (period >= 10) {
-    // グランドスウェル〜良い周期
-    if (windType === 'offshore')      return 19
-    if (windType === 'calm')          return 18
-    if (windType === 'side-offshore') return 16
-    if (windType === 'side-onshore')  return 14
-    return 13 // onshore
-  }
-  // グッドウェーブ帯（周期 8〜9秒・風向き問わず）
-  if (period >= 8) {
-    if (windType === 'offshore')      return 17
-    if (windType === 'calm')          return 16
-    if (windType === 'side-offshore') return 15
-    if (windType === 'side-onshore')  return 14
-    return 13 // onshore
-  }
   // 周期 6〜7秒: offshore/calm → グッドウェーブ, sideshore → まあまあ, onshore → ワイド気味
   if (period >= 6) {
-    if (windType === 'offshore')      return 15
-    if (windType === 'calm')          return 13
-    if (windType === 'side-offshore') return 10
-    if (windType === 'side-onshore')  return 8
+    if (windType === 'offshore')      return 17
+    if (windType === 'calm')          return 14
+    if (windType === 'side-offshore') return 11
+    if (windType === 'side-onshore')  return 9
     return 4 // onshore → ワイド気味
   }
   // 周期 5秒: onshore → ワイド気味, それ以外 → まあまあ
   if (period >= 5) {
-    if (windType === 'offshore')      return 10
-    if (windType === 'calm')          return 9
-    if (windType === 'side-offshore') return 8
-    if (windType === 'side-onshore')  return 8
+    if (windType === 'offshore')      return 11
+    if (windType === 'calm')          return 10
+    if (windType === 'side-offshore') return 9
+    if (windType === 'side-onshore')  return 9
     return 3 // onshore → ワイド気味
   }
   // 周期 < 5秒: offshore/calm → ワイド気味, sideshore/onshore → ダンパー
-  if (windType === 'offshore')      return 5
+  if (windType === 'offshore')      return 6
   if (windType === 'calm')          return 4
   if (windType === 'side-offshore') return 2
   if (windType === 'side-onshore')  return 1
@@ -381,18 +381,12 @@ function scoreWaveQuality(
   const crossSwellPenalty = getCrossSwellPenalty(swellDirection, windWaveDirection, windWaveHeight, waveHeight, secondarySwellHeight, secondarySwellDirection)
   const energy = calcWaveEnergy(waveHeight, effectivePeriod)
   const energyBonus = getWaveEnergyBonus(energy)
-  return Math.min(20, Math.max(0, base + swellTide + periodTide + windSwellPenalty + crossSwellPenalty + energyBonus))
+  return Math.min(22, Math.max(0, base + swellTide + periodTide + windSwellPenalty + crossSwellPenalty + energyBonus))
 }
 
-// 体感コンフォートスコア（+5点）
-// 晴れ=5base, 気温15-26℃快適ボーナス+1, UV≥9→-1
-function scoreComfort(weather: WaveCondition['weather'], temperature: number, uvIndex: number): number {
-  let base = 0
-  if (weather === 'sunny') base = 5
-  else if (weather === 'cloudy') base = 2
-  const tempBonus = temperature >= 15 && temperature <= 26 ? 1 : 0
-  const uvPenalty = uvIndex >= 9 ? -1 : 0
-  return Math.max(0, base + tempBonus + uvPenalty)
+// 雨判定（雨天時ペナルティ用）
+export function isRainy(weather: WaveCondition['weather']): boolean {
+  return weather === 'rainy'
 }
 
 export function calculateScore(
@@ -430,9 +424,10 @@ export function calculateScore(
     condition.secondarySwellDirection,
     condition.secondarySwellPeriod,
   ) * offMul)
-  const weatherBonus = scoreComfort(condition.weather, condition.temperature, condition.uvIndex)
 
-  const total = Math.max(0, Math.min(100, waveHeight + wind + swellDir + tide + waveQuality + weatherBonus))
+  const baseScore = Math.min(100, waveHeight + wind + swellDir + tide + waveQuality)
+  const rainPenalty = isRainy(condition.weather) ? -3 : 0
+  const total = Math.max(0, baseScore + rainPenalty)
 
   const breakdown: ScoreBreakdown = {
     waveHeight,
@@ -440,7 +435,7 @@ export function calculateScore(
     swellDir,
     tide,
     waveQuality,
-    weatherBonus,
+    weatherBonus: rainPenalty,
     levelCorrection: 0,
   }
 
@@ -517,9 +512,9 @@ export function waveQualityLabel(period: number, windClass: WindType): string {
 }
 
 export function waveQualityColor(score: number): { text: string; bg: string } {
-  if (score >= 18) return { text: '#0c4a6e', bg: '#dbeafe' }
-  if (score >= 13) return { text: '#0369a1', bg: '#e0f2fe' }
-  if (score >= 8)  return { text: '#64748b', bg: '#f8fafc' }
+  if (score >= 20) return { text: '#0c4a6e', bg: '#dbeafe' }
+  if (score >= 14) return { text: '#0369a1', bg: '#e0f2fe' }
+  if (score >= 9)  return { text: '#64748b', bg: '#f8fafc' }
   if (score >= 3)  return { text: '#d97706', bg: '#fef9c3' }
   return { text: '#dc2626', bg: '#fee2e2' }
 }
@@ -530,22 +525,22 @@ export function waveQualitySub(
   windType: WindType,
 ): string {
   const period = Math.round(wavePeriod)
-  if (score >= 18) {
+  if (score >= 20) {
     if (windType === 'offshore') return `周期${period}秒 × オフショア`
     return `周期${period}秒 × うねり正面`
   }
-  if (score >= 13) return `周期${period}秒・コンディション良好`
-  if (score >= 8)  return `周期${period}秒・標準的なコンディション`
+  if (score >= 14) return `周期${period}秒・コンディション良好`
+  if (score >= 9)  return `周期${period}秒・標準的なコンディション`
   if (score >= 3)  return '周期短め・やや荒れ気味'
   return '周期短め × オンショア・波が崩れやすい'
 }
 
 export function getStarRating(score: number, isCloseout: boolean): number {
   if (isCloseout) return 1
-  if (score >= 90) return 5
-  if (score >= 75) return 4
-  if (score >= 55) return 3
-  if (score >= 30) return 2
+  if (score >= 95) return 5
+  if (score >= 83) return 4
+  if (score >= 65) return 3
+  if (score >= 40) return 2
   return 1
 }
 
@@ -563,8 +558,8 @@ function buildReasonTags(
 ): string[] {
   const tags: string[] = []
 
-  if (breakdown.waveHeight >= 25) tags.push('波サイズぴったり')
-  else if (breakdown.waveHeight >= 18) tags.push('波やや小さめ')
+  if (breakdown.waveHeight >= 28) tags.push('波サイズぴったり')
+  else if (breakdown.waveHeight >= 20) tags.push('波やや小さめ')
   else tags.push('波が小さい')
 
   const windType = classifyWind(condition.windDir, condition.windSpeed, spot)
@@ -574,7 +569,7 @@ function buildReasonTags(
   else if (windType === 'side-onshore') tags.push('サイドオン')
   else tags.push('オンショア')
 
-  if (breakdown.waveQuality >= 15) tags.push('周期◎')
+  if (breakdown.waveQuality >= 17) tags.push('周期◎')
   else if (breakdown.waveQuality <= 3) tags.push('波質注意')
 
   if (breakdown.tide >= 10) tags.push('潮位◎')
