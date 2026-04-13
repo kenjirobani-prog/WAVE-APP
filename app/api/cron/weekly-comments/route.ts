@@ -221,11 +221,11 @@ async function generateWeeklyComments(
   areaScores: Record<string, Record<string, WeeklyDayScore>>,
   chartImages: string[],
   activeTyphoons: TyphoonDoc[],
-): Promise<Record<string, Record<string, string>> | null> {
+): Promise<{ data: Record<string, Record<string, string>> } | { error: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     console.error('[weekly-comments] ANTHROPIC_API_KEY not set')
-    return null
+    return { error: 'ANTHROPIC_API_KEY not set' }
   }
 
   const summarizeArea = (areaKey: string, name: string, days: DailyWaveSummary[]) => {
@@ -363,20 +363,20 @@ ${typhoonContext}
     if (!res.ok) {
       const errText = await res.text()
       console.error(`[weekly-comments] Claude API error ${res.status}: ${errText.slice(0, 300)}`)
-      return null
+      return { error: `Claude API ${res.status}: ${errText.slice(0, 200)}` }
     }
     const result = await res.json()
     const text = result?.content?.[0]?.text ?? ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      console.error('[weekly-comments] No JSON in response')
-      return null
+      console.error('[weekly-comments] No JSON in response:', text.slice(0, 200))
+      return { error: `No JSON in response: ${text.slice(0, 200)}` }
     }
-    return JSON.parse(jsonMatch[0])
+    return { data: JSON.parse(jsonMatch[0]) }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[weekly-comments] Claude generation failed:', msg)
-    return null
+    return { error: `Generation failed: ${msg}` }
   }
 }
 
@@ -420,10 +420,11 @@ export async function GET(request: NextRequest) {
     )
 
     // Claudeでコメント生成（StormGlassデータベース）
-    const comments = await generateWeeklyComments(areaData, areaScores, validCharts, activeTyphoons)
-    if (!comments) {
-      return NextResponse.json({ error: 'Comment generation failed' }, { status: 500 })
+    const result = await generateWeeklyComments(areaData, areaScores, validCharts, activeTyphoons)
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: 500 })
     }
+    const comments = result.data
     const generatedAt = new Date().toISOString()
     let savedCount = 0
     for (const [area, days] of Object.entries(comments)) {
