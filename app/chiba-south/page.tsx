@@ -17,7 +17,7 @@ import WeeklyDayCard from '@/components/WeeklyDayCard'
 
 const AREA = 'chiba-south'
 const AREA_LABEL = '千葉南'
-const WEEKLY_COMMENT_KEY = 'chiba'
+const WEEKLY_COMMENT_KEY = 'chiba-south'
 
 type DateTab = 'today' | 'tomorrow' | 'weekly'
 

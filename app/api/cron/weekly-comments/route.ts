@@ -14,9 +14,10 @@ export const maxDuration = 90
 // ==========================================
 
 const AREAS: Record<string, { lat: number; lon: number; name: string; repSpotId: string }> = {
-  shonan:  { lat: 35.317, lon: 139.474, name: '湘南', repSpotId: 'kugenuma' },
-  chiba:   { lat: 35.336, lon: 140.395, name: '千葉', repSpotId: 'ichinomiya' },
-  ibaraki: { lat: 36.305, lon: 140.578, name: '茨城', repSpotId: 'oarai' },
+  shonan:       { lat: 35.317, lon: 139.474, name: '湘南', repSpotId: 'kugenuma' },
+  'chiba-north': { lat: 35.336, lon: 140.395, name: '千葉北', repSpotId: 'ichinomiya' },
+  'chiba-south': { lat: 35.065, lon: 140.000, name: '千葉南', repSpotId: 'kamogawa' },
+  ibaraki:      { lat: 36.305, lon: 140.578, name: '茨城', repSpotId: 'oarai' },
 }
 
 // 気象庁 予想天気図PNG
@@ -52,8 +53,11 @@ interface DailyWaveSummary {
   windDirMorning: number
   windSpeedNoon: number
   windDirNoon: number
+  windSpeedEvening: number
+  windDirEvening: number
   waveHeightMorning: number
   waveHeightNoon: number
+  waveHeightEvening: number
 }
 
 // --- StormGlassベースの週間スコア+サマリ計算 ---
@@ -117,26 +121,24 @@ async function computeWeeklyData(
     })
     const mornCond = findAtHour(6)
     const noonCond = findAtHour(12)
+    const eveCond = findAtHour(16)
     const dayMaxWind = Math.max(...dayConds.map(c => c.windSpeed ?? 0))
 
-    // --- スコア計算 ---
-    if (dayMaxWind >= 25) {
-      scores[dateStr] = { bestStars: 1, isCloseout: true }
-    } else {
+    // --- スコア計算（時間帯別の実風速で評価） ---
+    {
       const slotStars: number[] = []
       let closeoutCount = 0
       let slotCount = 0
-      for (const cond of [mornCond, noonCond]) {
+      for (const cond of [mornCond, noonCond, eveCond]) {
         if (!cond) continue
         slotCount++
-        const scoreCond = { ...cond, windSpeed: Math.max(cond.windSpeed, dayMaxWind) }
-        const sc = calculateScore(scoreCond, spot)
+        const sc = calculateScore(cond, spot)
         const isCo = sc.reasonTags.includes('クローズアウト') || sc.reasonTags.includes('暴風（サーフィン不可）')
         if (isCo) { closeoutCount++ } else { slotStars.push(getStarRating(sc.score, false)) }
       }
       const allCloseout = slotCount > 0 && closeoutCount === slotCount
       scores[dateStr] = {
-        bestStars: allCloseout || slotStars.length === 0 ? 1 : Math.round(slotStars.reduce((a, b) => a + b, 0) / slotStars.length),
+        bestStars: allCloseout || slotStars.length === 0 ? 1 : Math.max(...slotStars),
         isCloseout: allCloseout,
       }
     }
@@ -162,8 +164,11 @@ async function computeWeeklyData(
       windDirMorning: Math.round(mornCond?.windDir ?? 0),
       windSpeedNoon: Math.round((noonCond?.windSpeed ?? 0) * 10) / 10,
       windDirNoon: Math.round(noonCond?.windDir ?? 0),
+      windSpeedEvening: Math.round((eveCond?.windSpeed ?? 0) * 10) / 10,
+      windDirEvening: Math.round(eveCond?.windDir ?? 0),
       waveHeightMorning: Math.round((mornCond?.waveHeight ?? 0) * 10) / 10,
       waveHeightNoon: Math.round((noonCond?.waveHeight ?? 0) * 10) / 10,
+      waveHeightEvening: Math.round((eveCond?.waveHeight ?? 0) * 10) / 10,
     })
   }
 
@@ -228,7 +233,7 @@ async function generateWeeklyComments(
     return `${name}:\n` + days.map(d => {
       const s = scores[d.date]
       const scoreTag = s ? (s.isCloseout ? ' 【終日クローズアウト・★1】' : ` ★${s.bestStars}`) : ''
-      return `  ${d.date}${scoreTag}: 朝6時[波高${d.waveHeightMorning}m 風${d.windSpeedMorning}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon}m 風${d.windSpeedNoon}m/s/${d.windDirNoon}°] 日最大風速${d.windSpeedMax}m/s 周期${d.wavePeriodMean}s うねり${d.swellHeightMean}m/${d.swellPeriodMean}s/${d.swellDirectionMean}°`
+      return `  ${d.date}${scoreTag}: 朝6時[波高${d.waveHeightMorning}m 風${d.windSpeedMorning}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon}m 風${d.windSpeedNoon}m/s/${d.windDirNoon}°] 夕方16時[波高${d.waveHeightEvening}m 風${d.windSpeedEvening}m/s/${d.windDirEvening}°] 日最大風速${d.windSpeedMax}m/s 周期${d.wavePeriodMean}s うねり${d.swellHeightMean}m/${d.swellPeriodMean}s/${d.swellDirectionMean}°`
     }).join('\n')
   }
 
@@ -299,7 +304,7 @@ ${typhoonBlocks}
 - 80〜100文字程度で記述する
 - 低気圧・高気圧・前線の動きとうねり・風波への具体的な影響を書く
 - 「何時頃が狙い目か」または「どの条件のサーファーに向くか」を必ず含める
-- 風速・波高は「朝6時」「昼12時」の時間帯別データを使うこと（「日最大風速」は安全警告の判断にのみ使用し、コメント本文の風速は朝6時または昼12時の値を使う）
+- 風速・波高は「朝6時」「昼12時」「夕方16時」の時間帯別データを使うこと（「日最大風速」は安全警告の判断にのみ使用し、コメント本文の風速は朝6時・昼12時・夕方16時の値を使う）
 - 波高・周期・風速などの具体的な数値を1つ以上含める
 - サーファー目線の実用的な表現を使う
   例：「朝イチ狙い目」「オンショアで面荒れ」「グランドスウェル期待」
@@ -316,9 +321,10 @@ ${typhoonContext}
 
 以下のJSON形式で出力してください。他の文字（マークダウンコードブロック含む）は一切含めないこと。dateキーは上記データのYYYY-MM-DD形式と完全一致させること：
 {
-  "shonan":  { "YYYY-MM-DD": "コメント（80〜100文字）", ... 7日分 },
-  "chiba":   { "YYYY-MM-DD": "コメント（80〜100文字）", ... 7日分 },
-  "ibaraki": { "YYYY-MM-DD": "コメント（80〜100文字）", ... 7日分 }
+  "shonan":       { "YYYY-MM-DD": "コメント（80〜100文字）", ... 7日分 },
+  "chiba-north":  { "YYYY-MM-DD": "コメント（80〜100文字）", ... 7日分 },
+  "chiba-south":  { "YYYY-MM-DD": "コメント（80〜100文字）", ... 7日分 },
+  "ibaraki":      { "YYYY-MM-DD": "コメント（80〜100文字）", ... 7日分 }
 }`
 
   const imageBlocks = chartImages.filter(Boolean).map(data => ({
