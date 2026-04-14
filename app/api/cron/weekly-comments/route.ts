@@ -406,7 +406,7 @@ export async function GET(request: NextRequest) {
     const validCharts = chartImages.filter((c): c is string => !!c)
     console.log(`[weekly-comments] Fetched ${validCharts.length}/2 weather charts`)
 
-    // 3エリア分をStormGlassから一括取得（スコア+コメント用データを同一ソースから生成）
+    // 4エリア分をStormGlassから一括取得（スコア+コメント用データを同一ソースから生成）
     const areaData: Record<string, DailyWaveSummary[]> = {}
     const areaScores: Record<string, Record<string, WeeklyDayScore>> = {}
 
@@ -418,6 +418,14 @@ export async function GET(request: NextRequest) {
         console.log(`[weekly-comments] ${coord.name}: ${summaries.length} days, ${Object.keys(scores).length} scores (StormGlass)`)
       })
     )
+
+    // データ取得検証: 空のエリアがあれば中止（不完全データでのClaude呼び出しを防ぐ）
+    const emptyAreas = Object.entries(areaData).filter(([, days]) => days.length === 0).map(([k]) => k)
+    if (emptyAreas.length > 0) {
+      const msg = `StormGlass data empty for areas: ${emptyAreas.join(', ')}`
+      console.error(`[weekly-comments] ${msg}`)
+      return NextResponse.json({ error: msg }, { status: 500 })
+    }
 
     // Claudeでコメント生成（StormGlassデータベース）
     const result = await generateWeeklyComments(areaData, areaScores, validCharts, activeTyphoons)
