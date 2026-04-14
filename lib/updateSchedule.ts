@@ -1,5 +1,5 @@
 // 更新スケジュール（JST時）
-export const UPDATE_HOURS_JST = [3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 21]
+export const UPDATE_HOURS_JST = [3, 6, 10, 14, 18, 21]
 
 // 現在時刻に最も近い過去の更新時刻を返す
 export function getLatestUpdateHour(): number {

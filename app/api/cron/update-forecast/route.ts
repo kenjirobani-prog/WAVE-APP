@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getConditions } from '@/lib/wave/waveService'
+import { getForecast } from '@/lib/wave/waveService'
 import { SPOTS } from '@/data/spots'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { doc, setDoc } from 'firebase/firestore'
 import type { WaveCondition } from '@/lib/wave/types'
 import { COMMENT_SCHEDULES, padHour, type CommentTarget } from '@/lib/commentSchedules'
+
+// StormGlassリクエスト削減:
+// - 7日分まとめ取得（getForecast 1回）でtoday/tomorrow/weeklyを全てカバー
+// - spotあたり 4→2 SGリクエスト（weather 1 + tide 1）
+// - cron 6回/日 × 20 spots × 2 = 240 req/日（上限500の48%）
 
 export const maxDuration = 60
 
@@ -56,55 +61,37 @@ export async function GET(request: NextRequest) {
     await ensureAnonymousAuth()
     const db = getDb()
 
+    // 7日分まとめ取得 → 日付ごとに分割してFirestoreへ保存
     for (const spot of activeSpots) {
       try {
-        // StormGlass APIからデータ取得
-        const conditions = await getConditions(spot.id, today)
+        const all = await getForecast(spot.id, 7)
 
-        // Firestoreにキャッシュ保存
-        // ドキュメントID: {spotId}_{YYYY-MM-DD}
-        const cacheKey = `${spot.id}_${dateStr}`
-        const cacheRef = doc(db, 'forecastCache', cacheKey)
-        await setDoc(cacheRef, {
-          spotId: spot.id,
-          date: dateStr,
-          conditions: conditions.map(conditionToPlain),
-          updatedAt: new Date().toISOString(),
-          source: 'cron',
-        })
+        // 日付ごとにグループ化（JST基準）
+        const byDate = new Map<string, WaveCondition[]>()
+        for (const c of all) {
+          const d = toJstDateStr(c.timestamp instanceof Date ? c.timestamp : new Date(c.timestamp))
+          if (!byDate.has(d)) byDate.set(d, [])
+          byDate.get(d)!.push(c)
+        }
 
-        results.push({ spotId: spot.id, status: 'ok', hours: conditions.length })
-        console.log(`[Cron] ${spot.id}: ${conditions.length} hours cached`)
+        const nowIso = new Date().toISOString()
+        for (const [d, conditions] of byDate) {
+          const cacheRef = doc(db, 'forecastCache', `${spot.id}_${d}`)
+          await setDoc(cacheRef, {
+            spotId: spot.id,
+            date: d,
+            conditions: conditions.map(conditionToPlain),
+            updatedAt: nowIso,
+            source: 'cron',
+          })
+        }
+
+        results.push({ spotId: spot.id, status: 'ok', hours: all.length })
+        console.log(`[Cron] ${spot.id}: ${all.length} hours cached across ${byDate.size} days`)
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         results.push({ spotId: spot.id, status: `error: ${msg}` })
         console.error(`[Cron] ${spot.id} error:`, msg)
-      }
-    }
-
-    // 明日分も取得
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const tomorrowStr = toJstDateStr(tomorrow)
-
-    for (const spot of activeSpots) {
-      try {
-        const conditions = await getConditions(spot.id, tomorrow)
-        const cacheKey = `${spot.id}_${tomorrowStr}`
-        const cacheRef = doc(db, 'forecastCache', cacheKey)
-        await setDoc(cacheRef, {
-          spotId: spot.id,
-          date: tomorrowStr,
-          conditions: conditions.map(conditionToPlain),
-          updatedAt: new Date().toISOString(),
-          source: 'cron',
-        })
-        results.push({ spotId: spot.id + '_tomorrow', status: 'ok', hours: conditions.length })
-        console.log(`[Cron] ${spot.id} (tomorrow): ${conditions.length} hours cached`)
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        results.push({ spotId: spot.id + '_tomorrow', status: `error: ${msg}` })
-        console.error(`[Cron] ${spot.id} (tomorrow) error:`, msg)
       }
     }
 
