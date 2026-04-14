@@ -75,6 +75,7 @@ interface WeeklyDayScore {
 interface WeeklyAreaResult {
   scores: Record<string, WeeklyDayScore>
   summaries: DailyWaveSummary[]
+  error?: string
 }
 
 async function computeWeeklyData(
@@ -95,8 +96,9 @@ async function computeWeeklyData(
     hours = await fetchStormGlass(areaCoord.lat, areaCoord.lon, start, endDate)
     console.log(`[weekly-comments] StormGlass ${areaKey}: ${hours.length} hours`)
   } catch (err) {
-    console.error(`[weekly-comments] StormGlass fetch failed for ${areaKey}:`, err)
-    return empty
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(`[weekly-comments] StormGlass fetch failed for ${areaKey}:`, msg)
+    return { ...empty, error: msg }
   }
 
   // WaveConditionに変換
@@ -410,11 +412,13 @@ export async function GET(request: NextRequest) {
     const areaData: Record<string, DailyWaveSummary[]> = {}
     const areaScores: Record<string, Record<string, WeeklyDayScore>> = {}
 
+    const fetchErrors: Record<string, string> = {}
     await Promise.all(
       Object.entries(AREAS).map(async ([key, coord]) => {
-        const { scores, summaries } = await computeWeeklyData(key, coord)
+        const { scores, summaries, error } = await computeWeeklyData(key, coord)
         areaScores[key] = scores
         areaData[key] = summaries
+        if (error) fetchErrors[key] = error
         console.log(`[weekly-comments] ${coord.name}: ${summaries.length} days, ${Object.keys(scores).length} scores (StormGlass)`)
       })
     )
@@ -422,7 +426,8 @@ export async function GET(request: NextRequest) {
     // データ取得検証: 空のエリアがあれば中止（不完全データでのClaude呼び出しを防ぐ）
     const emptyAreas = Object.entries(areaData).filter(([, days]) => days.length === 0).map(([k]) => k)
     if (emptyAreas.length > 0) {
-      const msg = `StormGlass data empty for areas: ${emptyAreas.join(', ')}`
+      const detail = Object.entries(fetchErrors).map(([k, v]) => `${k}: ${v}`).join(' | ') || '(no explicit error)'
+      const msg = `StormGlass data empty for areas: ${emptyAreas.join(', ')} — ${detail}`
       console.error(`[weekly-comments] ${msg}`)
       return NextResponse.json({ error: msg }, { status: 500 })
     }
