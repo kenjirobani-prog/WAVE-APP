@@ -7,7 +7,7 @@ import { calculateScore, getStarRating } from '@/lib/wave/scoring'
 import { SPOTS } from '@/data/spots'
 import type { WaveCondition } from '@/lib/wave/types'
 
-export const maxDuration = 90
+export const maxDuration = 180
 
 // ==========================================
 // 週間エリア別AIコメント生成（毎朝6時 JST）
@@ -340,7 +340,7 @@ ${typhoonContext}
 
   try {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 60000)
+    const timeout = setTimeout(() => controller.abort(), 170000)
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
