@@ -14,6 +14,7 @@ import AreaTabs from '@/components/AreaTabs'
 import HamburgerMenu from '@/components/HamburgerMenu'
 import AiCommentLoading from '@/components/AiCommentLoading'
 import WeeklyDayCard from '@/components/WeeklyDayCard'
+import TyphoonBanner from '@/components/TyphoonBanner'
 
 const AREA = 'ibaraki'
 const AREA_LABEL = '茨城'
@@ -221,6 +222,7 @@ export default function IbarakiPage() {
           )
         ) : (
           <>
+            <TyphoonBanner />
             {!loading && bestSlot && (
               <div style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)', borderRadius: 14, padding: '14px 18px', color: '#fff' }}>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6, opacity: 0.8 }}>{tab === 'today' ? '今日' : '明日'}のおすすめ</p>
