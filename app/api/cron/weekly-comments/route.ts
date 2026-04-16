@@ -235,7 +235,7 @@ async function generateWeeklyComments(
     return `${name}:\n` + days.map(d => {
       const s = scores[d.date]
       const scoreTag = s ? (s.isCloseout ? ' 【終日クローズアウト・★1】' : ` ★${s.bestStars}`) : ''
-      return `  ${d.date}${scoreTag}: 朝6時[波高${d.waveHeightMorning}m 風${d.windSpeedMorning}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon}m 風${d.windSpeedNoon}m/s/${d.windDirNoon}°] 夕方16時[波高${d.waveHeightEvening}m 風${d.windSpeedEvening}m/s/${d.windDirEvening}°] 日最大風速${d.windSpeedMax}m/s 周期${d.wavePeriodMean}s うねり${d.swellHeightMean}m/${d.swellPeriodMean}s/${d.swellDirectionMean}°`
+      return `  ${d.date}${scoreTag}: 朝6時[波高${d.waveHeightMorning.toFixed(1)}m 風${d.windSpeedMorning.toFixed(1)}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon.toFixed(1)}m 風${d.windSpeedNoon.toFixed(1)}m/s/${d.windDirNoon}°] 夕方16時[波高${d.waveHeightEvening.toFixed(1)}m 風${d.windSpeedEvening.toFixed(1)}m/s/${d.windDirEvening}°] 日最大風速${d.windSpeedMax.toFixed(1)}m/s 周期${d.wavePeriodMean.toFixed(1)}s うねり${d.swellHeightMean.toFixed(1)}m/${d.swellPeriodMean.toFixed(1)}s/${d.swellDirectionMean}°`
     }).join('\n')
   }
 

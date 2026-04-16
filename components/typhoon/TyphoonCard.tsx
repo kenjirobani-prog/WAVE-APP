@@ -55,7 +55,7 @@ export default function TyphoonCard({ year, typhoon }: Props) {
         </div>
         <div className="bg-[#f0f9ff] rounded-lg p-2">
           <p className="text-[9px] text-[#8899aa]">最大風速</p>
-          <p className="text-sm font-semibold text-[#0a1628]">{typhoon.windSpeed} m/s</p>
+          <p className="text-sm font-semibold text-[#0a1628]">{Number(typhoon.windSpeed).toFixed(1)} m/s</p>
         </div>
         <div className="bg-[#f0f9ff] rounded-lg p-2">
           <p className="text-[9px] text-[#8899aa]">強さ</p>

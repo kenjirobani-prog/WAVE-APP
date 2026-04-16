@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       period?: number
       waveQualityLabel?: string
     }) =>
-      `${d.date}: スコア${d.avgScore}, 波高${d.waveHeight ?? '?'}m, 風${d.windType ?? '?'}, うねり${d.swellDirection ?? '?'}, 周期${d.period ?? '?'}秒, 波質${d.waveQualityLabel ?? '?'}`
+      `${d.date}: スコア${d.avgScore}, 波高${d.waveHeight != null ? Number(d.waveHeight).toFixed(1) : '?'}m, 風${d.windType ?? '?'}, うねり${d.swellDirection ?? '?'}, 周期${d.period != null ? Number(d.period).toFixed(1) : '?'}秒, 波質${d.waveQualityLabel ?? '?'}`
     ).join('\n')
 
     console.log('[weekly-comment] Prompt:', prompt.substring(0, 200))

@@ -25,7 +25,7 @@ export default function TideStatusBar({ currentLevel, trend }: Props) {
       }} />
       <span style={{ fontSize: 12, color: '#94a3b8' }}>現在</span>
       <span style={{ fontSize: 14, fontWeight: 500, color: '#0a1628' }}>
-        {currentLevel}<span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 1 }}>cm</span>
+        {Math.round(currentLevel)}<span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 1 }}>cm</span>
       </span>
       {/* 右側：上げ/引き/停滞 */}
       <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 600, color: cfg.color }}>

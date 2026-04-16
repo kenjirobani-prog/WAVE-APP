@@ -31,7 +31,7 @@ export default function TideCardStrip({ events }: Props) {
               {isHigh ? '満' : '干'} {ev.label}
             </p>
             <p style={{ fontSize: 18, fontWeight: 700, color: '#0a1628', lineHeight: 1.1 }}>
-              {ev.level}
+              {Math.round(ev.level)}
             </p>
             <p style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1.3 }}>cm</p>
           </div>

@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
               if (c) {
                 const spot = SPOTS.find(s => s.id === spotId)
                 const wClass = classifyWind(c.windDir, c.windSpeed, spot)
-                forecastSummary += `${spotId}: 波高${c.waveHeight}m, 周期${c.wavePeriod}秒, 風速${c.windSpeed}m/s, 風の種類:${windTypeLabel(wClass)}, 潮位${c.tideHeight}cm\n`
+                forecastSummary += `${spotId}: 波高${Number(c.waveHeight).toFixed(1)}m, 周期${Number(c.wavePeriod).toFixed(1)}秒, 風速${Number(c.windSpeed).toFixed(1)}m/s, 風の種類:${windTypeLabel(wClass)}, 潮位${Math.round(c.tideHeight)}cm\n`
               }
             }
           } catch {}
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
               const rep = findByHour(hours, 12) ?? hours[Math.floor(hours.length / 2)]
               const spot = SPOTS.find(s => s.id === spotId)
               const wClass = classifyWind(rep.windDir, rep.windSpeed, spot)
-              forecastSummary += `${spotId}: 波高${rep.waveHeight}m, 周期${rep.wavePeriod}秒, 風速${rep.windSpeed}m/s, 風の種類:${windTypeLabel(wClass)}, 潮位${rep.tideHeight}cm\n`
+              forecastSummary += `${spotId}: 波高${Number(rep.waveHeight).toFixed(1)}m, 周期${Number(rep.wavePeriod).toFixed(1)}秒, 風速${Number(rep.windSpeed).toFixed(1)}m/s, 風の種類:${windTypeLabel(wClass)}, 潮位${Math.round(rep.tideHeight)}cm\n`
             }
           }
         } catch {}

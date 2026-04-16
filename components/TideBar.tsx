@@ -33,7 +33,7 @@ export default function TideBar({ tideData, currentHour }: Props) {
     <div>
       {/* 潮位値と満ち引き */}
       <div className="flex items-baseline gap-2 mb-3">
-        <span className="text-2xl font-bold text-[#0a1628]">{currentTide}cm</span>
+        <span className="text-2xl font-bold text-[#0a1628]">{Math.round(currentTide)}cm</span>
         <span className={`text-sm font-semibold ${isRising ? 'text-sky-500' : 'text-amber-500'}`}>
           {movementText}
         </span>
