@@ -17,7 +17,7 @@ export function isCloseout(waveHeight: number, windSpeed: number, windDir: numbe
 }
 
 // ブレイクタイプ
-export type BreakType = 'plunging' | 'spilling' | 'closeout' | 'surging'
+export type BreakType = 'plunging' | 'spilling' | 'closeout' | 'surging' | 'wide'
 
 export type BreakTypeInfo = {
   type: BreakType
@@ -27,14 +27,62 @@ export type BreakTypeInfo = {
   difficulty: 'beginner' | 'intermediate' | 'advanced'
 }
 
+// ワイド判定の補助情報（プロンプトへ反映するため外部公開）
+export interface WideDetection {
+  isWide: boolean
+  crossAngle: number        // swellDirと(bestSwellDir or windDir)の最大角度差
+  windSwellRatio: number    // windWaveHeight / swellWaveHeight
+}
+
+function angleDiff180(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360
+  return d > 180 ? 360 - d : d
+}
+
+/**
+ * ワイド（横に広がって崩れやすい状態）判定
+ * - gradualスポット: cross >= 70° AND 風波比 > 0.6
+ * - それ以外（steep/moderate）: cross >= 80° AND 風波比 >= 0.7
+ * cross = max(|swellDir - bestSwellDir|, |swellDir - windDir|)
+ */
+export function detectWide(
+  bathymetryType: BathymetryProfile['type'],
+  swellDir: number,
+  bestSwellDir: number,
+  windDir: number,
+  swellWaveHeight: number,
+  windWaveHeight: number,
+): WideDetection {
+  if (swellWaveHeight <= 0) {
+    return { isWide: false, crossAngle: 0, windSwellRatio: 0 }
+  }
+  const windSwellRatio = windWaveHeight / swellWaveHeight
+  const bestDirDiff = angleDiff180(swellDir, bestSwellDir)
+  const windSwellAngleDiff = angleDiff180(swellDir, windDir)
+  const crossAngle = Math.max(bestDirDiff, windSwellAngleDiff)
+
+  const isWide =
+    bathymetryType === 'gradual'
+      ? crossAngle >= 70 && windSwellRatio > 0.6
+      : crossAngle >= 80 && windSwellRatio >= 0.7
+
+  return { isWide, crossAngle, windSwellRatio }
+}
+
 export function predictBreakType(
   bathymetryType: BathymetryProfile['type'],
   tideLevel: number,
   waveHeight: number,
   swellRatio: number,
   closeoutRisk: BathymetryProfile['closeoutRisk'],
+  // ワイド判定用（省略可。渡さない場合はワイド判定をスキップ）
+  swellDir?: number,
+  bestSwellDir?: number,
+  windDir?: number,
+  swellWaveHeight?: number,
+  windWaveHeight?: number,
 ): BreakTypeInfo {
-  // クローズアウトリスク高 × 強うねり × 干潮
+  // 1) クローズアウト（最優先）: リスク高 × 強うねり × 干潮
   if (closeoutRisk !== 'low' && waveHeight >= 1.0 && tideLevel < 60) {
     return {
       type: 'closeout',
@@ -44,7 +92,25 @@ export function predictBreakType(
       difficulty: 'advanced',
     }
   }
-  // 急傾斜 × グランドスウェル × 適正潮位 → プランジング
+  // 2) ワイド: クロスうねり × 風波比率（任意パラメータが揃っている場合のみ）
+  if (
+    swellDir != null && bestSwellDir != null && windDir != null &&
+    swellWaveHeight != null && windWaveHeight != null
+  ) {
+    const { isWide } = detectWide(
+      bathymetryType, swellDir, bestSwellDir, windDir, swellWaveHeight, windWaveHeight,
+    )
+    if (isWide) {
+      return {
+        type: 'wide',
+        label: 'Wide',
+        labelJa: 'ワイド気味',
+        description: '波が横に広がって崩れやすい状態。セクションが短く乗りにくい。',
+        difficulty: 'intermediate',
+      }
+    }
+  }
+  // 3) プランジング: 急傾斜 × グランドスウェル × 適正潮位
   if (bathymetryType === 'steep' && swellRatio >= 0.6 && tideLevel >= 60 && tideLevel <= 120) {
     return {
       type: 'plunging',
@@ -54,7 +120,7 @@ export function predictBreakType(
       difficulty: 'advanced',
     }
   }
-  // 急傾斜 × 満潮 → サージング
+  // 4) サージング: 急傾斜 × 満潮
   if (bathymetryType === 'steep' && tideLevel > 130) {
     return {
       type: 'surging',
@@ -64,7 +130,7 @@ export function predictBreakType(
       difficulty: 'advanced',
     }
   }
-  // 緩傾斜 × 満潮 → スピリング（トロい）
+  // 5) スピリング（緩傾斜 × 満潮）
   if (bathymetryType === 'gradual' && tideLevel > 120) {
     return {
       type: 'spilling',

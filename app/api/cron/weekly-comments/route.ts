@@ -3,7 +3,7 @@ import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
 import { shouldMentionTyphoon, distanceToTokyoKm } from '@/lib/typhoon/mention'
 import { fetchStormGlass, hoursToConditions } from '@/lib/wave/adapters/stormglass'
-import { calculateScore, getStarRating } from '@/lib/wave/scoring'
+import { calculateScore, getStarRating, detectWide } from '@/lib/wave/scoring'
 import { SPOTS } from '@/data/spots'
 import type { WaveCondition } from '@/lib/wave/types'
 
@@ -58,6 +58,7 @@ interface DailyWaveSummary {
   waveHeightMorning: number
   waveHeightNoon: number
   waveHeightEvening: number
+  wideNoon?: { crossAngle: number; windSwellRatio: number } | null
 }
 
 // --- StormGlassベースの週間スコア+サマリ計算 ---
@@ -151,6 +152,28 @@ async function computeWeeklyData(
     const max = (accessor: (c: WaveCondition) => number) =>
       Math.max(...dayConds.map(accessor))
 
+    // ワイド傾向を昼12時のデータで判定
+    let wideNoon: { crossAngle: number; windSwellRatio: number } | null = null
+    if (
+      noonCond && spot.bathymetryProfile &&
+      noonCond.swellWaveHeight != null && noonCond.windWaveHeight != null
+    ) {
+      const w = detectWide(
+        spot.bathymetryProfile.type,
+        noonCond.swellDir,
+        spot.bestSwellDir,
+        noonCond.windDir,
+        noonCond.swellWaveHeight,
+        noonCond.windWaveHeight,
+      )
+      if (w.isWide) {
+        wideNoon = {
+          crossAngle: Math.round(w.crossAngle),
+          windSwellRatio: Math.round(w.windSwellRatio * 100) / 100,
+        }
+      }
+    }
+
     summaries.push({
       date: dateStr,
       waveHeightMax: Math.round(max(c => c.waveHeight) * 10) / 10,
@@ -171,6 +194,7 @@ async function computeWeeklyData(
       waveHeightMorning: Math.round((mornCond?.waveHeight ?? 0) * 10) / 10,
       waveHeightNoon: Math.round((noonCond?.waveHeight ?? 0) * 10) / 10,
       waveHeightEvening: Math.round((eveCond?.waveHeight ?? 0) * 10) / 10,
+      wideNoon,
     })
   }
 
@@ -235,7 +259,10 @@ async function generateWeeklyComments(
     return `${name}:\n` + days.map(d => {
       const s = scores[d.date]
       const scoreTag = s ? (s.isCloseout ? ' 【終日クローズアウト・★1】' : ` ★${s.bestStars}`) : ''
-      return `  ${d.date}${scoreTag}: 朝6時[波高${d.waveHeightMorning.toFixed(1)}m 風${d.windSpeedMorning.toFixed(1)}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon.toFixed(1)}m 風${d.windSpeedNoon.toFixed(1)}m/s/${d.windDirNoon}°] 夕方16時[波高${d.waveHeightEvening.toFixed(1)}m 風${d.windSpeedEvening.toFixed(1)}m/s/${d.windDirEvening}°] 日最大風速${d.windSpeedMax.toFixed(1)}m/s 周期${d.wavePeriodMean.toFixed(1)}s うねり${d.swellHeightMean.toFixed(1)}m/${d.swellPeriodMean.toFixed(1)}s/${d.swellDirectionMean}°`
+      const wideTag = d.wideNoon
+        ? ` 【ワイド傾向・干渉角${d.wideNoon.crossAngle}°/風波比${d.wideNoon.windSwellRatio}】`
+        : ''
+      return `  ${d.date}${scoreTag}${wideTag}: 朝6時[波高${d.waveHeightMorning.toFixed(1)}m 風${d.windSpeedMorning.toFixed(1)}m/s/${d.windDirMorning}°] 昼12時[波高${d.waveHeightNoon.toFixed(1)}m 風${d.windSpeedNoon.toFixed(1)}m/s/${d.windDirNoon}°] 夕方16時[波高${d.waveHeightEvening.toFixed(1)}m 風${d.windSpeedEvening.toFixed(1)}m/s/${d.windDirEvening}°] 日最大風速${d.windSpeedMax.toFixed(1)}m/s 周期${d.wavePeriodMean.toFixed(1)}s うねり${d.swellHeightMean.toFixed(1)}m/${d.swellPeriodMean.toFixed(1)}s/${d.swellDirectionMean}°`
     }).join('\n')
   }
 
@@ -316,6 +343,7 @@ ${typhoonBlocks}
 - 安全に関わる情報（危険・海に近づかないでください）は最優先で明記する
 - 「入水」という言葉は絶対に使わないこと。代わりに「海に入る」「サーフィンする」「パドルアウト」「海に近づかないでください」「サーフィンは控えて」などの自然な表現を使う
 - 【終日クローズアウト・★1】と表示されている日は、必ず「海に近づかないでください」「サーフィンは絶対に控えてください」等の警告を含めること。「上級者向け」「チャレンジング」等の肯定的な表現は使わないこと
+- 【ワイド傾向・干渉角◯°/風波比◯】と表示されている日は、クロスうねりと風波の影響で波がワイド気味になりセクションが短く乗りにくい可能性があることをコメントに反映してください（例：「クロスうねりでワイド気味、セクション短め」）
 
 【数値データ】
 ${dataText}

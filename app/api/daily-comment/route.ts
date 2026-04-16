@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { COMMENT_SCHEDULES, padHour, type CommentTarget } from '@/lib/commentSchedules'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
 import { SPOTS } from '@/data/spots'
-import { classifyWind, windTypeLabel } from '@/lib/wave/scoring'
+import { classifyWind, windTypeLabel, detectWide } from '@/lib/wave/scoring'
 
 export const maxDuration = 30
 
@@ -177,6 +177,36 @@ export async function GET(request: NextRequest) {
       } catch {}
     }
 
+    // ワイド傾向の検出: クロスうねり + 風波比率 + 地形
+    let wideWarning = ''
+    for (const spotId of spotIds) {
+      const spot = SPOTS.find(s => s.id === spotId)
+      if (!spot?.bathymetryProfile) continue
+      try {
+        const fRef = doc(db, 'forecastCache', `${spotId}_${forecastDate}`)
+        const fSnap = await getDoc(fRef)
+        if (!fSnap.exists()) continue
+        const conditions = fSnap.data().conditions ?? []
+        const rep = conditions.find((c: { timestamp: string }) => {
+          const h = (new Date(c.timestamp).getUTCHours() + 9) % 24
+          return h === 12
+        }) ?? conditions[0]
+        if (!rep || rep.swellWaveHeight == null || rep.windWaveHeight == null) continue
+        const wide = detectWide(
+          spot.bathymetryProfile.type,
+          rep.swellDir,
+          spot.bestSwellDir,
+          rep.windDir,
+          rep.swellWaveHeight,
+          rep.windWaveHeight,
+        )
+        if (wide.isWide) {
+          wideWarning = `\n【ワイド傾向の注意】${spot.name}付近ではクロスうねり（干渉角${Math.round(wide.crossAngle)}°）と風波の影響（風波比率${wide.windSwellRatio.toFixed(2)}）により、波がワイド気味になりセクションが短く乗りにくい可能性があります。`
+          break
+        }
+      } catch {}
+    }
+
     const targetLabel = target === 'today' ? '今日' : '明日'
     const timeContext = target === 'today'
       ? `現在時刻: ${hourNum}時。${hourNum}時以降の今日のサーフィン状況`
@@ -210,9 +240,10 @@ export async function GET(request: NextRequest) {
 - 口調は丁寧でフレンドリーな「〜です」「〜ましょう」調で、先輩サーファーが教えてくれるようなトーンにしてください。
 - 余計な前置きや見出し記号は不要です。コメント本文のみ返してください。
 - 読みやすいよう、3要素の区切りで適度に改行を入れてください。
-- データに「ダンパー傾向の注意」が含まれている場合は、コメントの最後に「なお、うねりが海岸線に対してほぼ直角に入っており周期も短めのため、波が厚くダンパーになりやすい傾向があります。」という趣旨の注記を自然に追加してください。`
+- データに「ダンパー傾向の注意」が含まれている場合は、コメントの最後に「なお、うねりが海岸線に対してほぼ直角に入っており周期も短めのため、波が厚くダンパーになりやすい傾向があります。」という趣旨の注記を自然に追加してください。
+- データに「ワイド傾向の注意」が含まれている場合は、コメントの最後に「なお、波がワイド気味のため、セクションが短く乗りにくい可能性があります。クロスうねりと風波の影響です。」という趣旨の注記を自然に追加してください。`
 
-    const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の${areaLabel}・${spotName}のデータ:\n${forecastSummary}${dumperWarning}`
+    const userPrompt = `${targetLabel}（${forecastDate}）${hourNum}時時点の${areaLabel}・${spotName}のデータ:\n${forecastSummary}${dumperWarning}${wideWarning}`
 
     console.log(`[daily-comment] Generating for ${target} ${hour}h...`)
 

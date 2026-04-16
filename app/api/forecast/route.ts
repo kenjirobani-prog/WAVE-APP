@@ -91,8 +91,11 @@ function addMetadata(conditions: WaveCondition[], spotId: string) {
   const tideEvents = detectTideEvents(tideByHour)
   const conditionsWithMeta = conditions.map(c => {
     const swellRatio = getSwellRatio(c.swellWaveHeight, c.waveHeight)
-    const breakInfo = bp
-      ? predictBreakType(bp.type, c.tideHeight, c.waveHeight, swellRatio, bp.closeoutRisk)
+    const breakInfo = bp && spot
+      ? predictBreakType(
+          bp.type, c.tideHeight, c.waveHeight, swellRatio, bp.closeoutRisk,
+          c.swellDir, spot.bestSwellDir, c.windDir, c.swellWaveHeight, c.windWaveHeight,
+        )
       : null
     return {
       ...c,
