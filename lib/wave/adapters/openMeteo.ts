@@ -1,12 +1,14 @@
 import type { WaveAdapter, WaveCondition } from '../types'
 import type { Spot } from '@/types'
 import { SPOTS } from '@/data/spots'
+import {
+  JCG_STATIONS,
+  defaultTide,
+  estimateTideHeight,
+  fetchJcgTideHourly,
+} from '../tide'
 
 const OPEN_METEO_MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine'
-
-// 海上保安庁 リアルタイム験潮データ（横浜観測点 s=0062）
-// 潮位基準: 最低水面（横浜は平均水面の下115cm = 0cm基準）
-const KAIHO_GAUGE_URL = 'https://www1.kaiho.mlit.go.jp/TIDE/gauge/gauge.php?s=0062'
 
 function getSpotById(spotId: string): Spot {
   const spot = SPOTS.find(s => s.id === spotId)
@@ -24,111 +26,6 @@ function classifyWeather(code: number): WaveCondition['weather'] {
   if (code === 0 || code === 1) return 'sunny'
   if (code <= 3) return 'cloudy'
   return 'rainy'
-}
-
-
-// ---- KAiho 験潮データ パーサー ----
-
-function parseObservations(html: string, date: Date): (number | undefined)[] {
-  const hourlyValues: number[][] = Array.from({ length: 24 }, () => [])
-  // サーバーはUTCで動作するためgetFullYear/getDate等はUTC値を返す。JST(+9h)で計算する
-  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-  const yyyy = jst.getUTCFullYear()
-  const mm = String(jst.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(jst.getUTCDate()).padStart(2, '0')
-
-  const pattern = new RegExp(
-    `${yyyy}\\s+${mm}\\s+${dd}\\s+(\\d{2})\\s+\\d{2}\\s+(\\d+)`,
-    'g'
-  )
-  let match
-  while ((match = pattern.exec(html)) !== null) {
-    const hour = parseInt(match[1])
-    const value = parseInt(match[2])
-    if (value !== 9999 && hour >= 0 && hour < 24) {
-      hourlyValues[hour].push(value)
-    }
-  }
-  return hourlyValues.map(vals =>
-    vals.length > 0
-      ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
-      : undefined
-  )
-}
-
-function parsePredictionTable(html: string, date: Date): (number | undefined)[] {
-  // JST日付を使う（サーバーはUTC環境）
-  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-  const mm = String(jst.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(jst.getUTCDate()).padStart(2, '0')
-  const dateStr = mm + dd
-
-  const dateCell = `<td[^>]*>\\s*${dateStr}\\s*<\\/td>`
-  const numCell = `(?:<td[^>]*>\\s*(\\d+)\\s*<\\/td>\\s*){1,25}`
-  const rowPattern = new RegExp(`${dateCell}\\s*(${numCell})`, 's')
-
-  const rowMatch = rowPattern.exec(html)
-  if (!rowMatch) return new Array(24).fill(undefined)
-
-  const values: number[] = []
-  const tdPattern = /<td[^>]*>\s*(\d+)\s*<\/td>/g
-  let tdMatch
-  while ((tdMatch = tdPattern.exec(rowMatch[1])) !== null) {
-    values.push(parseInt(tdMatch[1]))
-  }
-
-  // 予測テーブルの最初の列は「1時」の値（0時は含まれない）
-  // values[0]=1時, values[1]=2時, ..., values[22]=23時 → hour h = values[h-1]
-  // hour 0 は undefined にして observations または estimateTideHeight にフォールバック
-  const shifted: (number | undefined)[] = new Array(24).fill(undefined)
-  values.slice(0, 23).forEach((v, i) => {
-    shifted[i + 1] = isNaN(v) ? undefined : v
-  })
-  return shifted
-}
-
-function estimateTideHeight(hour: number): number {
-  const base = 115
-  const amplitude = 70
-  return Math.round(base + amplitude * Math.sin((hour / 12) * Math.PI))
-}
-
-function defaultTide(): number[] {
-  return Array.from({ length: 24 }, (_, h) => estimateTideHeight(h))
-}
-
-async function fetchKAihoTideHourly(date: Date): Promise<number[]> {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 8000)
-  try {
-  const res = await fetch(KAIHO_GAUGE_URL, {
-    headers: { Accept: 'text/html,application/xhtml+xml' },
-    signal: controller.signal,
-    next: { revalidate: 1800 },
-  } as RequestInit)
-  if (!res.ok) throw new Error(`KAiho gauge API error: ${res.status}`)
-
-  const html = await res.text()
-  const observations = parseObservations(html, date)
-  const predictions = parsePredictionTable(html, date)
-
-  const result = Array.from({ length: 24 }, (_, h) => {
-    if (observations[h] !== undefined) return observations[h]!
-    if (predictions[h] !== undefined) return predictions[h]!
-    return estimateTideHeight(h)
-  })
-
-  // デバッグ用ログ（Vercel Function Logsで確認可能）
-  const jstForLog = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-  console.log('[KAiho] JST date:', jstForLog.toISOString().split('T')[0])
-  console.log('[KAiho] observations (0-23h):', observations)
-  console.log('[KAiho] predictions  (0-23h):', predictions)
-  console.log('[KAiho] result       (0-23h):', result)
-
-  return result
-  } finally {
-    clearTimeout(timeout)
-  }
 }
 
 // ---- Open-Meteo 海象・気象データ ----
@@ -224,13 +121,14 @@ export const openMeteoAdapter: WaveAdapter = {
     const dateStr = parseDate(date)
     const todayStr = parseDate(new Date())
     const isToday = dateStr === todayStr
+    const areaOffset = JCG_STATIONS[spot.area]?.offsetCm ?? 115
 
     const [marine, weather, tideHourly] = await Promise.all([
       fetchMarineData(spot.lat, spot.lng, dateStr, dateStr),
       fetchWeatherData(spot.lat, spot.lng, dateStr, dateStr),
       isToday
-        ? fetchKAihoTideHourly(date).catch(defaultTide)
-        : Promise.resolve(defaultTide()),
+        ? fetchJcgTideHourly(spot.area, date).catch(() => defaultTide(areaOffset))
+        : Promise.resolve(defaultTide(areaOffset)),
     ])
 
     return buildConditions(
@@ -259,25 +157,25 @@ export const openMeteoAdapter: WaveAdapter = {
     const startStr = parseDate(today)
     const endStr = parseDate(endDate)
     const todayStr = startStr
+    const areaOffset = JCG_STATIONS[spot.area]?.offsetCm ?? 115
 
-    const [marine, weather, kaihoTide] = await Promise.all([
+    const [marine, weather, jcgTide] = await Promise.all([
       fetchMarineData(spot.lat, spot.lng, startStr, endStr),
       fetchWeatherData(spot.lat, spot.lng, startStr, endStr),
-      fetchKAihoTideHourly(today).catch(defaultTide),
+      fetchJcgTideHourly(spot.area, today).catch(() => defaultTide(areaOffset)),
     ])
 
+    const fallbackDay = defaultTide(areaOffset)
     const times: string[] = marine.hourly.time
     return times.map((time, i) => {
       const dt = new Date(time + '+09:00')
       const hour = parseInt(time.split('T')[1].split(':')[0], 10)
       const thisDateStr = parseDate(dt)
-      const tideHourly = thisDateStr === todayStr ? kaihoTide : null
+      const tideHourly = thisDateStr === todayStr ? jcgTide : fallbackDay
 
-      const tideHeight = tideHourly
-        ? (tideHourly[hour] ?? estimateTideHeight(hour))
-        : estimateTideHeight(hour)
+      const tideHeight = tideHourly[hour] ?? estimateTideHeight(hour, areaOffset)
       const prevTide = hour > 0
-        ? (tideHourly ? (tideHourly[hour - 1] ?? estimateTideHeight(hour - 1)) : estimateTideHeight(hour - 1))
+        ? (tideHourly[hour - 1] ?? estimateTideHeight(hour - 1, areaOffset))
         : undefined
 
       return {

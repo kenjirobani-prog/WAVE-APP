@@ -1,6 +1,12 @@
 import type { WaveAdapter, WaveCondition } from '../types'
 import type { Spot } from '@/types'
 import { SPOTS } from '@/data/spots'
+import {
+  JCG_STATIONS,
+  defaultTide,
+  fetchJcgTideHourly,
+  fetchStormGlassTideRange,
+} from '../tide'
 
 const STORMGLASS_URL = 'https://api.stormglass.io/v2/weather/point'
 
@@ -24,14 +30,6 @@ function getSpotById(spotId: string): Spot {
 function val(obj: Record<string, number> | undefined): number {
   if (!obj) return 0
   return obj.sg ?? obj[Object.keys(obj)[0]] ?? 0
-}
-
-// seaLevel（メートル単位）→ cm に変換。StormGlassの基準を湘南向けに補正
-// StormGlassのseaLevelは平均海面(MSL)からのオフセット（メートル）
-// 湘南の平均潮位を約115cmとし、seaLevel(m)*100 を加算
-function seaLevelToCm(seaLevelMeters: number): number {
-  const baseCm = 115
-  return Math.round(baseCm + seaLevelMeters * 100)
 }
 
 function classifyWeather(windSpeed: number, _temperature: number): WaveCondition['weather'] {
@@ -108,46 +106,6 @@ function parseJstDate(date: Date): string {
   return jst.toISOString().split('T')[0]
 }
 
-// ---- 潮位: StormGlass Tide API / フォールバック推定 ----
-
-function estimateTideHeight(hour: number): number {
-  const base = 115
-  const amplitude = 70
-  return Math.round(base + amplitude * Math.sin((hour / 12) * Math.PI))
-}
-
-function defaultTide(): number[] {
-  return Array.from({ length: 24 }, (_, h) => estimateTideHeight(h))
-}
-
-export async function fetchTideFromStormGlass(lat: number, lng: number, date: string): Promise<number[]> {
-  const startISO = new Date(`${date}T00:00:00+09:00`).toISOString()
-  const endISO   = new Date(`${date}T23:59:59+09:00`).toISOString()
-  const url = `https://api.stormglass.io/v2/tide/sea-level/point?lat=${lat}&lng=${lng}&start=${startISO}&end=${endISO}`
-  const hourly = Array(24).fill(115)
-  try {
-    const apiKey = process.env.STORMGLASS_API_KEY
-    if (!apiKey) throw new Error('STORMGLASS_API_KEY not configured')
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 10000)
-    try {
-      const res = await fetch(url, { headers: { Authorization: apiKey }, signal: controller.signal })
-      if (!res.ok) throw new Error(`StormGlass Tide API ${res.status}`)
-      const json = await res.json()
-      json.data?.forEach((d: { time: string; sg: number }) => {
-        const jstHour = (new Date(d.time).getUTCHours() + 9) % 24
-        // Chart Datum → TP基準: +115cm オフセット（横浜検潮所基準）
-        hourly[jstHour] = Math.round(d.sg * 100 + 115)
-      })
-    } finally {
-      clearTimeout(timeout)
-    }
-  } catch (e) {
-    console.error('[fetchTideFromStormGlass] error, using fallback 115cm', e)
-  }
-  return hourly
-}
-
 // ---- StormGlass types ----
 
 interface StormGlassHour {
@@ -192,7 +150,7 @@ export async function fetchStormGlass(lat: number, lng: number, start: Date, end
   }
 }
 
-export function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateStr?: string, tideHourly?: number[], openMeteo?: OpenMeteoWeather): WaveCondition[] {
+export function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateStr?: string, tideHourly?: number[], openMeteo?: OpenMeteoWeather, areaOffsetCm: number = 115): WaveCondition[] {
   // 指定日のデータのみフィルタ（targetDateStrがあれば）
   const filtered = targetDateStr
     ? hours.filter(h => {
@@ -203,11 +161,12 @@ export function hoursToConditions(spotId: string, hours: StormGlassHour[], targe
 
   const conditions: WaveCondition[] = []
   let prevTide: number | undefined
+  const fallbackTide = defaultTide(areaOffsetCm)
 
   for (const h of filtered) {
     const jstHour = (new Date(h.time).getUTCHours() + 9) % 24
-    // 潮位: 海上保安庁データがあればそちらを使用、なければサイン推定
-    const tideHeight = tideHourly ? tideHourly[jstHour] : estimateTideHeight(jstHour)
+    // 潮位: 与えられた時間配列（JCG実測 or StormGlass予測）を優先、欠損時のみサイン推定
+    const tideHeight = tideHourly?.[jstHour] ?? fallbackTide[jstHour]
     const windSpd = val(h.windSpeed)
     const temp = val(h.airTemperature)
 
@@ -245,41 +204,73 @@ export const stormglassAdapter: WaveAdapter = {
     const dateStr = parseJstDate(date)
     const todayStr = parseJstDate(new Date())
     const isToday = dateStr === todayStr
+    const station = JCG_STATIONS[spot.area]
+    const areaOffset = station?.offsetCm ?? 115
 
     // 指定日の0時〜23時（JST）をUTCに変換してリクエスト
     const start = new Date(`${dateStr}T00:00:00+09:00`)
     const end = new Date(`${dateStr}T23:59:59+09:00`)
 
-    // 波データ・潮位データ・天気データを並行取得
+    // 当日は JCG 実測、翌日以降は StormGlass Tide 予測
+    const tidePromise: Promise<number[] | undefined> = isToday
+      ? fetchJcgTideHourly(spot.area, date).catch(err => {
+          console.error(`[Tide] JCG failed for ${spot.area}, fallback to StormGlass:`, err)
+          return fetchStormGlassTideRange(spot.lat, spot.lng, dateStr, dateStr, areaOffset)
+            .then(m => m.get(dateStr))
+            .catch(() => undefined)
+        })
+      : fetchStormGlassTideRange(spot.lat, spot.lng, dateStr, dateStr, areaOffset)
+          .then(m => m.get(dateStr))
+          .catch(() => undefined)
+
     const [hours, tideHourly, openMeteo] = await Promise.all([
       fetchStormGlass(spot.lat, spot.lng, start, end),
-      fetchTideFromStormGlass(spot.lat, spot.lng, dateStr).catch(() => defaultTide()),
+      tidePromise,
       fetchOpenMeteoWeather(spot.lat, spot.lng, dateStr).catch(() => undefined),
     ])
-    console.log(`[StormGlass] getConditions ${spotId} ${dateStr}: ${hours.length} hours, tide: stormglass, weather: ${openMeteo ? 'open-meteo' : 'fallback'}`)
 
-    return hoursToConditions(spotId, hours, dateStr, tideHourly, openMeteo)
+    const tideSource = isToday ? (tideHourly ? 'jcg' : 'fallback') : (tideHourly ? 'stormglass' : 'fallback')
+    console.log(`[StormGlass] getConditions ${spotId} ${dateStr}: ${hours.length}h, tide:${tideSource}, weather:${openMeteo ? 'open-meteo' : 'fallback'}`)
+
+    return hoursToConditions(spotId, hours, dateStr, tideHourly, openMeteo, areaOffset)
   },
 
   async getForecast(spotId: string, days: number): Promise<WaveCondition[]> {
     const spot = getSpotById(spotId)
     const now = new Date()
     const startDate = parseJstDate(now)
-    // 今日のJST 0時から開始（cronが何時に走っても今日の全24h分を取得）
+    // 今日のJST 0時から開始
     const todayMidnightJST = new Date(`${startDate}T00:00:00+09:00`)
     const end = new Date(todayMidnightJST.getTime() + days * 24 * 60 * 60 * 1000)
     const endDate = parseJstDate(end)
+    const station = JCG_STATIONS[spot.area]
+    const areaOffset = station?.offsetCm ?? 115
 
-    const [hours, todayTide, weatherMap] = await Promise.all([
+    // 当日：JCG 実測（失敗時はStormGlass側の当日分にフォールバック）
+    // 翌日以降：StormGlass Tide API（7日分一括）
+    const [hours, jcgToday, sgTideMap, weatherMap] = await Promise.all([
       fetchStormGlass(spot.lat, spot.lng, todayMidnightJST, end),
-      fetchTideFromStormGlass(spot.lat, spot.lng, startDate).catch(() => defaultTide()),
+      fetchJcgTideHourly(spot.area, now).catch(err => {
+        console.error(`[Tide] JCG failed for ${spot.area}, will use StormGlass for today too:`, err)
+        return null as number[] | null
+      }),
+      fetchStormGlassTideRange(spot.lat, spot.lng, startDate, endDate, areaOffset)
+        .catch(err => {
+          console.error('[Tide] StormGlass tide range failed:', err)
+          return new Map<string, number[]>()
+        }),
       fetchOpenMeteoWeatherRange(spot.lat, spot.lng, startDate, endDate).catch(() => new Map<string, OpenMeteoWeather>()),
     ])
-    console.log(`[StormGlass] getForecast ${spotId} ${days}days: ${hours.length} hours, weather dates: ${weatherMap.size}`)
 
-    // 日付ごとの潮位をキャッシュ（今日分は既に取得済み、他の日はオンデマンド）
-    const tideCache = new Map<string, number[]>()
-    tideCache.set(startDate, todayTide)
+    // 日付ごとの潮位を組み立て
+    const tideByDate = new Map<string, number[]>(sgTideMap)
+    if (jcgToday) {
+      tideByDate.set(startDate, jcgToday)
+    }
+    const fallbackDay = defaultTide(areaOffset)
+
+    const todaySource = jcgToday ? 'jcg' : (sgTideMap.has(startDate) ? 'stormglass' : 'fallback')
+    console.log(`[StormGlass] getForecast ${spotId} ${days}d: ${hours.length}h, tide today:${todaySource}, tide days:${tideByDate.size}/${days}, weather days:${weatherMap.size}`)
 
     const conditions: WaveCondition[] = []
     let prevTide: number | undefined
@@ -289,12 +280,7 @@ export const stormglassAdapter: WaveAdapter = {
       const jst = new Date(new Date(h.time).getTime() + 9 * 60 * 60 * 1000)
       const hourDateStr = jst.toISOString().split('T')[0]
 
-      // 日付ごとの潮位を取得（キャッシュなければフォールバック）
-      let dayTide = tideCache.get(hourDateStr)
-      if (!dayTide) {
-        dayTide = defaultTide()
-        tideCache.set(hourDateStr, dayTide)
-      }
+      const dayTide = tideByDate.get(hourDateStr) ?? fallbackDay
       const tideHeight = dayTide[jstHour]
       const windSpd = val(h.windSpeed)
       const temp = val(h.airTemperature)

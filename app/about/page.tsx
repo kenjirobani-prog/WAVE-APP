@@ -36,7 +36,7 @@ export default function AboutPage() {
 
           <h2 className="text-base font-bold mt-6 mb-2 text-[#0a1628]">データの源泉</h2>
           <p className="text-sm leading-7 text-[#4a6fa5]">
-            波データはStormGlass APIを通じて、NOAA・ECMWF・MeteoFranceなど世界トップの気象機関のモデルを統合して取得しています。潮位は海上保安庁・横浜観測点のリアルタイム検潮データを使用。天気はWMO天気コードから取得し、UV指数も実データで計算します。
+            波データはStormGlass APIを通じて、NOAA・ECMWF・MeteoFranceなど世界トップの気象機関のモデルを統合して取得しています。潮位は当日が海上保安庁のリアルタイム験潮データ（エリア別観測点：湘南=横浜／千葉北=千葉／千葉南=布良／茨城=小名浜）、翌日以降はStormGlass Tide APIの予測値を使用。天気はWMO天気コードから取得し、UV指数も実データで計算します。
           </p>
 
           <hr className="border-[#eef1f4] my-6" />
