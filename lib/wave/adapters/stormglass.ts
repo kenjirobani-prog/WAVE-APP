@@ -264,12 +264,14 @@ export const stormglassAdapter: WaveAdapter = {
   async getForecast(spotId: string, days: number): Promise<WaveCondition[]> {
     const spot = getSpotById(spotId)
     const now = new Date()
-    const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
     const startDate = parseJstDate(now)
+    // 今日のJST 0時から開始（cronが何時に走っても今日の全24h分を取得）
+    const todayMidnightJST = new Date(`${startDate}T00:00:00+09:00`)
+    const end = new Date(todayMidnightJST.getTime() + days * 24 * 60 * 60 * 1000)
     const endDate = parseJstDate(end)
 
     const [hours, todayTide, weatherMap] = await Promise.all([
-      fetchStormGlass(spot.lat, spot.lng, now, end),
+      fetchStormGlass(spot.lat, spot.lng, todayMidnightJST, end),
       fetchTideFromStormGlass(spot.lat, spot.lng, startDate).catch(() => defaultTide()),
       fetchOpenMeteoWeatherRange(spot.lat, spot.lng, startDate, endDate).catch(() => new Map<string, OpenMeteoWeather>()),
     ])
