@@ -150,7 +150,7 @@ export async function fetchStormGlass(lat: number, lng: number, start: Date, end
   }
 }
 
-export function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateStr?: string, tideHourly?: number[], openMeteo?: OpenMeteoWeather, areaOffsetCm: number = 115): WaveCondition[] {
+export function hoursToConditions(spotId: string, hours: StormGlassHour[], targetDateStr?: string, tideHourly?: number[], openMeteo?: OpenMeteoWeather): WaveCondition[] {
   // 指定日のデータのみフィルタ（targetDateStrがあれば）
   const filtered = targetDateStr
     ? hours.filter(h => {
@@ -161,7 +161,7 @@ export function hoursToConditions(spotId: string, hours: StormGlassHour[], targe
 
   const conditions: WaveCondition[] = []
   let prevTide: number | undefined
-  const fallbackTide = defaultTide(areaOffsetCm)
+  const fallbackTide = defaultTide()
 
   for (const h of filtered) {
     const jstHour = (new Date(h.time).getUTCHours() + 9) % 24
@@ -205,7 +205,7 @@ export const stormglassAdapter: WaveAdapter = {
     const todayStr = parseJstDate(new Date())
     const isToday = dateStr === todayStr
     const station = JCG_STATIONS[spot.area]
-    const areaOffset = station?.offsetCm ?? 115
+    const sgOffset = station?.stormglassOffsetCm ?? 115
 
     // 指定日の0時〜23時（JST）をUTCに変換してリクエスト
     const start = new Date(`${dateStr}T00:00:00+09:00`)
@@ -215,11 +215,11 @@ export const stormglassAdapter: WaveAdapter = {
     const tidePromise: Promise<number[] | undefined> = isToday
       ? fetchJcgTideHourly(spot.area, date).catch(err => {
           console.error(`[Tide] JCG failed for ${spot.area}, fallback to StormGlass:`, err)
-          return fetchStormGlassTideRange(spot.lat, spot.lng, dateStr, dateStr, areaOffset)
+          return fetchStormGlassTideRange(spot.lat, spot.lng, dateStr, dateStr, sgOffset)
             .then(m => m.get(dateStr))
             .catch(() => undefined)
         })
-      : fetchStormGlassTideRange(spot.lat, spot.lng, dateStr, dateStr, areaOffset)
+      : fetchStormGlassTideRange(spot.lat, spot.lng, dateStr, dateStr, sgOffset)
           .then(m => m.get(dateStr))
           .catch(() => undefined)
 
@@ -232,7 +232,7 @@ export const stormglassAdapter: WaveAdapter = {
     const tideSource = isToday ? (tideHourly ? 'jcg' : 'fallback') : (tideHourly ? 'stormglass' : 'fallback')
     console.log(`[StormGlass] getConditions ${spotId} ${dateStr}: ${hours.length}h, tide:${tideSource}, weather:${openMeteo ? 'open-meteo' : 'fallback'}`)
 
-    return hoursToConditions(spotId, hours, dateStr, tideHourly, openMeteo, areaOffset)
+    return hoursToConditions(spotId, hours, dateStr, tideHourly, openMeteo)
   },
 
   async getForecast(spotId: string, days: number): Promise<WaveCondition[]> {
@@ -244,7 +244,7 @@ export const stormglassAdapter: WaveAdapter = {
     const end = new Date(todayMidnightJST.getTime() + days * 24 * 60 * 60 * 1000)
     const endDate = parseJstDate(end)
     const station = JCG_STATIONS[spot.area]
-    const areaOffset = station?.offsetCm ?? 115
+    const sgOffset = station?.stormglassOffsetCm ?? 115
 
     // 当日：JCG 実測（失敗時はStormGlass側の当日分にフォールバック）
     // 翌日以降：StormGlass Tide API（7日分一括）
@@ -254,7 +254,7 @@ export const stormglassAdapter: WaveAdapter = {
         console.error(`[Tide] JCG failed for ${spot.area}, will use StormGlass for today too:`, err)
         return null as number[] | null
       }),
-      fetchStormGlassTideRange(spot.lat, spot.lng, startDate, endDate, areaOffset)
+      fetchStormGlassTideRange(spot.lat, spot.lng, startDate, endDate, sgOffset)
         .catch(err => {
           console.error('[Tide] StormGlass tide range failed:', err)
           return new Map<string, number[]>()
@@ -267,7 +267,7 @@ export const stormglassAdapter: WaveAdapter = {
     if (jcgToday) {
       tideByDate.set(startDate, jcgToday)
     }
-    const fallbackDay = defaultTide(areaOffset)
+    const fallbackDay = defaultTide()
 
     const todaySource = jcgToday ? 'jcg' : (sgTideMap.has(startDate) ? 'stormglass' : 'fallback')
     console.log(`[StormGlass] getForecast ${spotId} ${days}d: ${hours.length}h, tide today:${todaySource}, tide days:${tideByDate.size}/${days}, weather days:${weatherMap.size}`)

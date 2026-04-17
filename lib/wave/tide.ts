@@ -1,26 +1,29 @@
 import type { AreaKey } from '@/types'
 
 // エリア別・海上保安庁（JCG）験潮所マッピング
-// offsetCm: StormGlass の sg(平均海面基準, m) を station の基準系(cm)に揃えるオフセット
-//   - JCG 値はそのまま使う（station 自前の基準系）
-//   - StormGlass 値には `sg*100 + offsetCm` を適用
-// 値は概算（後から実測比較で調整可）
-export const JCG_STATIONS: Record<AreaKey, { id: string; name: string; offsetCm: number }> = {
-  'shonan':      { id: '0062', name: '横浜',   offsetCm: 115 },
-  'chiba-north': { id: '0053', name: '千葉',   offsetCm: 100 },
-  'chiba-south': { id: '0052', name: '布良',   offsetCm:  90 },
-  'ibaraki':     { id: '0042', name: '小名浜', offsetCm:  85 },
+// - JCG 値は CD（最低水面）基準のcm値でそのまま使う（オフセット加算なし）
+// - stormglassOffsetCm: StormGlass の sg(MSL基準, m) を CD基準(cm) に変換するオフセット
+//   （JCGのフッターより横浜の CD = 115cm below MSL、他港は概算）
+export const JCG_STATIONS: Record<AreaKey, { id: string; name: string; stormglassOffsetCm: number }> = {
+  'shonan':      { id: '0062', name: '横浜',   stormglassOffsetCm: 115 },
+  'chiba-north': { id: '0053', name: '千葉',   stormglassOffsetCm: 100 },
+  'chiba-south': { id: '0052', name: '布良',   stormglassOffsetCm:  90 },
+  'ibaraki':     { id: '0042', name: '小名浜', stormglassOffsetCm:  85 },
 }
 
 const KAIHO_GAUGE_BASE = 'https://www1.kaiho.mlit.go.jp/TIDE/gauge/gauge.php'
 
-export function estimateTideHeight(hour: number, offsetCm: number = 115): number {
-  const amplitude = 70
-  return Math.round(offsetCm + amplitude * Math.sin((hour / 12) * Math.PI))
+// フォールバック専用のサイン波推定（JCG/StormGlass両方取得失敗時のみ）
+// JCG実測値がだいたい45〜185cmに収まるため、115±70を標準値とする
+const FALLBACK_CENTER_CM = 115
+const FALLBACK_AMPLITUDE_CM = 70
+
+export function estimateTideHeight(hour: number): number {
+  return Math.round(FALLBACK_CENTER_CM + FALLBACK_AMPLITUDE_CM * Math.sin((hour / 12) * Math.PI))
 }
 
-export function defaultTide(offsetCm: number = 115): number[] {
-  return Array.from({ length: 24 }, (_, h) => estimateTideHeight(h, offsetCm))
+export function defaultTide(): number[] {
+  return Array.from({ length: 24 }, (_, h) => estimateTideHeight(h))
 }
 
 // ---- JCG 験潮HTML パーサー ----
@@ -59,7 +62,8 @@ function parsePredictionTable(html: string, date: Date): (number | undefined)[] 
   const dateStr = mm + dd
 
   const dateCell = `<td[^>]*>\\s*${dateStr}\\s*<\\/td>`
-  const numCell = `(?:<td[^>]*>\\s*(\\d+)\\s*<\\/td>\\s*){1,25}`
+  // 予測テーブルは 0時〜24時 の25列（HTMLヘッダ実物: <td>0時</td>...<td>24時</td>）
+  const numCell = `(?:<td[^>]*>\\s*(\\d+)\\s*<\\/td>\\s*){1,26}`
   const rowPattern = new RegExp(`${dateCell}\\s*(${numCell})`, 's')
 
   const rowMatch = rowPattern.exec(html)
@@ -72,12 +76,13 @@ function parsePredictionTable(html: string, date: Date): (number | undefined)[] 
     values.push(parseInt(tdMatch[1]))
   }
 
-  // 予測テーブルは1時〜23時（0時なし）
-  const shifted: (number | undefined)[] = new Array(24).fill(undefined)
-  values.slice(0, 23).forEach((v, i) => {
-    shifted[i + 1] = isNaN(v) ? undefined : v
-  })
-  return shifted
+  // 予測テーブルは values[h] = h時 の値（0時〜24時）。24時は翌日0時なので無視。
+  const result: (number | undefined)[] = new Array(24).fill(undefined)
+  for (let h = 0; h < 24; h++) {
+    const v = values[h]
+    if (v !== undefined && !isNaN(v)) result[h] = v
+  }
+  return result
 }
 
 /** 指定エリアの JCG 験潮所から当日24時間分の潮位(cm)を取得 */
@@ -90,7 +95,10 @@ export async function fetchJcgTideHourly(area: AreaKey, date: Date): Promise<num
   const timeout = setTimeout(() => controller.abort(), 8000)
   try {
     const res = await fetch(url, {
-      headers: { Accept: 'text/html,application/xhtml+xml' },
+      headers: {
+        Accept: 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (compatible; WaveForecast/1.0)',
+      },
       signal: controller.signal,
       next: { revalidate: 1800 },
     } as RequestInit)
@@ -106,10 +114,11 @@ export async function fetchJcgTideHourly(area: AreaKey, date: Date): Promise<num
       throw new Error(`JCG HTML parse returned no values (station=${station.id}). Structure may have changed.`)
     }
 
+    // JCG値はそのまま使用（CD基準cm、オフセット加算なし）。欠損時のみサイン推定
     const result = Array.from({ length: 24 }, (_, h) => {
       if (observations[h] !== undefined) return observations[h]!
       if (predictions[h] !== undefined) return predictions[h]!
-      return estimateTideHeight(h, station.offsetCm)
+      return estimateTideHeight(h)
     })
 
     console.log(`[JCG] ${area}(s=${station.id}/${station.name}) obs=${obsCount} pred=${predCount}`)
@@ -121,14 +130,15 @@ export async function fetchJcgTideHourly(area: AreaKey, date: Date): Promise<num
 
 /**
  * StormGlass Tide API を多日分まとめて取得。
- * 返り値: JST日付文字列 YYYY-MM-DD → 24時間配列(cm)
+ * 返り値: JST日付文字列 YYYY-MM-DD → 24時間配列(cm, CD基準)
+ * sg(MSL基準, m) → CD基準(cm) 変換: `sg*100 + stormglassOffsetCm`
  */
 export async function fetchStormGlassTideRange(
   lat: number,
   lng: number,
   startDateJst: string,
   endDateJst: string,
-  offsetCm: number,
+  stormglassOffsetCm: number,
 ): Promise<Map<string, number[]>> {
   const apiKey = process.env.STORMGLASS_API_KEY
   if (!apiKey) throw new Error('STORMGLASS_API_KEY not configured')
@@ -148,8 +158,8 @@ export async function fetchStormGlassTideRange(
       const jst = new Date(new Date(d.time).getTime() + 9 * 60 * 60 * 1000)
       const dateKey = jst.toISOString().split('T')[0]
       const jstHour = jst.getUTCHours()
-      const arr = byDate.get(dateKey) ?? Array(24).fill(offsetCm)
-      arr[jstHour] = Math.round(d.sg * 100 + offsetCm)
+      const arr = byDate.get(dateKey) ?? Array(24).fill(stormglassOffsetCm)
+      arr[jstHour] = Math.round(d.sg * 100 + stormglassOffsetCm)
       byDate.set(dateKey, arr)
     })
   } finally {

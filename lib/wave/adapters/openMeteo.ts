@@ -2,7 +2,6 @@ import type { WaveAdapter, WaveCondition } from '../types'
 import type { Spot } from '@/types'
 import { SPOTS } from '@/data/spots'
 import {
-  JCG_STATIONS,
   defaultTide,
   estimateTideHeight,
   fetchJcgTideHourly,
@@ -121,14 +120,13 @@ export const openMeteoAdapter: WaveAdapter = {
     const dateStr = parseDate(date)
     const todayStr = parseDate(new Date())
     const isToday = dateStr === todayStr
-    const areaOffset = JCG_STATIONS[spot.area]?.offsetCm ?? 115
 
     const [marine, weather, tideHourly] = await Promise.all([
       fetchMarineData(spot.lat, spot.lng, dateStr, dateStr),
       fetchWeatherData(spot.lat, spot.lng, dateStr, dateStr),
       isToday
-        ? fetchJcgTideHourly(spot.area, date).catch(() => defaultTide(areaOffset))
-        : Promise.resolve(defaultTide(areaOffset)),
+        ? fetchJcgTideHourly(spot.area, date).catch(() => defaultTide())
+        : Promise.resolve(defaultTide()),
     ])
 
     return buildConditions(
@@ -157,15 +155,14 @@ export const openMeteoAdapter: WaveAdapter = {
     const startStr = parseDate(today)
     const endStr = parseDate(endDate)
     const todayStr = startStr
-    const areaOffset = JCG_STATIONS[spot.area]?.offsetCm ?? 115
 
     const [marine, weather, jcgTide] = await Promise.all([
       fetchMarineData(spot.lat, spot.lng, startStr, endStr),
       fetchWeatherData(spot.lat, spot.lng, startStr, endStr),
-      fetchJcgTideHourly(spot.area, today).catch(() => defaultTide(areaOffset)),
+      fetchJcgTideHourly(spot.area, today).catch(() => defaultTide()),
     ])
 
-    const fallbackDay = defaultTide(areaOffset)
+    const fallbackDay = defaultTide()
     const times: string[] = marine.hourly.time
     return times.map((time, i) => {
       const dt = new Date(time + '+09:00')
@@ -173,9 +170,9 @@ export const openMeteoAdapter: WaveAdapter = {
       const thisDateStr = parseDate(dt)
       const tideHourly = thisDateStr === todayStr ? jcgTide : fallbackDay
 
-      const tideHeight = tideHourly[hour] ?? estimateTideHeight(hour, areaOffset)
+      const tideHeight = tideHourly[hour] ?? estimateTideHeight(hour)
       const prevTide = hour > 0
-        ? (tideHourly[hour - 1] ?? estimateTideHeight(hour - 1, areaOffset))
+        ? (tideHourly[hour - 1] ?? estimateTideHeight(hour - 1))
         : undefined
 
       return {
