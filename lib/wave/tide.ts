@@ -36,8 +36,9 @@ function parseObservations(html: string, date: Date): (number | undefined)[] {
   const mm = String(jst.getUTCMonth() + 1).padStart(2, '0')
   const dd = String(jst.getUTCDate()).padStart(2, '0')
 
+  // 大潮時には station datum を下回る負の値も観測されるため `-?\d+` で許容。
   const pattern = new RegExp(
-    `${yyyy}\\s+${mm}\\s+${dd}\\s+(\\d{2})\\s+\\d{2}\\s+(\\d+)`,
+    `${yyyy}\\s+${mm}\\s+${dd}\\s+(\\d{2})\\s+\\d{2}\\s+(-?\\d+)`,
     'g'
   )
   let match
@@ -63,14 +64,15 @@ function parsePredictionTable(html: string, date: Date): (number | undefined)[] 
 
   const dateCell = `<td[^>]*>\\s*${dateStr}\\s*<\\/td>`
   // 予測テーブルは 0時〜24時 の25列（HTMLヘッダ実物: <td>0時</td>...<td>24時</td>）
-  const numCell = `(?:<td[^>]*>\\s*(\\d+)\\s*<\\/td>\\s*){1,26}`
+  // 大潮時には station datum を下回る負の値（例: -8cm）も来るため、先頭の `-` を許容する。
+  const numCell = `(?:<td[^>]*>\\s*(-?\\d+)\\s*<\\/td>\\s*){1,26}`
   const rowPattern = new RegExp(`${dateCell}\\s*(${numCell})`, 's')
 
   const rowMatch = rowPattern.exec(html)
   if (!rowMatch) return new Array(24).fill(undefined)
 
   const values: number[] = []
-  const tdPattern = /<td[^>]*>\s*(\d+)\s*<\/td>/g
+  const tdPattern = /<td[^>]*>\s*(-?\d+)\s*<\/td>/g
   let tdMatch
   while ((tdMatch = tdPattern.exec(rowMatch[1])) !== null) {
     values.push(parseInt(tdMatch[1]))
