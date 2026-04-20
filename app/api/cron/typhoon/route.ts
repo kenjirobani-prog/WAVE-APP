@@ -354,8 +354,7 @@ export async function GET(request: NextRequest) {
     console.log(`[typhoon] Found ${xmlUrls.length} typhoon XML entries in feed`)
 
     if (xmlUrls.length === 0) {
-      console.log('[typhoon] No active typhoons in JMA feed')
-      return NextResponse.json({ success: true, typhoons: 0, message: 'No active typhoons', debug })
+      console.log('[typhoon] No active typhoons in JMA feed — will still run deactivation sweep')
     }
 
     // 各XMLを台風ごとに集約（EventIDで重複排除 = 同じ台風の最新発表を使う）
