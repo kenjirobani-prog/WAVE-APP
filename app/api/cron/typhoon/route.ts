@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore'
 import type { TyphoonData, ForecastPoint } from '@/types/typhoon'
 import { distanceToTokyoKm } from '@/lib/typhoon/mention'
 
@@ -402,14 +402,49 @@ export async function GET(request: NextRequest) {
     debug.step = 'save_to_firestore'
     debug.parsedTyphoons = typhoonDataList.length
 
-    if (typhoonDataList.length === 0) {
-      return NextResponse.json({ success: true, typhoons: 0, message: 'No typhoons parsed', debug })
-    }
-
-    // Firestoreに保存
+    // Firestoreに保存（消滅台風の非アクティブ化も行うためtyphoonDataList===0でも続行）
     await ensureAnonymousAuth()
     const db = getDb()
     const year = String(new Date().getFullYear())
+
+    // 今回のフィードに含まれる台風IDのセット
+    const currentTyphoonIds = new Set(
+      typhoonDataList.map(t => `T${year.slice(2)}${String(t.number).padStart(2, '0')}`)
+    )
+
+    // Firestore上で isActive=true になっている台風のうち、
+    // 今回のJMAフィードに含まれないものは消滅したとみなし isActive=false に更新
+    const deactivatedIds: string[] = []
+    try {
+      const listRef = collection(db, 'typhoons', year, 'list')
+      const activeQuery = query(listRef, where('isActive', '==', true))
+      const activeSnap = await getDocs(activeQuery)
+      for (const d of activeSnap.docs) {
+        if (!currentTyphoonIds.has(d.id)) {
+          await setDoc(d.ref, {
+            isActive: false,
+            dissipatedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }, { merge: true })
+          deactivatedIds.push(d.id)
+          console.log(`[typhoon] Deactivated ${d.id} (no longer in JMA feed)`)
+        }
+      }
+    } catch (deactErr) {
+      const msg = deactErr instanceof Error ? deactErr.message : String(deactErr)
+      console.error('[typhoon] Deactivation sweep failed:', msg)
+    }
+    debug.deactivated = deactivatedIds
+
+    if (typhoonDataList.length === 0) {
+      return NextResponse.json({
+        success: true,
+        typhoons: 0,
+        message: 'No typhoons parsed',
+        deactivated: deactivatedIds,
+        debug,
+      })
+    }
 
     const savedIds: string[] = []
     for (const t of typhoonDataList) {
