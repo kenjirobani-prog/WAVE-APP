@@ -1,14 +1,28 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Anton, Noto_Sans_JP } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
 import Footer from '@/components/Footer'
 import './globals.css'
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  display: 'swap',
+  weight: ['400', '500', '600', '700', '800', '900'],
   variable: '--font-inter',
+  display: 'swap',
+})
+
+const anton = Anton({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-anton',
+  display: 'swap',
+})
+
+const notoJp = Noto_Sans_JP({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-noto-jp',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -88,7 +102,7 @@ export default function RootLayout({
           })}}
         />
       </head>
-      <body className={`${inter.className} min-h-screen bg-[#f0f9ff]`}>
+      <body className={`${inter.variable} ${anton.variable} ${notoJp.variable} ${inter.className} min-h-screen bg-[#f0f9ff]`}>
         <div className="max-w-md mx-auto min-h-screen flex flex-col">
           {children}
           <Footer />

@@ -5,6 +5,24 @@
 :root {
   --background: #f0f9ff;
   --foreground: #0a1628;
+
+  /* === Ace Hotel風 デザイントークン === */
+  /* ベース（生成り＋墨） */
+  --ink-900: #1a1815;
+  --ink-700: #3a3530;
+  --ink-500: #6b6660;
+  --ink-300: #a8a29a;
+  --paper-100: #fbf8f3;
+  --paper-200: #f5f1ea;
+  --paper-300: #ede5d5;
+  --rule-line: #1a1815;
+  --rule-thin: #d8d2c5;
+
+  /* アクセント */
+  --accent-saturday: #1a3a52;
+  --alert-red: #a82a1f;
+  --alert-red-bg: #f5e8e5;
+  --alert-red-text-on-dark: #f5c4b3;
 }
 
 body {
