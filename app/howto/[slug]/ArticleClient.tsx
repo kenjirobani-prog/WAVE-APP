@@ -1,10 +1,9 @@
 'use client'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import BackButton from '@/components/BackButton'
 import type { HowToArticle } from '@/data/howto'
 
 // ──────────────────────────────────────────
-// Markdown parser (no external library)
+// Markdown parser (no external library) — preserved as-is from prior version
 // ──────────────────────────────────────────
 
 type Block =
@@ -25,7 +24,6 @@ function parseBlocks(raw: string): Block[] {
 
     if (!trimmed) { i++; continue }
 
-    // Headings
     const h3 = trimmed.match(/^### (.+)/)
     if (h3) { blocks.push({ kind: 'h3', text: h3[1] }); i++; continue }
 
@@ -35,7 +33,6 @@ function parseBlocks(raw: string): Block[] {
     const h1 = trimmed.match(/^# (.+)/)
     if (h1) { blocks.push({ kind: 'h1', text: h1[1] }); i++; continue }
 
-    // Table (starts with |)
     if (trimmed.startsWith('|')) {
       const tableLines: string[] = []
       while (i < lines.length && lines[i].trim().startsWith('|')) {
@@ -53,7 +50,6 @@ function parseBlocks(raw: string): Block[] {
       continue
     }
 
-    // Unordered list (starts with - )
     if (trimmed.startsWith('- ')) {
       const items: string[] = []
       while (i < lines.length && lines[i].trim().startsWith('- ')) {
@@ -64,7 +60,6 @@ function parseBlocks(raw: string): Block[] {
       continue
     }
 
-    // Paragraph — collect until blank line / heading / table / list
     const paraLines: string[] = []
     while (i < lines.length) {
       const t = lines[i].trim()
@@ -80,14 +75,13 @@ function parseBlocks(raw: string): Block[] {
   return blocks
 }
 
-// Inline renderer: **bold**
 function Inline({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/)
   return (
     <>
       {parts.map((part, i) =>
         part.startsWith('**') && part.endsWith('**')
-          ? <strong key={i} style={{ fontWeight: 700, color: '#0a1628' }}>{part.slice(2, -2)}</strong>
+          ? <strong key={i} style={{ fontWeight: 800, color: 'var(--ink-900)' }}>{part.slice(2, -2)}</strong>
           : <span key={i}>{part}</span>
       )}
     </>
@@ -98,50 +92,118 @@ function MarkdownBody({ content }: { content: string }) {
   const blocks = parseBlocks(content)
 
   return (
-    <div style={{ color: '#374151', fontSize: 15, lineHeight: 1.8 }}>
+    <div
+      className="font-jp"
+      style={{ color: 'var(--ink-700)', fontSize: 14, lineHeight: 1.85 }}
+    >
       {blocks.map((block, idx) => {
         switch (block.kind) {
           case 'h1':
-            // h1 is redundant with the article header — render as decorative subtitle
             return (
-              <p key={idx} style={{ fontSize: 13, color: '#94a3b8', marginTop: 0, marginBottom: 20, fontStyle: 'italic' }}>
+              <p
+                key={idx}
+                className="font-jp"
+                style={{
+                  fontSize: 12,
+                  color: 'var(--ink-300)',
+                  marginTop: 0,
+                  marginBottom: 24,
+                  fontStyle: 'italic',
+                }}
+              >
                 {block.text}
               </p>
             )
 
           case 'h2':
             return (
-              <h2 key={idx} style={{
-                fontSize: 18, fontWeight: 700, color: '#0284c7',
-                marginTop: 36, marginBottom: 12,
-                paddingBottom: 8, borderBottom: '2px solid #e0f2fe',
-              }}>
+              <h2
+                key={idx}
+                className="font-display"
+                style={{
+                  fontSize: 22,
+                  letterSpacing: '0.02em',
+                  color: 'var(--ink-900)',
+                  marginTop: 40,
+                  marginBottom: 14,
+                  paddingBottom: 8,
+                  borderBottom: '2px solid var(--ink-900)',
+                  lineHeight: 1.05,
+                }}
+              >
                 {block.text}
               </h2>
             )
 
           case 'h3':
             return (
-              <h3 key={idx} style={{
-                fontSize: 15, fontWeight: 700, color: '#0a1628',
-                marginTop: 24, marginBottom: 8,
-              }}>
+              <h3
+                key={idx}
+                className="font-jp"
+                style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  color: 'var(--ink-900)',
+                  marginTop: 28,
+                  marginBottom: 10,
+                  lineHeight: 1.45,
+                }}
+              >
                 {block.text}
               </h3>
             )
 
           case 'p':
             return (
-              <p key={idx} style={{ marginTop: 0, marginBottom: 16 }}>
+              <p
+                key={idx}
+                className="font-jp"
+                style={{
+                  marginTop: 0,
+                  marginBottom: 18,
+                  fontWeight: 500,
+                  color: 'var(--ink-700)',
+                  lineHeight: 1.85,
+                }}
+              >
                 <Inline text={block.text} />
               </p>
             )
 
           case 'ul':
             return (
-              <ul key={idx} style={{ marginTop: 0, marginBottom: 16, paddingLeft: 20 }}>
+              <ul
+                key={idx}
+                className="font-jp"
+                style={{
+                  marginTop: 0,
+                  marginBottom: 18,
+                  paddingLeft: 0,
+                  listStyle: 'none',
+                }}
+              >
                 {block.items.map((item, j) => (
-                  <li key={j} style={{ marginBottom: 6 }}>
+                  <li
+                    key={j}
+                    style={{
+                      marginBottom: 8,
+                      paddingLeft: 18,
+                      position: 'relative',
+                      color: 'var(--ink-700)',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        color: 'var(--ink-900)',
+                        fontWeight: 800,
+                      }}
+                    >
+                      —
+                    </span>
                     <Inline text={item} />
                   </li>
                 ))}
@@ -150,17 +212,35 @@ function MarkdownBody({ content }: { content: string }) {
 
           case 'table':
             return (
-              <div key={idx} style={{ overflowX: 'auto', marginBottom: 20, borderRadius: 10, border: '0.5px solid #eef1f4' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div
+                key={idx}
+                style={{
+                  overflowX: 'auto',
+                  marginBottom: 24,
+                  border: '1px solid var(--ink-900)',
+                }}
+              >
+                <table
+                  className="font-jp"
+                  style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}
+                >
                   <thead>
-                    <tr style={{ background: '#f0f9ff' }}>
+                    <tr style={{ background: 'var(--paper-300)' }}>
                       {block.headers.map((h, j) => (
-                        <th key={j} style={{
-                          padding: '8px 12px', textAlign: 'left',
-                          fontWeight: 700, color: '#0284c7',
-                          borderBottom: '0.5px solid #bae6fd',
-                          whiteSpace: 'nowrap',
-                        }}>
+                        <th
+                          key={j}
+                          className="font-display"
+                          style={{
+                            padding: '10px 12px',
+                            textAlign: 'left',
+                            fontWeight: 400,
+                            fontSize: 12,
+                            letterSpacing: '0.06em',
+                            color: 'var(--ink-900)',
+                            borderBottom: '1px solid var(--ink-900)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {h}
                         </th>
                       ))}
@@ -168,12 +248,23 @@ function MarkdownBody({ content }: { content: string }) {
                   </thead>
                   <tbody>
                     {block.rows.map((row, j) => (
-                      <tr key={j} style={{ borderBottom: j < block.rows.length - 1 ? '0.5px solid #eef1f4' : 'none' }}>
+                      <tr
+                        key={j}
+                        style={{
+                          borderBottom: j < block.rows.length - 1 ? '0.5px solid var(--rule-thin)' : 'none',
+                          background: j % 2 === 0 ? 'var(--paper-100)' : 'var(--paper-200)',
+                        }}
+                      >
                         {row.map((cell, k) => (
-                          <td key={k} style={{
-                            padding: '8px 12px', verticalAlign: 'top',
-                            color: '#374151',
-                          }}>
+                          <td
+                            key={k}
+                            style={{
+                              padding: '10px 12px',
+                              verticalAlign: 'top',
+                              color: 'var(--ink-700)',
+                              fontWeight: 500,
+                            }}
+                          >
                             <Inline text={cell} />
                           </td>
                         ))}
@@ -197,50 +288,66 @@ function MarkdownBody({ content }: { content: string }) {
 // ──────────────────────────────────────────
 
 export default function ArticleClient({ article }: { article: HowToArticle }) {
-  const router = useRouter()
-
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      {/* ヘッダー */}
-      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <Link href="/" style={{ textDecoration: 'none' }}><span style={{ fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</span></Link>
-              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>How to Surfing</span>
-            </div>
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+      {/* Header */}
+      <header
+        className="px-5 pt-5 pb-5"
+        style={{ background: 'var(--paper-100)', borderBottom: '4px solid var(--ink-900)' }}
+      >
+        <div className="flex items-center gap-3 mb-3.5">
+          <BackButton />
+          <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-500)' }}>
+            記事一覧へ戻る
           </div>
         </div>
-
-        <div className="flex items-center gap-2 mb-3">
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: '#fff',
-            background: 'rgba(255,255,255,0.2)', borderRadius: 99, padding: '2px 8px',
-          }}>
+        <div className="inline-block" style={{ border: '2px solid var(--ink-900)', padding: '6px 12px' }}>
+          <div className="font-display text-3xl leading-[0.95] tracking-[0.02em]">HOW TO SURF</div>
+        </div>
+        <div className="font-jp text-sm font-bold mt-2">サーフィンの始め方</div>
+        <div
+          className="flex items-center gap-3 mt-3 pt-2.5"
+          style={{ borderTop: '1px solid var(--ink-900)' }}
+        >
+          <span
+            className="font-display text-[10px] tracking-[0.08em] px-2 py-0.5"
+            style={{ background: 'var(--ink-900)', color: 'var(--paper-100)' }}
+          >
             {article.category}
           </span>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{article.readingTime}</span>
+          <span
+            className="font-jp text-[10px] font-bold"
+            style={{ color: 'var(--ink-500)' }}
+          >
+            {article.readingTime} · {article.publishedAt.replace(/-/g, '/')}
+          </span>
         </div>
-
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', lineHeight: 1.35, marginBottom: 6 }}>
+        <h1
+          className="font-jp font-black mt-4 leading-tight"
+          style={{ fontSize: 22, color: 'var(--ink-900)' }}
+        >
           {article.title}
         </h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, marginBottom: 8 }}>
+        <p
+          className="font-jp text-[13px] font-medium mt-2 leading-[1.7]"
+          style={{ color: 'var(--ink-500)' }}
+        >
           {article.subtitle}
         </p>
-        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-          {article.publishedAt.replace(/-/g, '/')}
-        </span>
       </header>
 
-      {/* 本文 */}
-      <main className="flex-1 overflow-auto pb-4">
-        <div className="bg-white px-5 py-6">
+      {/* Body */}
+      <main className="flex-1 overflow-auto pb-4" style={{ background: 'var(--paper-100)' }}>
+        <article
+          style={{
+            background: 'var(--paper-100)',
+            padding: '28px 20px',
+            borderBottom: '4px solid var(--ink-900)',
+          }}
+        >
           <MarkdownBody content={article.content} />
-        </div>
+        </article>
       </main>
-
     </div>
   )
 }

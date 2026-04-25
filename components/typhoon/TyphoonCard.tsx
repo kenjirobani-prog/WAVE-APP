@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import ArrowButton from '@/components/ui/ArrowButton'
 import { getApproximateLocation } from '@/lib/typhoon/location'
 
 interface Props {
@@ -28,49 +29,123 @@ function formatDateTime(iso?: string): string {
   return `${mm}/${dd} ${hh}:${mi}`
 }
 
+function MetricCell({ en, label, value }: { en: string; label: string; value: string }) {
+  return (
+    <div
+      style={{
+        background: 'var(--paper-300)',
+        border: '1px solid var(--ink-900)',
+        padding: '10px 12px',
+      }}
+    >
+      <div
+        className="font-display text-[9px] tracking-[0.06em]"
+        style={{ color: 'var(--ink-500)' }}
+      >
+        {en}
+      </div>
+      <div
+        className="font-jp text-[9px] font-medium mt-0.5"
+        style={{ color: 'var(--ink-500)' }}
+      >
+        {label}
+      </div>
+      <div
+        className="font-jp text-sm font-black mt-1"
+        style={{ color: 'var(--ink-900)' }}
+      >
+        {value}
+      </div>
+    </div>
+  )
+}
+
 export default function TyphoonCard({ year, typhoon }: Props) {
   return (
-    <div className="bg-white border border-[#eef1f4] rounded-xl p-4 mb-3">
-      <div className="flex items-start justify-between mb-3">
-        <h3 className="text-base font-bold text-[#0a1628]">{typhoon.name}</h3>
+    <div
+      style={{
+        background: 'var(--paper-100)',
+        border: '1px solid var(--ink-900)',
+        padding: '16px 18px',
+      }}
+    >
+      <div
+        className="flex items-start justify-between gap-3 pb-3 mb-3"
+        style={{ borderBottom: '1px solid var(--rule-thin)' }}
+      >
+        <div>
+          <div
+            className="font-display text-[10px] tracking-[0.08em]"
+            style={{ color: 'var(--ink-500)' }}
+          >
+            TYPHOON {typhoon.number}
+          </div>
+          <div className="font-jp text-base font-black mt-1" style={{ color: 'var(--ink-900)' }}>
+            {typhoon.name}
+          </div>
+        </div>
         <div className="text-right">
           {typhoon.updatedAt && (
-            <p className="text-[10px] text-[#8899aa]">{formatDateTime(typhoon.updatedAt)} 更新</p>
+            <div
+              className="font-jp text-[10px] font-bold"
+              style={{ color: 'var(--ink-500)' }}
+            >
+              {formatDateTime(typhoon.updatedAt)} 更新
+            </div>
           )}
           {typhoon.startedAt && (
-            <p className="text-[10px] text-[#c0ccd8]">{formatDateTime(typhoon.startedAt)} 発生</p>
+            <div
+              className="font-jp text-[10px] font-medium mt-0.5"
+              style={{ color: 'var(--ink-300)' }}
+            >
+              {formatDateTime(typhoon.startedAt)} 発生
+            </div>
           )}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="bg-[#f0f9ff] rounded-lg p-2" style={{ gridColumn: '1 / -1' }}>
-          <p className="text-[9px] text-[#8899aa]">現在位置</p>
-          <p className="text-sm font-semibold text-[#0a1628]">
-            {getApproximateLocation(typhoon.position.lat, typhoon.position.lon)}
-          </p>
+      <div className="mb-3">
+        <div
+          className="font-display text-[9px] tracking-[0.06em]"
+          style={{ color: 'var(--ink-500)' }}
+        >
+          LOCATION
         </div>
-        <div className="bg-[#f0f9ff] rounded-lg p-2">
-          <p className="text-[9px] text-[#8899aa]">中心気圧</p>
-          <p className="text-sm font-semibold text-[#0a1628]">{typhoon.pressure} hPa</p>
+        <div className="font-jp text-sm font-bold mt-0.5" style={{ color: 'var(--ink-900)' }}>
+          {getApproximateLocation(typhoon.position.lat, typhoon.position.lon)}
         </div>
-        <div className="bg-[#f0f9ff] rounded-lg p-2">
-          <p className="text-[9px] text-[#8899aa]">最大風速</p>
-          <p className="text-sm font-semibold text-[#0a1628]">{Number(typhoon.windSpeed).toFixed(1)} m/s</p>
-        </div>
-        <div className="bg-[#f0f9ff] rounded-lg p-2">
-          <p className="text-[9px] text-[#8899aa]">強さ</p>
-          <p className="text-sm font-semibold text-[#0a1628]">{typhoon.intensity || '-'}</p>
-        </div>
-        <div className="bg-[#f0f9ff] rounded-lg p-2">
-          <p className="text-[9px] text-[#8899aa]">大きさ</p>
-          <p className="text-sm font-semibold text-[#0a1628]">{typhoon.size || '-'}</p>
-        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5 mb-3">
+        <MetricCell en="PRESSURE" label="中心気圧" value={`${typhoon.pressure} hPa`} />
+        <MetricCell en="WIND" label="最大風速" value={`${Number(typhoon.windSpeed).toFixed(1)} m/s`} />
+        {typhoon.intensity && (
+          <MetricCell en="INTENSITY" label="強さ" value={typhoon.intensity} />
+        )}
+        {typhoon.size && (
+          <MetricCell en="SIZE" label="大きさ" value={typhoon.size} />
+        )}
       </div>
       <Link
         href={`/typhoon/${year}/${typhoon.id}`}
-        className="flex items-center justify-end gap-1 text-xs font-semibold text-[#1A7A6E]"
+        className="block"
+        style={{
+          background: 'var(--ink-900)',
+          color: 'var(--paper-100)',
+          padding: '10px 14px',
+          textDecoration: 'none',
+        }}
       >
-        詳細を見る →
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div
+              className="font-display text-[10px] tracking-[0.08em]"
+              style={{ color: 'rgba(251,248,243,0.6)' }}
+            >
+              VIEW DETAILS
+            </div>
+            <div className="font-jp text-sm font-black mt-0.5">詳細を見る</div>
+          </div>
+          <ArrowButton variant="light" size={28} />
+        </div>
       </Link>
     </div>
   )

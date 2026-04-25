@@ -1,8 +1,17 @@
 'use client'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter, useParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
+import BackButton from '@/components/BackButton'
+import ArrowButton from '@/components/ui/ArrowButton'
 import type { SurfboardItem } from '@/app/api/surfboards/route'
+
+const GENRE_EN: Record<string, string> = {
+  'ショートボード': 'SHORT BOARD',
+  'ミッドレングス': 'MID LENGTH',
+  'ロングボード': 'LONG BOARD',
+  'ソフトボード': 'SOFT BOARD',
+  'ロング・ソフト': 'LONG / SOFT',
+}
 
 function lengthToFeet(inch: number | null): string {
   if (!inch) return '—'
@@ -11,44 +20,82 @@ function lengthToFeet(inch: number | null): string {
   return rem > 0 ? `${feet}'${rem}"` : `${feet}'0"`
 }
 
-const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
-  '初心者': { bg: '#dcfce7', color: '#166534' },
-  '初中級者': { bg: '#dcfce7', color: '#166534' },
-  '中級者': { bg: '#dbeafe', color: '#1e40af' },
-  '中上級者': { bg: '#dbeafe', color: '#1e40af' },
-  '上級者': { bg: '#ffedd5', color: '#9a3412' },
-  'オールレベル': { bg: '#f0f9ff', color: '#0284c7' },
-}
-
-const GENRE_COLORS: Record<string, { bg: string; color: string }> = {
-  'ショートボード': { bg: '#ede9fe', color: '#6d28d9' },
-  'ミッドレングス': { bg: '#e0f2fe', color: '#0369a1' },
-  'ロングボード': { bg: '#fef3c7', color: '#92400e' },
-  'ソフトボード': { bg: '#d1fae5', color: '#065f46' },
-  'ロング・ソフト': { bg: '#fef3c7', color: '#92400e' },
-}
-
 function SpecGrid({ item }: { item: SurfboardItem }) {
-  const specs = [
-    { label: '長さ', value: lengthToFeet(item.lengthInch) },
-    { label: 'ボリューム', value: item.volumeL ? `${item.volumeL}L` : '—' },
-    { label: 'フィン', value: item.fin || '—' },
-    { label: 'ジャンル', value: item.genre || '—' },
+  const specs: { label: string; en: string; value: string }[] = [
+    { label: '長さ', en: 'LENGTH', value: lengthToFeet(item.lengthInch) },
+    { label: 'ボリューム', en: 'VOLUME', value: item.volumeL ? `${item.volumeL}L` : '—' },
+    { label: 'フィン', en: 'FIN', value: item.fin || '—' },
+    { label: 'ジャンル', en: 'GENRE', value: item.genre || '—' },
   ]
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-1.5">
       {specs.map(s => (
-        <div key={s.label} className="bg-[#f8fafc] rounded-lg p-3">
-          <p className="text-[10px] text-[#8899aa] mb-1">{s.label}</p>
-          <p className="text-sm font-bold text-[#0a1628]">{s.value}</p>
+        <div
+          key={s.label}
+          style={{
+            background: 'var(--paper-100)',
+            border: '1px solid var(--ink-900)',
+            padding: '12px 14px',
+          }}
+        >
+          <div
+            className="font-display text-[9px] tracking-[0.08em]"
+            style={{ color: 'var(--ink-500)' }}
+          >
+            {s.en}
+          </div>
+          <div
+            className="font-jp text-[10px] font-medium mt-0.5"
+            style={{ color: 'var(--ink-500)' }}
+          >
+            {s.label}
+          </div>
+          <div
+            className="font-jp text-base font-black mt-1.5"
+            style={{ color: 'var(--ink-900)' }}
+          >
+            {s.value}
+          </div>
         </div>
       ))}
     </div>
   )
 }
 
+function MinimalHeader({ title }: { title: string }) {
+  return (
+    <header
+      className="px-5 pt-5 pb-5"
+      style={{ background: 'var(--paper-100)', borderBottom: '4px solid var(--ink-900)' }}
+    >
+      <div className="flex items-center gap-3 mb-3.5">
+        <BackButton />
+        <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-500)' }}>
+          サーフボード一覧へ戻る
+        </div>
+      </div>
+      <div className="inline-block" style={{ border: '2px solid var(--ink-900)', padding: '6px 12px' }}>
+        <div className="font-display text-3xl leading-[0.95] tracking-[0.02em]">SURFBOARDS</div>
+      </div>
+      <div className="font-jp text-sm font-bold mt-2">{title}</div>
+    </header>
+  )
+}
+
+function SkeletonBlock({ height }: { height: number }) {
+  return (
+    <div
+      className="animate-pulse"
+      style={{
+        background: 'var(--paper-300)',
+        height,
+        border: '1px solid var(--ink-900)',
+      }}
+    />
+  )
+}
+
 export default function SurfboardDetailPage() {
-  const router = useRouter()
   const params = useParams()
   const id = params.id as string
   const [item, setItem] = useState<SurfboardItem | null>(null)
@@ -67,128 +114,301 @@ export default function SurfboardDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-        <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
-            <div className="h-6 w-40 bg-white/20 rounded animate-pulse" />
-          </div>
-        </header>
-        <main className="flex-1 p-4 space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-xl border border-[#eef1f4] p-4 animate-pulse">
-              <div className="h-4 bg-[#eef1f4] rounded w-1/3 mb-3" />
-              <div className="h-3 bg-[#eef1f4] rounded w-full" />
-            </div>
-          ))}
+      <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+        <MinimalHeader title="読み込み中..." />
+        <main className="flex-1 px-5 py-5 space-y-3">
+          <SkeletonBlock height={120} />
+          <SkeletonBlock height={120} />
+          <SkeletonBlock height={120} />
         </main>
-
       </div>
     )
   }
 
   if (!item) {
     return (
-      <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-        <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
-            <span style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Not Found</span>
-          </div>
-        </header>
+      <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+        <MinimalHeader title="ボードが見つかりません" />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-[#8899aa]">ボードが見つかりませんでした</p>
+          <p className="font-jp text-sm" style={{ color: 'var(--ink-500)' }}>
+            ボードが見つかりませんでした
+          </p>
         </main>
       </div>
     )
   }
 
-  const genreStyle = GENRE_COLORS[item.genre] ?? { bg: '#f1f5f9', color: '#475569' }
-  const levelStyle = LEVEL_COLORS[item.level] ?? { bg: '#f1f5f9', color: '#475569' }
+  const brandEn = (item.brand || '').toUpperCase()
+  const genreEn = GENRE_EN[item.genre] ?? item.genre.toUpperCase()
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      {/* ヘッダー */}
-      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <Link href="/" style={{ textDecoration: 'none' }}><span style={{ fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>{item.brand}</span></Link>
-              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>{item.model || item.name}</span>
-            </div>
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+      {/* Header */}
+      <header
+        className="px-5 pt-5 pb-5"
+        style={{ background: 'var(--paper-100)', borderBottom: '4px solid var(--ink-900)' }}
+      >
+        <div className="flex items-center gap-3 mb-3.5">
+          <BackButton />
+          <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-500)' }}>
+            サーフボード一覧へ戻る
           </div>
         </div>
-        <div className="flex gap-1.5 flex-wrap">
-          <span style={{ background: genreStyle.bg, color: genreStyle.color, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{item.genre}</span>
+        <div className="inline-block" style={{ border: '2px solid var(--ink-900)', padding: '6px 12px' }}>
+          <div className="font-display text-3xl leading-[0.95] tracking-[0.02em]">
+            {brandEn || 'SURFBOARD'}
+          </div>
+        </div>
+        <div className="font-jp text-base font-bold mt-2 leading-tight" style={{ color: 'var(--ink-900)' }}>
+          {item.model || item.name}
+        </div>
+        <div
+          className="flex items-center gap-2 mt-3 pt-2.5 flex-wrap"
+          style={{ borderTop: '1px solid var(--ink-900)' }}
+        >
+          <span
+            className="font-display text-[10px] tracking-[0.08em] px-2 py-0.5"
+            style={{ background: 'var(--ink-900)', color: 'var(--paper-100)' }}
+          >
+            {genreEn}
+          </span>
           {item.lengthInch && (
-            <span style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{lengthToFeet(item.lengthInch)}</span>
+            <span
+              className="font-jp text-[10px] font-bold px-2 py-0.5"
+              style={{
+                background: 'transparent',
+                color: 'var(--ink-900)',
+                border: '1px solid var(--ink-900)',
+              }}
+            >
+              {lengthToFeet(item.lengthInch)}
+            </span>
           )}
           {item.volumeL && (
-            <span style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{item.volumeL}L</span>
+            <span
+              className="font-jp text-[10px] font-bold px-2 py-0.5"
+              style={{
+                background: 'transparent',
+                color: 'var(--ink-900)',
+                border: '1px solid var(--ink-900)',
+              }}
+            >
+              {item.volumeL}L
+            </span>
           )}
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-4 p-4 space-y-3">
-        {/* スペック詳細 */}
-        <div className="bg-white rounded-xl border border-[#eef1f4] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-3">スペック詳細</p>
-          <SpecGrid item={item} />
-        </div>
-
-        {/* こんなサーファーに */}
-        <div className="bg-white rounded-xl border border-[#eef1f4] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-3">こんなサーファーに</p>
-          <div className="flex gap-1.5 flex-wrap">
-            {item.level && (
-              <span style={{ background: levelStyle.bg, color: levelStyle.color, fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 99 }}>{item.level}</span>
-            )}
-            {item.waveSize && (
-              <span style={{ background: '#f0f9ff', color: '#0284c7', fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 99 }}>{item.waveSize}</span>
-            )}
-            <span style={{ background: genreStyle.bg, color: genreStyle.color, fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 99 }}>{item.genre}</span>
-          </div>
-        </div>
-
-        {/* 特徴・コメント */}
-        {item.description && (
-          <div className="bg-white rounded-xl border border-[#eef1f4] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-3">特徴・コメント</p>
-            <p className="text-sm text-[#374151] leading-relaxed">{item.description}</p>
-          </div>
-        )}
-
-        {/* 価格・公式サイト */}
-        <div className="bg-white rounded-xl border border-[#eef1f4] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#8899aa] mb-3">価格・公式サイト</p>
-          <div className="mb-3">
-            {item.priceUSD ? (
-              <>
-                <p style={{ fontSize: 28, fontWeight: 800, color: '#0284c7', lineHeight: 1 }}>${item.priceUSD.toLocaleString()}</p>
-                <p className="text-xs text-[#8899aa] mt-1">約¥{Math.round(item.priceUSD * 150).toLocaleString()}（150円換算）</p>
-              </>
-            ) : item.priceJPY ? (
-              <p style={{ fontSize: 28, fontWeight: 800, color: '#0284c7', lineHeight: 1 }}>¥{item.priceJPY.toLocaleString()}</p>
-            ) : (
-              <p className="text-sm text-[#8899aa]">価格情報なし</p>
-            )}
-          </div>
-          {item.officialUrl ? (
-            <a
-              href={item.officialUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-5 py-2.5 bg-[#0284c7] text-white rounded-full text-sm font-semibold"
+      <main className="flex-1 overflow-auto pb-4" style={{ background: 'var(--paper-100)' }}>
+        <div className="px-5 py-5 space-y-3">
+          {/* Spec details */}
+          <section
+            style={{
+              background: 'var(--paper-100)',
+              border: '1px solid var(--ink-900)',
+              padding: '18px 16px',
+            }}
+          >
+            <div
+              className="flex items-center justify-between pb-2 mb-3"
+              style={{ borderBottom: '1px solid var(--ink-900)' }}
             >
-              公式サイトで見る ↗
-            </a>
-          ) : (
-            <span style={{ background: '#f1f5f9', color: '#94a3b8', fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 99 }}>販売終了</span>
+              <div className="font-display text-[12px] tracking-[0.1em]">
+                SPECIFICATIONS
+              </div>
+              <div
+                className="font-jp text-[10px] font-bold"
+                style={{ color: 'var(--ink-500)' }}
+              >
+                スペック詳細
+              </div>
+            </div>
+            <SpecGrid item={item} />
+          </section>
+
+          {/* For these surfers */}
+          <section
+            style={{
+              background: 'var(--paper-300)',
+              border: '1px solid var(--ink-900)',
+              padding: '18px 16px',
+            }}
+          >
+            <div
+              className="flex items-center justify-between pb-2 mb-3"
+              style={{ borderBottom: '1px solid var(--ink-900)' }}
+            >
+              <div className="font-display text-[12px] tracking-[0.1em]">
+                FOR SURFERS
+              </div>
+              <div
+                className="font-jp text-[10px] font-bold"
+                style={{ color: 'var(--ink-500)' }}
+              >
+                こんなサーファーに
+              </div>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {item.level && (
+                <span
+                  className="font-jp text-xs font-bold px-3 py-1.5"
+                  style={{
+                    background: 'var(--ink-900)',
+                    color: 'var(--paper-100)',
+                  }}
+                >
+                  {item.level}
+                </span>
+              )}
+              {item.waveSize && (
+                <span
+                  className="font-jp text-xs font-bold px-3 py-1.5"
+                  style={{
+                    background: 'var(--paper-100)',
+                    color: 'var(--ink-900)',
+                    border: '1px solid var(--ink-900)',
+                  }}
+                >
+                  {item.waveSize}
+                </span>
+              )}
+              <span
+                className="font-jp text-xs font-bold px-3 py-1.5"
+                style={{
+                  background: 'var(--paper-100)',
+                  color: 'var(--ink-900)',
+                  border: '1px solid var(--ink-900)',
+                }}
+              >
+                {item.genre}
+              </span>
+            </div>
+          </section>
+
+          {/* Description */}
+          {item.description && (
+            <section
+              style={{
+                background: 'var(--paper-100)',
+                border: '1px solid var(--ink-900)',
+                padding: '18px 16px',
+              }}
+            >
+              <div
+                className="flex items-center justify-between pb-2 mb-3"
+                style={{ borderBottom: '1px solid var(--ink-900)' }}
+              >
+                <div className="font-display text-[12px] tracking-[0.1em]">
+                  DESCRIPTION
+                </div>
+                <div
+                  className="font-jp text-[10px] font-bold"
+                  style={{ color: 'var(--ink-500)' }}
+                >
+                  特徴・コメント
+                </div>
+              </div>
+              <p
+                className="font-jp text-[13px] font-medium leading-[1.85]"
+                style={{ color: 'var(--ink-700)' }}
+              >
+                {item.description}
+              </p>
+            </section>
           )}
+
+          {/* Price + official link */}
+          <section
+            style={{
+              background: 'var(--paper-100)',
+              border: '1px solid var(--ink-900)',
+              padding: '18px 16px',
+            }}
+          >
+            <div
+              className="flex items-center justify-between pb-2 mb-3"
+              style={{ borderBottom: '1px solid var(--ink-900)' }}
+            >
+              <div className="font-display text-[12px] tracking-[0.1em]">
+                PRICE
+              </div>
+              <div
+                className="font-jp text-[10px] font-bold"
+                style={{ color: 'var(--ink-500)' }}
+              >
+                価格・公式サイト
+              </div>
+            </div>
+            <div className="mb-4">
+              {item.priceUSD ? (
+                <>
+                  <div
+                    className="font-display tracking-[0.02em]"
+                    style={{ fontSize: 36, lineHeight: 0.95, color: 'var(--ink-900)' }}
+                  >
+                    ${item.priceUSD.toLocaleString()}
+                  </div>
+                  <div
+                    className="font-jp text-xs font-medium mt-2"
+                    style={{ color: 'var(--ink-500)' }}
+                  >
+                    約 ¥{Math.round(item.priceUSD * 150).toLocaleString()}（150円換算）
+                  </div>
+                </>
+              ) : item.priceJPY ? (
+                <div
+                  className="font-display tracking-[0.02em]"
+                  style={{ fontSize: 36, lineHeight: 0.95, color: 'var(--ink-900)' }}
+                >
+                  ¥{item.priceJPY.toLocaleString()}
+                </div>
+              ) : (
+                <p className="font-jp text-sm" style={{ color: 'var(--ink-500)' }}>
+                  価格情報なし
+                </p>
+              )}
+            </div>
+            {item.officialUrl ? (
+              <a
+                href={item.officialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+                style={{
+                  background: 'var(--ink-900)',
+                  color: 'var(--paper-100)',
+                  padding: '14px 18px',
+                  textDecoration: 'none',
+                }}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div
+                      className="font-display text-[10px] tracking-[0.08em]"
+                      style={{ color: 'rgba(251,248,243,0.6)' }}
+                    >
+                      OFFICIAL SITE
+                    </div>
+                    <div className="font-jp text-sm font-black mt-1">公式サイトで見る</div>
+                  </div>
+                  <ArrowButton variant="light" size={28} />
+                </div>
+              </a>
+            ) : (
+              <span
+                className="inline-block font-jp text-xs font-bold px-3 py-1.5"
+                style={{
+                  background: 'var(--paper-300)',
+                  color: 'var(--ink-500)',
+                  border: '1px solid var(--ink-300)',
+                }}
+              >
+                販売終了
+              </span>
+            )}
+          </section>
         </div>
       </main>
-
     </div>
   )
 }

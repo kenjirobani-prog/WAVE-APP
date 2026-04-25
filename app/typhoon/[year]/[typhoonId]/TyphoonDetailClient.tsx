@@ -55,6 +55,37 @@ function formatUpdatedAt(iso?: string): string {
   return t ? `${t} 更新` : ''
 }
 
+function MetricCell({ label, value, en }: { label: string; value: string; en: string }) {
+  return (
+    <div
+      style={{
+        background: 'var(--paper-300)',
+        border: '1px solid var(--ink-900)',
+        padding: '12px 14px',
+      }}
+    >
+      <div
+        className="font-display text-[9px] tracking-[0.05em]"
+        style={{ color: 'var(--ink-500)' }}
+      >
+        {en}
+      </div>
+      <div
+        className="font-jp text-[10px] font-medium mt-0.5"
+        style={{ color: 'var(--ink-500)' }}
+      >
+        {label}
+      </div>
+      <div
+        className="font-jp text-base font-black mt-1.5"
+        style={{ color: 'var(--ink-900)' }}
+      >
+        {value}
+      </div>
+    </div>
+  )
+}
+
 export default function TyphoonDetailClient({ year, typhoonId }: { year: string; typhoonId: string }) {
   const [typhoon, setTyphoon] = useState<Typhoon | null>(null)
   const [areaComments, setAreaComments] = useState<Record<string, AreaComment>>({})
@@ -69,7 +100,6 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
         await ensureAnonymousAuth()
         const db = getDb()
 
-        // 台風本体
         const tRef = doc(db, 'typhoons', year, 'list', typhoonId)
         const tSnap = await getDoc(tRef)
         if (!tSnap.exists()) {
@@ -94,7 +124,6 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
           startedAt: d.startedAt,
         })
 
-        // エリア別コメント（サブコレクションが存在しない場合はスキップ）
         try {
           const cRef = collection(db, 'typhoons', year, 'list', typhoonId, 'areaComments')
           const cSnap = await getDocs(cRef)
@@ -123,26 +152,48 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#f0f9ff]">
-        <p className="text-sm text-[#8899aa]">読み込み中...</p>
+      <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--paper-300)' }}>
+        <p className="font-jp text-sm" style={{ color: 'var(--ink-500)' }}>読み込み中...</p>
       </div>
     )
   }
 
   if (notFound || !typhoon) {
     return (
-      <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-        <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+        <header
+          className="px-5 pt-5 pb-5"
+          style={{ background: 'var(--paper-100)', borderBottom: '4px solid var(--ink-900)' }}
+        >
+          <div className="flex items-center gap-3 mb-3.5">
             <BackButton />
-            <span style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>台風情報</span>
+            <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-500)' }}>
+              戻る
+            </div>
           </div>
+          <div className="inline-block" style={{ border: '2px solid var(--ink-900)', padding: '6px 12px' }}>
+            <div className="font-display text-3xl leading-[0.95] tracking-[0.02em]">TYPHOON</div>
+          </div>
+          <div className="font-jp text-sm font-bold mt-2">台風情報</div>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center p-8 gap-2">
-          <p className="text-sm text-[#8899aa]">台風データが見つかりませんでした。</p>
-          <p className="text-[10px] text-[#c0ccd8]">path: typhoons/{year}/list/{typhoonId}</p>
-          {errorMsg && <p className="text-[10px] text-red-400">{errorMsg}</p>}
-          <Link href={`/typhoon/${year}`} className="text-xs text-sky-700 font-semibold mt-2">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 gap-3">
+          <p className="font-jp text-sm" style={{ color: 'var(--ink-500)' }}>
+            台風データが見つかりませんでした。
+          </p>
+          <p
+            className="font-display text-[10px] tracking-[0.06em]"
+            style={{ color: 'var(--ink-300)' }}
+          >
+            path: typhoons/{year}/list/{typhoonId}
+          </p>
+          {errorMsg && (
+            <p className="font-jp text-[10px]" style={{ color: 'var(--alert-red)' }}>{errorMsg}</p>
+          )}
+          <Link
+            href={`/typhoon/${year}`}
+            className="font-jp text-xs font-bold mt-2 underline"
+            style={{ color: 'var(--ink-900)' }}
+          >
             ← {year}年の台風一覧に戻る
           </Link>
         </div>
@@ -150,77 +201,242 @@ export default function TyphoonDetailClient({ year, typhoonId }: { year: string;
     )
   }
 
+  const isActive = typhoon.isActive
+  const titleEn = `TYPHOON ${typhoon.number}`
+
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+      {/* Header */}
+      <header
+        className="px-5 pt-5 pb-5"
+        style={{ background: 'var(--paper-100)', borderBottom: '4px solid var(--ink-900)' }}
+      >
+        <div className="flex items-center gap-3 mb-3.5">
           <BackButton />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <Link href={`/typhoon/${year}`} style={{ textDecoration: 'none' }}>
-                <span style={{ fontSize: 18, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>{year}年 台風</span>
-              </Link>
-              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>{typhoon.name}</span>
-            </div>
+          <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-500)' }}>
+            {year}年の台風一覧へ戻る
           </div>
+        </div>
+        <div className="inline-block" style={{ border: '2px solid var(--ink-900)', padding: '6px 12px' }}>
+          <div className="font-display text-3xl leading-[0.95] tracking-[0.02em]">{titleEn}</div>
+        </div>
+        <div className="font-jp text-base font-bold mt-2" style={{ color: 'var(--ink-900)' }}>
+          {typhoon.name}
+        </div>
+        <div
+          className="flex items-center gap-2 mt-3 pt-2.5 flex-wrap"
+          style={{ borderTop: '1px solid var(--ink-900)' }}
+        >
+          <span
+            className="font-display text-[10px] tracking-[0.08em] px-2 py-0.5"
+            style={{
+              background: isActive ? 'var(--alert-red)' : 'var(--ink-900)',
+              color: 'var(--paper-100)',
+            }}
+          >
+            {isActive ? 'ACTIVE' : 'ARCHIVED'}
+          </span>
+          <span
+            className="font-jp text-[10px] font-bold"
+            style={{ color: 'var(--ink-500)' }}
+          >
+            {year}年
+            {typhoon.updatedAt && ` · ${formatUpdatedAt(typhoon.updatedAt)}`}
+          </span>
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto pb-4 px-4 pt-4 space-y-4">
-        {/* ① 台風基本情報カード */}
-        <section className="bg-white border border-[#eef1f4] rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-[#0a1628]">台風{typhoon.number}号 基本情報</h2>
-            {typhoon.updatedAt && (
-              <span className="text-[10px] text-[#8899aa]">{formatUpdatedAt(typhoon.updatedAt)}</span>
-            )}
+      <main className="flex-1 overflow-auto pb-4">
+        {/* Status section (black bar) */}
+        <section
+          className="px-5 py-6"
+          style={{
+            background: 'var(--ink-900)',
+            color: 'var(--paper-100)',
+            borderBottom: '4px solid var(--ink-900)',
+          }}
+        >
+          <div
+            className="font-jp text-[11px] mb-3.5 font-bold tracking-[0.1em]"
+            style={{ color: 'rgba(251,248,243,0.6)' }}
+          >
+            現在の状態
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[#f0f9ff] rounded-lg p-2.5" style={{ gridColumn: '1 / -1' }}>
-              <p className="text-[9px] text-[#8899aa]">現在位置</p>
-              <p className="text-sm font-semibold text-[#0a1628]">
-                {getApproximateLocation(typhoon.position.lat, typhoon.position.lon)}
-              </p>
-            </div>
-            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
-              <p className="text-[9px] text-[#8899aa]">中心気圧</p>
-              <p className="text-sm font-semibold text-[#0a1628]">{typhoon.pressure} hPa</p>
-            </div>
-            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
-              <p className="text-[9px] text-[#8899aa]">最大風速</p>
-              <p className="text-sm font-semibold text-[#0a1628]">{Number(typhoon.windSpeed).toFixed(1)} m/s</p>
-            </div>
-            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
-              <p className="text-[9px] text-[#8899aa]">強さ</p>
-              <p className="text-sm font-semibold text-[#0a1628]">{typhoon.intensity || '-'}</p>
-            </div>
-            <div className="bg-[#f0f9ff] rounded-lg p-2.5">
-              <p className="text-[9px] text-[#8899aa]">大きさ</p>
-              <p className="text-sm font-semibold text-[#0a1628]">{typhoon.size || '-'}</p>
-            </div>
-            {typhoon.startedAt && (
-              <div className="bg-[#f0f9ff] rounded-lg p-2.5" style={{ gridColumn: '1 / -1' }}>
-                <p className="text-[9px] text-[#8899aa]">発生時刻</p>
-                <p className="text-sm font-semibold text-[#0a1628]">{formatDateTime(typhoon.startedAt)} 発生</p>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div>
+              <div
+                className="font-display text-[10px] tracking-[0.08em]"
+                style={{ color: 'rgba(251,248,243,0.6)' }}
+              >
+                LOCATION
               </div>
+              <div className="font-jp text-base font-black mt-1">
+                {getApproximateLocation(typhoon.position.lat, typhoon.position.lon)}
+              </div>
+            </div>
+            {typhoon.intensity && (
+              <span
+                className="font-display text-[11px] tracking-[0.08em] px-3 py-1.5"
+                style={{
+                  background: isActive ? 'var(--alert-red)' : 'var(--paper-300)',
+                  color: isActive ? 'var(--paper-100)' : 'var(--ink-900)',
+                }}
+              >
+                {typhoon.intensity.toUpperCase()}
+              </span>
+            )}
+          </div>
+          {typhoon.startedAt && (
+            <div
+              className="font-jp text-[11px] font-medium mt-3"
+              style={{ color: 'rgba(251,248,243,0.7)' }}
+            >
+              {formatDateTime(typhoon.startedAt)} 発生
+            </div>
+          )}
+        </section>
+
+        {/* Metrics grid */}
+        <section
+          className="px-5 py-5"
+          style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+        >
+          <div className="mb-4">
+            <div className="font-display text-xl leading-none">METRICS</div>
+            <div
+              className="font-jp text-[10px] font-medium mt-1"
+              style={{ color: 'var(--ink-500)' }}
+            >
+              基本情報
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <MetricCell en="PRESSURE" label="中心気圧" value={`${typhoon.pressure} hPa`} />
+            <MetricCell en="WIND" label="最大風速" value={`${Number(typhoon.windSpeed).toFixed(1)} m/s`} />
+            {typhoon.maxWindGust && (
+              <MetricCell en="GUST" label="最大瞬間風速" value={`${Number(typhoon.maxWindGust).toFixed(1)} m/s`} />
+            )}
+            {typhoon.size && (
+              <MetricCell en="SIZE" label="大きさ" value={typhoon.size} />
             )}
           </div>
         </section>
 
-        {/* ② SVG進路マップ */}
-        <section className="bg-white border border-[#eef1f4] rounded-xl p-4">
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">進路予報</h2>
-          <TyphoonMap position={typhoon.position} forecastPath={typhoon.forecastPath} />
+        {/* Forecast map */}
+        <section
+          className="px-5 py-5"
+          style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+        >
+          <div className="mb-4">
+            <div className="font-display text-xl leading-none">FORECAST PATH</div>
+            <div
+              className="font-jp text-[10px] font-medium mt-1"
+              style={{ color: 'var(--ink-500)' }}
+            >
+              進路予報
+            </div>
+          </div>
+          <div style={{ border: '1px solid var(--ink-900)', overflow: 'hidden' }}>
+            <TyphoonMap position={typhoon.position} forecastPath={typhoon.forecastPath} />
+          </div>
         </section>
 
-        {/* ③ エリア別影響コメント */}
-        <section>
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">エリア別うねり影響</h2>
-          <div className="grid grid-cols-1 gap-3">
-            <AreaCommentCard area="湘南" comment={areaComments.shonan} />
-            <AreaCommentCard area="千葉" comment={areaComments.chiba} />
-            <AreaCommentCard area="茨城" comment={areaComments.ibaraki} />
+        {/* Forecast path table */}
+        {typhoon.forecastPath.length > 0 && (
+          <section
+            className="px-5 py-5"
+            style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+          >
+            <div className="mb-4">
+              <div className="font-display text-xl leading-none">PATH DATA</div>
+              <div
+                className="font-jp text-[10px] font-medium mt-1"
+                style={{ color: 'var(--ink-500)' }}
+              >
+                予報経路データ
+              </div>
+            </div>
+            <div style={{ border: '1px solid var(--ink-900)', overflow: 'auto' }}>
+              <table
+                className="font-jp"
+                style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}
+              >
+                <thead>
+                  <tr style={{ background: 'var(--paper-300)' }}>
+                    {[
+                      { jp: '時刻', en: 'TIME' },
+                      { jp: '位置', en: 'POSITION' },
+                      { jp: '気圧', en: 'PRESSURE' },
+                      { jp: '風速', en: 'WIND' },
+                    ].map(h => (
+                      <th
+                        key={h.en}
+                        className="font-display"
+                        style={{
+                          padding: '8px 10px',
+                          textAlign: 'left',
+                          fontSize: 11,
+                          letterSpacing: '0.06em',
+                          color: 'var(--ink-900)',
+                          borderBottom: '1px solid var(--ink-900)',
+                          whiteSpace: 'nowrap',
+                          fontWeight: 400,
+                        }}
+                      >
+                        {h.en}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {typhoon.forecastPath.map((p, i) => (
+                    <tr
+                      key={i}
+                      style={{
+                        background: i % 2 === 0 ? 'var(--paper-100)' : 'var(--paper-200)',
+                        borderBottom: i < typhoon.forecastPath.length - 1 ? '0.5px solid var(--rule-thin)' : 'none',
+                      }}
+                    >
+                      <td className="font-jp" style={{ padding: '8px 10px', color: 'var(--ink-700)', fontWeight: 500 }}>
+                        {formatDateTime(p.time)}
+                      </td>
+                      <td className="font-jp" style={{ padding: '8px 10px', color: 'var(--ink-700)', fontWeight: 500 }}>
+                        {getApproximateLocation(p.lat, p.lon)}
+                      </td>
+                      <td className="font-jp" style={{ padding: '8px 10px', color: 'var(--ink-700)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        {p.pressure} hPa
+                      </td>
+                      <td className="font-jp" style={{ padding: '8px 10px', color: 'var(--ink-700)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        {Number(p.windSpeed).toFixed(1)} m/s
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* Area commentary */}
+        <section
+          style={{
+            background: 'var(--paper-100)',
+            borderTop: '2px solid var(--ink-900)',
+            borderBottom: '4px solid var(--ink-900)',
+          }}
+        >
+          <div className="px-5 py-5" style={{ borderBottom: '1px solid var(--ink-900)' }}>
+            <div className="font-display text-xl leading-none">AREA COMMENTARY</div>
+            <div
+              className="font-jp text-[10px] font-medium mt-1"
+              style={{ color: 'var(--ink-500)' }}
+            >
+              エリア別うねり影響
+            </div>
           </div>
+          <AreaCommentCard area="湘南" comment={areaComments.shonan} altBg="paper-100" />
+          <AreaCommentCard area="千葉" comment={areaComments.chiba} altBg="paper-300" />
+          <AreaCommentCard area="茨城" comment={areaComments.ibaraki} altBg="paper-100" />
         </section>
       </main>
     </div>
