@@ -25,7 +25,7 @@ const STAR_LEGEND: { stars: string; text: string }[] = [
 
 export default function AboutPage() {
   return (
-    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-100)' }}>
       {/* Header */}
       <header
         className="px-5 pt-5 pb-5"
@@ -56,8 +56,8 @@ export default function AboutPage() {
 
         {/* Section: AI 波予報とは */}
         <section
-          className="px-5 py-6"
-          style={{ background: 'var(--paper-100)', borderBottom: '1px solid var(--ink-900)' }}
+          className="px-5 py-7"
+          style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
         >
           <div className="font-display text-[10px] tracking-[0.08em] mb-2" style={{ color: 'var(--ink-500)' }}>
             WHAT / AI 波予報とは
@@ -69,8 +69,8 @@ export default function AboutPage() {
 
         {/* Section: データの源泉 */}
         <section
-          className="px-5 py-6"
-          style={{ background: 'var(--paper-300)', borderBottom: '1px solid var(--ink-900)' }}
+          className="px-5 py-7"
+          style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
         >
           <div className="font-display text-[10px] tracking-[0.08em] mb-2" style={{ color: 'var(--ink-500)' }}>
             DATA SOURCE / データの源泉
@@ -82,7 +82,7 @@ export default function AboutPage() {
 
         {/* Section: エリア・スポット専用のロジック */}
         <section
-          className="px-5 py-6"
+          className="px-5 py-7"
           style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
         >
           <div className="font-display text-[10px] tracking-[0.08em] mb-2" style={{ color: 'var(--ink-500)' }}>
@@ -95,7 +95,7 @@ export default function AboutPage() {
 
         {/* Section: スコア計算テーブル */}
         <section
-          className="px-5 py-6"
+          className="px-5 py-7"
           style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
         >
           <div className="mb-4">
@@ -153,39 +153,35 @@ export default function AboutPage() {
           </p>
         </section>
 
-        {/* Section: 個人プロジェクト（黒帯） */}
+        {/* Section: 個人プロジェクト */}
         <section
-          className="px-5 py-6"
-          style={{
-            background: 'var(--ink-900)',
-            color: 'var(--paper-100)',
-            borderBottom: '2px solid var(--ink-900)',
-          }}
+          className="px-5 py-7"
+          style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
         >
           <div className="mb-4">
             <div className="font-display text-xl leading-none">INDIVIDUAL PROJECT</div>
             <div
               className="font-jp text-[10px] font-medium mt-1"
-              style={{ color: 'rgba(251,248,243,0.6)' }}
+              style={{ color: 'var(--ink-500)' }}
             >
               このアプリができた理由
             </div>
           </div>
-          <p className="font-jp text-[13px] font-medium leading-[1.85] mb-3">
+          <p className="font-jp text-[13px] font-medium leading-[1.85] mb-3" style={{ color: 'var(--ink-900)' }}>
             AI 波予報は、商用サービスではありません。
           </p>
-          <p className="font-jp text-[13px] font-medium leading-[1.85] mb-3">
+          <p className="font-jp text-[13px] font-medium leading-[1.85] mb-3" style={{ color: 'var(--ink-700)' }}>
             きっかけはシンプルで、「AIがどこまでできるか試したかった」のと、「好きなサーフィンの波のことを、もっと自分自身が深く知りたかった」という2つの動機からはじまった個人プロジェクトです。
           </p>
-          <p className="font-jp text-[13px] font-medium leading-[1.85]">
+          <p className="font-jp text-[13px] font-medium leading-[1.85]" style={{ color: 'var(--ink-700)' }}>
             開発も運用も、99%はAIが担っています。コードを書くのもAI、データを集めるのもAI、このページの文章を整えるのもAI。人間がやっていることは、方向を決めることと、海に入ることだけ。そのことが、AIの可能性をいちばん実感できた部分でもあります。
           </p>
         </section>
 
         {/* Section: ターゲット */}
         <section
-          className="px-5 py-6"
-          style={{ background: 'var(--paper-100)', borderBottom: '1px solid var(--ink-900)' }}
+          className="px-5 py-7"
+          style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
         >
           <div className="font-display text-[10px] tracking-[0.08em] mb-2" style={{ color: 'var(--ink-500)' }}>
             TARGET / 想定ユーザー
@@ -197,8 +193,8 @@ export default function AboutPage() {
 
         {/* Section: これから */}
         <section
-          className="px-5 py-6"
-          style={{ background: 'var(--paper-300)', borderBottom: '2px solid var(--ink-900)' }}
+          className="px-5 py-7"
+          style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
         >
           <div className="font-display text-[10px] tracking-[0.08em] mb-2" style={{ color: 'var(--ink-500)' }}>
             FUTURE / これから
@@ -213,11 +209,11 @@ export default function AboutPage() {
           href="https://x.com/ichinisantaro"
           target="_blank"
           rel="noopener noreferrer"
-          className="block px-5 py-6"
+          className="block px-5 py-7"
           style={{
             background: 'var(--paper-100)',
             color: 'var(--ink-900)',
-            borderBottom: '1px solid var(--ink-900)',
+            borderBottom: '2px solid var(--ink-900)',
             textDecoration: 'none',
           }}
         >
@@ -237,15 +233,15 @@ export default function AboutPage() {
           </div>
         </a>
 
-        {/* CTA: Contact (black) */}
+        {/* CTA: Contact */}
         <a
           href="https://forms.gle/bR4gctV1d3zHx9w8A"
           target="_blank"
           rel="noopener noreferrer"
-          className="block px-5 py-6"
+          className="block px-5 py-7"
           style={{
-            background: 'var(--ink-900)',
-            color: 'var(--paper-100)',
+            background: 'var(--paper-100)',
+            color: 'var(--ink-900)',
             borderBottom: '4px solid var(--ink-900)',
             textDecoration: 'none',
           }}
@@ -254,7 +250,7 @@ export default function AboutPage() {
             <div>
               <div
                 className="font-display text-[10px] tracking-[0.08em]"
-                style={{ color: 'rgba(251,248,243,0.6)' }}
+                style={{ color: 'var(--ink-500)' }}
               >
                 CONTACT
               </div>
@@ -263,12 +259,12 @@ export default function AboutPage() {
               </div>
               <div
                 className="font-jp text-[11px] font-medium mt-1"
-                style={{ color: 'rgba(251,248,243,0.7)' }}
+                style={{ color: 'var(--ink-700)' }}
               >
                 バグ報告・機能要望などお気軽にどうぞ
               </div>
             </div>
-            <ArrowButton variant="light" />
+            <ArrowButton variant="dark" />
           </div>
         </a>
       </main>

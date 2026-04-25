@@ -180,42 +180,40 @@ export default function ChibaSouthPage() {
 
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      {/* Header (Ace Hotel風) */}
+      {/* Header (Ace Hotel風 — ロゴBoxとハンバーガーを同行配置) */}
       <header
-        className="px-5 pt-6 pb-5 border-b-4"
+        className="px-5 pt-[18px] pb-[18px] border-b-4"
         style={{ background: 'var(--paper-100)', color: 'var(--ink-900)', borderColor: 'var(--ink-900)' }}
       >
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="inline-block px-3.5 py-2" style={{ border: '2px solid var(--ink-900)' }}>
-              <div className="font-display text-[32px] leading-[0.95] tracking-[0.02em]">
-                AI WAVE FORECAST
-              </div>
-            </div>
-            <div className="font-jp text-[11px] font-medium mt-2" style={{ color: 'var(--ink-500)' }}>
-              AI波予報
-            </div>
-            <div
-              className="flex items-center gap-2 mt-3.5 pt-2.5"
-              style={{ borderTop: '1px solid var(--ink-900)' }}
-            >
-              <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
-                UPDATE
-              </div>
-              <div className="font-jp text-[10px] font-medium" style={{ color: 'var(--ink-900)' }}>
-                {UPDATE_HOURS_JST.join('・')}時
-              </div>
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
-                NEXT
-              </div>
-              <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-900)' }}>
-                {getNextUpdateTime()}
-              </div>
+        <div className="flex justify-between items-start mb-[14px]">
+          <div className="inline-block" style={{ border: '2px solid var(--ink-900)', padding: '8px 14px' }}>
+            <div className="font-display text-[32px] leading-[0.95] tracking-[0.02em]">
+              AI WAVE FORECAST
             </div>
           </div>
           <HamburgerMenu />
+        </div>
+        <div className="font-jp text-[11px] font-medium" style={{ color: 'var(--ink-500)' }}>
+          AI波予報
+        </div>
+        <div
+          className="flex items-center gap-2 mt-[14px] pt-[10px]"
+          style={{ borderTop: '1px solid var(--ink-900)' }}
+        >
+          <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
+            UPDATE
+          </div>
+          <div className="font-jp text-[10px] font-medium" style={{ color: 'var(--ink-900)' }}>
+            {UPDATE_HOURS_JST.join('・')}時
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
+            NEXT
+          </div>
+          <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-900)' }}>
+            {getNextUpdateTime()}
+          </div>
         </div>
       </header>
 
