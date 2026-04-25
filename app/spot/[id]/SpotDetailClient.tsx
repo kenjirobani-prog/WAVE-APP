@@ -6,11 +6,19 @@ import { calculateScore, classifyWind, windTypeLabel, compassLabel, getStarRatin
 import type { WaveCondition } from '@/lib/wave/types'
 import { getLatestUpdateHour } from '@/lib/updateSchedule'
 import StarRating from '@/components/StarRating'
+import ArrowButton from '@/components/ui/ArrowButton'
 import { getWaveSizeLabel } from '@/lib/wave/waveSize'
 import TideCurve from '@/components/TideCurve'
 import TideCardStrip from '@/components/TideCardStrip'
 import TideStatusBar from '@/components/TideStatusBar'
 import type { TideEvent } from '@/lib/wave/types'
+
+const AREA_EN: Record<string, string> = {
+  'shonan': 'SHONAN',
+  'chiba-north': 'CHIBA·N',
+  'chiba-south': 'CHIBA·S',
+  'ibaraki': 'IBARAKI',
+}
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear()
@@ -19,46 +27,30 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
+function formatMD(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+function formatHM(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 export function SpotDetailSkeleton() {
   return (
-    <div className="animate-pulse bg-[#f0f9ff]">
-      <section className="bg-white p-6 border-b border-[#eef1f4]">
-        <div className="flex gap-4 mb-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex-1 bg-[#f0f9ff] rounded-xl p-4 h-20" />
-          ))}
-        </div>
+    <div className="animate-pulse" style={{ background: 'var(--paper-300)' }}>
+      <section className="px-5 py-5" style={{ background: 'var(--paper-100)', borderBottom: '4px solid var(--ink-900)' }}>
+        <div className="h-8 w-48" style={{ background: 'var(--paper-300)' }} />
+        <div className="h-4 w-32 mt-3" style={{ background: 'var(--paper-300)' }} />
       </section>
-      <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-        <div className="grid grid-cols-2 gap-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-[#f0f9ff] rounded-xl p-3 space-y-2">
-              <div className="h-3 bg-white rounded w-16" />
-              <div className="h-6 bg-white rounded w-12" />
-            </div>
+      <section className="px-5 py-5" style={{ background: 'var(--ink-900)' }}>
+        <div className="grid grid-cols-3 gap-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-24" style={{ background: 'var(--paper-300)' }} />
           ))}
         </div>
       </section>
     </div>
   )
-}
-
-function waveHeightLabel(h: number): string {
-  if (h >= 2.0)  return 'オーバーヘッド'
-  if (h >= 1.8)  return '頭〜オーバーヘッド'
-  if (h >= 1.6)  return '頭'
-  if (h >= 1.5)  return '肩〜頭'
-  if (h >= 1.35) return '肩'
-  if (h >= 1.2)  return '胸'
-  if (h >= 1.0)  return '腹〜胸'
-  if (h >= 0.8)  return '腹'
-  if (h >= 0.65) return '腰〜腹'
-  if (h >= 0.5)  return '腰'
-  if (h >= 0.4)  return 'モモ〜腰'
-  if (h >= 0.3)  return 'モモ'
-  if (h >= 0.2)  return 'ヒザ〜モモ'
-  if (h >= 0.1)  return 'ヒザ'
-  return 'スネ以下'
 }
 
 function calcSetInterval(period: number): string {
@@ -71,18 +63,6 @@ function calcSetInterval(period: number): string {
 const COMPASS_8 = ['北', '北東', '東', '南東', '南', '南西', '西', '北西']
 function swellDir8(deg: number): string { return COMPASS_8[Math.round(deg / 45) % 8] }
 
-function waveQualitySimple(period: number, windType: string): string {
-  if (period >= 10) return 'キレた波'
-  if (period >= 8) return 'グッドウェーブ'
-  if (period >= 6) {
-    if (windType === 'offshore' || windType === 'calm') return 'グッドウェーブ'
-    if (windType === 'onshore') return 'ワイド気味'
-    return 'まあまあ'
-  }
-  if (period >= 5) return windType === 'onshore' ? 'ワイド気味' : 'まあまあ'
-  return windType === 'offshore' || windType === 'calm' ? 'ワイド気味' : 'ダンパー'
-}
-
 function seasonLabel(s: string): string {
   const labels: Record<string, string> = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' }
   return labels[s] ?? s
@@ -92,22 +72,6 @@ interface TimeSlotData {
   stars: number
   isCloseout: boolean
   waveHeight: number
-}
-
-const PREFERRED_SIZE_M = 0.8  // 基準: 腰サイズ
-
-function getBarColor(waveHeight: number, preferred: number): string {
-  if (waveHeight >= preferred) return 'bg-emerald-400'
-  if (waveHeight >= preferred - 0.3) return 'bg-blue-400'
-  return 'bg-sky-200'
-}
-
-function windTypeColor(type: string): string {
-  if (type === 'calm') return 'text-slate-300'
-  if (type === 'offshore') return 'text-emerald-500'
-  if (type === 'side-offshore') return 'text-blue-400'
-  if (type === 'side-onshore') return 'text-amber-400'
-  return 'text-red-400'
 }
 
 function windTypeShort(type: string): string {
@@ -155,7 +119,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
       const conditions: WaveCondition[] = data.conditions ?? []
       if (conditions.length === 0) throw new Error('No data')
 
-      // Compute time slot stars
       const slotHours = [6, 12, 16]
       const slotMultiplier = spot.waveHeightMultiplier ?? 1.0
       const slotResults = slotHours.map(h => {
@@ -169,7 +132,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
       setMiddaySlot(slotResults[1])
       setEveningSlot(slotResults[2])
 
-      // Representative condition: today = latest update hour, tomorrow = 6時
       const isTomorrow = dateParam && dateParam !== toDateStr(new Date())
       const displayHour = isTomorrow ? 6 : getLatestUpdateHour()
       const representative = conditions.find(c => {
@@ -183,7 +145,6 @@ export default function SpotDetailContent({ id }: { id: string }) {
       const applyMult = (c: WaveCondition): WaveCondition =>
         m !== 1.0 ? { ...c, waveHeight: c.waveHeight * m } : c
 
-      // 当日の4〜23時のデータのみ表示（翌日0-3時はstaleキャッシュの可能性があるため除外）
       const isToday = !dateParam || dateParam === toDateStr(new Date())
       const accessHour = (new Date().getUTCHours() + 9) % 24
       const startHour = !isToday ? 4 : accessHour >= 3 && accessHour <= 8 ? 4 : accessHour >= 9 && accessHour <= 14 ? 9 : 15
@@ -206,24 +167,81 @@ export default function SpotDetailContent({ id }: { id: string }) {
 
   if (!spot) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#f0f9ff]">
-        <p className="text-[#8899aa]">スポットが見つかりません</p>
+      <div
+        className="flex-1 flex items-center justify-center"
+        style={{ background: 'var(--paper-300)' }}
+      >
+        <p className="font-jp text-sm" style={{ color: 'var(--ink-500)' }}>スポットが見つかりません</p>
       </div>
     )
   }
 
+  const isTomorrow = dateParam && dateParam !== toDateStr(new Date())
+  const displayDate = isTomorrow ? new Date(dateParam!) : new Date()
+  const dateLabel = isTomorrow ? `明日 ${formatMD(displayDate)}` : `本日 ${formatMD(displayDate)}`
+  const updatedLabel = lastUpdated ? `${formatHM(lastUpdated)} 更新` : ''
+  const areaEn = AREA_EN[spot.area] ?? spot.area.toUpperCase()
+  const nameEn = (spot.nameEn || spot.name).toUpperCase()
+
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      {/* Header */}
-      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)', padding: '1rem 1rem 1rem', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => router.back()} className="p-2 -ml-2" style={{ color: 'rgba(255,255,255,0.85)' }}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{spot.name}の波予報</h1>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{spot.nameEn}</p>
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+      {/* Header (Ace Hotel風) */}
+      <header
+        className="px-5 pt-5 pb-5"
+        style={{ background: 'var(--paper-100)', borderBottom: '4px solid var(--ink-900)' }}
+      >
+        <div className="flex items-center gap-3 mb-3.5">
+          <button
+            onClick={() => router.back()}
+            aria-label="戻る"
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
+            <div
+              className="flex items-center justify-center"
+              style={{
+                width: 28,
+                height: 28,
+                border: '2px solid var(--ink-900)',
+                borderRadius: '50%',
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path
+                  d="M8 2L4 6l4 4"
+                  stroke="#1a1815"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </button>
+          <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-500)' }}>
+            エリア一覧へ戻る
+          </div>
+        </div>
+        <div className="inline-block" style={{ border: '2px solid var(--ink-900)', padding: '6px 12px' }}>
+          <div className="font-display text-4xl leading-[0.95] tracking-[0.02em]">
+            {nameEn}
+          </div>
+        </div>
+        <div className="font-jp text-sm font-bold mt-2">{spot.name}</div>
+        <div
+          className="flex items-center gap-3 mt-3 pt-2.5"
+          style={{ borderTop: '1px solid var(--ink-900)' }}
+        >
+          <div
+            className="font-display text-[10px] tracking-[0.08em]"
+            style={{ color: 'var(--ink-500)' }}
+          >
+            {areaEn}
+          </div>
+          <div className="font-jp text-[10px] font-medium">
+            {spot.areaLabel}
+          </div>
+        </div>
+        <div className="font-jp text-[11px] font-bold mt-1">
+          {dateLabel}{updatedLabel ? ` · ${updatedLabel}` : ''}
         </div>
       </header>
 
@@ -232,108 +250,184 @@ export default function SpotDetailContent({ id }: { id: string }) {
           <SpotDetailSkeleton />
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <p className="text-[#8899aa] text-sm text-center px-4">{error}</p>
-            <button onClick={loadData} className="px-6 py-2 bg-[#0284c7] text-white rounded-full text-sm font-semibold">再試行</button>
+            <p className="text-sm text-center px-4 font-jp" style={{ color: 'var(--ink-500)' }}>
+              {error}
+            </p>
+            <button
+              onClick={loadData}
+              className="px-6 py-2 font-jp text-sm font-bold"
+              style={{ background: 'var(--ink-900)', color: 'var(--paper-100)' }}
+            >
+              再試行
+            </button>
           </div>
         ) : (
           <>
-            {/* 1. Time slot stars (top) */}
-            <section className="bg-white p-4 border-b border-[#eef1f4]">
-              <div className="grid grid-cols-3 gap-3">
+            {/* 1. Time slot conditions (black section) */}
+            <section
+              className="px-5 py-5"
+              style={{
+                background: 'var(--ink-900)',
+                color: 'var(--paper-100)',
+                borderBottom: '4px solid var(--ink-900)',
+              }}
+            >
+              <div
+                className="font-jp text-[11px] mb-3.5 font-bold tracking-[0.1em]"
+                style={{ color: 'rgba(251,248,243,0.6)' }}
+              >
+                時間帯別コンディション
+              </div>
+              <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: '朝', sub: '4〜10時', data: morningSlot },
-                  { label: '昼', sub: '10〜15時', data: middaySlot },
-                  { label: '夕方', sub: '15〜18時', data: eveningSlot },
-                ].map(({ label, sub, data }) => (
-                  <div key={label} className={`rounded-xl p-3 text-center ${data.isCloseout ? 'border-2 border-red-400 bg-red-50' : 'bg-[#f0f9ff]'}`}>
-                    <p className="text-xs font-semibold text-[#8899aa] mb-0.5">{label}</p>
-                    <p className="text-[10px] text-[#94a3b8] mb-2">{sub}</p>
-                    {data.isCloseout ? (
-                      <p className="text-xs font-bold text-red-500">クローズアウト</p>
-                    ) : (
-                      <>
-                        <StarRating stars={data.stars} size="md" />
-                        {data.waveHeight > 0 && (
-                          <span style={{
-                            fontSize: '11px',
-                            color: '#64748b',
-                            background: '#f1f5f9',
-                            borderRadius: '20px',
-                            padding: '1px 8px',
-                            display: 'inline-block',
-                            marginTop: '3px',
-                            whiteSpace: 'nowrap',
-                          }}>
-                            {getWaveSizeLabel(data.waveHeight)}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ))}
+                  { id: 'morning', label: '朝', timeRange: '4〜10時', data: morningSlot },
+                  { id: 'midday', label: '昼', timeRange: '10〜15時', data: middaySlot },
+                  { id: 'evening', label: '夕方', timeRange: '15〜18時', data: eveningSlot },
+                ].map(slot => {
+                  const allSlots = [morningSlot, middaySlot, eveningSlot]
+                  const validScores = allSlots.filter(s => !s.isCloseout).map(s => s.stars)
+                  const bestScore = validScores.length > 0 ? Math.max(...validScores) : 0
+                  const isBest = !slot.data.isCloseout && bestScore > 0 && slot.data.stars === bestScore
+
+                  if (slot.data.isCloseout) {
+                    return (
+                      <div
+                        key={slot.id}
+                        className="text-center"
+                        style={{
+                          background: 'var(--alert-red-bg)',
+                          color: 'var(--ink-900)',
+                          padding: '16px 8px',
+                        }}
+                      >
+                        <div className="font-jp text-lg font-black">{slot.label}</div>
+                        <div
+                          className="font-jp text-[9px] mt-1 font-medium"
+                          style={{ color: 'var(--ink-500)' }}
+                        >
+                          {slot.timeRange}
+                        </div>
+                        <div
+                          className="my-3 font-jp text-[10px] font-bold tracking-[0.08em]"
+                          style={{ color: 'var(--alert-red)' }}
+                        >
+                          クローズ
+                        </div>
+                        <div className="font-jp text-[11px] font-bold">-</div>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div
+                      key={slot.id}
+                      className="text-center"
+                      style={{
+                        background: isBest ? 'var(--paper-100)' : 'var(--paper-300)',
+                        color: 'var(--ink-900)',
+                        padding: '16px 8px',
+                      }}
+                    >
+                      <div className="font-jp text-lg font-black">{slot.label}</div>
+                      <div
+                        className="font-jp text-[9px] mt-1 font-medium"
+                        style={{ color: 'var(--ink-500)' }}
+                      >
+                        {slot.timeRange}
+                      </div>
+                      <div className="my-3 flex justify-center">
+                        <StarRating stars={slot.data.stars} size="sm" />
+                      </div>
+                      <div className="font-jp text-[11px] font-bold">
+                        {slot.data.waveHeight > 0 ? getWaveSizeLabel(slot.data.waveHeight) : '-'}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </section>
 
-            {/* 2. Five indicator strip */}
+            {/* 2. Five-indicator strip */}
             {current && (() => {
               const wt = classifyWind(current.windDir, current.windSpeed)
-              const wtLabel = windTypeLabel(wt)
-              const isOffshore = wt === 'offshore' || wt === 'calm' || wt === 'side-offshore'
+              const wtShort = windTypeShort(wt)
               return (
-                <section className="bg-white mt-2 px-4 py-3 border-b border-[#eef1f4]">
-                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">
-                    {dateParam && dateParam !== toDateStr(new Date()) ? '明日朝 6時のコンディション' : '現在のコンディション'}
-                  </h2>
-                  <div style={{ display: 'flex', border: '0.5px solid #eef1f4', borderRadius: 10, overflow: 'hidden' }}>
-                    {/* 波高 */}
-                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
-                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>波高</p>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{current.waveHeight.toFixed(1)}m</p>
-                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>{waveHeightLabel(current.waveHeight)}</p>
+                <section
+                  className="px-5 py-5"
+                  style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+                >
+                  <div
+                    className="font-jp text-[11px] mb-4 font-bold tracking-[0.1em]"
+                    style={{ color: 'var(--ink-500)' }}
+                  >
+                    {isTomorrow ? '明日朝6時のコンディション' : '現在のコンディション'}
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    <div className="text-center" style={{ border: '1px solid var(--ink-900)', padding: '10px 4px' }}>
+                      <div className="font-display text-[9px] tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>WAVE</div>
+                      <div className="font-jp text-[10px] font-medium mt-0.5">波高</div>
+                      <div className="font-jp text-base font-black mt-2 leading-none">{current.waveHeight.toFixed(1)}m</div>
                     </div>
-                    <div style={{ width: '0.5px', background: '#eef1f4' }} />
-                    {/* 風 */}
-                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
-                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>風</p>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{current.windSpeed.toFixed(1)}m/s</p>
-                      <span style={{ fontSize: 9, fontWeight: 600, padding: '1px 5px', borderRadius: 4, display: 'inline-block', background: isOffshore ? '#dbeafe' : '#fee2e2', color: isOffshore ? '#1d4ed8' : '#dc2626' }}>
-                        {wtLabel}
-                      </span>
+                    <div className="text-center" style={{ border: '1px solid var(--ink-900)', padding: '10px 4px' }}>
+                      <div className="font-display text-[9px] tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>PERIOD</div>
+                      <div className="font-jp text-[10px] font-medium mt-0.5">周期</div>
+                      <div className="font-jp text-base font-black mt-2 leading-none">{current.wavePeriod.toFixed(0)}秒</div>
                     </div>
-                    <div style={{ width: '0.5px', background: '#eef1f4' }} />
-                    {/* うねり */}
-                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
-                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>うねり</p>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{swellDir8(current.swellDir)}</p>
-                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>{compassLabel(current.swellDir)}</p>
+                    <div className="text-center" style={{ border: '1px solid var(--ink-900)', padding: '10px 4px' }}>
+                      <div className="font-display text-[9px] tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>SWELL</div>
+                      <div className="font-jp text-[10px] font-medium mt-0.5">うねり</div>
+                      <div className="font-jp text-base font-black mt-2 leading-none">{swellDir8(current.swellDir)}</div>
                     </div>
-                    <div style={{ width: '0.5px', background: '#eef1f4' }} />
-                    {/* 周期 */}
-                    <div style={{ flex: 1, padding: '8px 4px', textAlign: 'center' }}>
-                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>周期</p>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: '#0a1628', margin: '2px 0' }}>{current.wavePeriod.toFixed(0)}秒</p>
-                      <p style={{ fontSize: 9, color: '#94a3b8', margin: 0 }}>{calcSetInterval(current.wavePeriod)}</p>
+                    <div className="text-center" style={{ border: '1px solid var(--ink-900)', padding: '10px 4px' }}>
+                      <div className="font-display text-[9px] tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>WIND</div>
+                      <div className="font-jp text-[10px] font-medium mt-0.5">風</div>
+                      <div className="font-jp text-base font-black mt-2 leading-none">{current.windSpeed.toFixed(0)}m</div>
+                      <div
+                        className="font-jp text-[9px] font-bold mt-1"
+                        style={{ color: wt === 'onshore' || wt === 'side-onshore' ? 'var(--alert-red)' : 'var(--ink-700)' }}
+                      >
+                        {wtShort}
+                      </div>
                     </div>
+                    <div className="text-center" style={{ border: '1px solid var(--ink-900)', padding: '10px 4px' }}>
+                      <div className="font-display text-[9px] tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>TIDE</div>
+                      <div className="font-jp text-[10px] font-medium mt-0.5">潮位</div>
+                      <div className="font-jp text-base font-black mt-2 leading-none">{Math.round(current.tideHeight)}cm</div>
+                    </div>
+                  </div>
+                  <div
+                    className="font-jp text-[10px] mt-3 font-medium"
+                    style={{ color: 'var(--ink-500)' }}
+                  >
+                    周期セット間隔：{calcSetInterval(current.wavePeriod)} · うねり方角 {compassLabel(current.swellDir)} · 風 {windTypeLabel(wt)}
                   </div>
                 </section>
               )
             })()}
 
-            {/* 3. Hourly chart — 4-row layout */}
+            {/* 3. Hourly chart */}
             {hourly.length > 0 && (() => {
               const maxHeight = Math.max(...hourly.map(h => h.waveHeight), 1)
               const maxWind = Math.max(...hourly.map(h => h.windSpeed), 1)
               const colW = 36
               const gap = 2
               const labelW = 28
-              const rowSep = { height: 1, background: '#eef1f4', margin: '3px 0' } as const
+              const rowSep = { height: 1, background: 'var(--rule-thin)', margin: '3px 0' } as const
               return (
-                <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">1時間ごと予報</h2>
+                <section
+                  className="px-5 py-5"
+                  style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+                >
+                  <div className="mb-4">
+                    <div className="font-display text-xl leading-none">HOURLY FORECAST</div>
+                    <div
+                      className="font-jp text-[10px] font-medium mt-1"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      1時間ごと予報
+                    </div>
+                  </div>
                   <div className="overflow-x-auto">
                     <div style={{ minWidth: `${labelW + hourly.length * (colW + gap)}px` }}>
-
-                      {/* Header row — hours */}
                       <div style={{ display: 'flex', gap, marginBottom: 4 }}>
                         <div style={{ width: labelW, flexShrink: 0 }} />
                         {hourly.map((c, i) => {
@@ -342,7 +436,10 @@ export default function SpotDetailContent({ id }: { id: string }) {
                           const isNow = Math.abs(new Date(c.timestamp).getTime() - now.getTime()) < 1800000
                           return (
                             <div key={i} style={{ width: colW, flexShrink: 0, textAlign: 'center' }}>
-                              <span style={{ fontSize: 9, fontWeight: 600, color: isNow ? '#0284c7' : '#94a3b8' }}>
+                              <span
+                                className="font-jp"
+                                style={{ fontSize: 9, fontWeight: 700, color: isNow ? 'var(--ink-900)' : 'var(--ink-500)' }}
+                              >
                                 {isNow ? '▲' : ''}{h}時
                               </span>
                             </div>
@@ -350,10 +447,9 @@ export default function SpotDetailContent({ id }: { id: string }) {
                         })}
                       </div>
 
-                      {/* Row 1 — 波高 */}
                       <div style={{ display: 'flex', gap, alignItems: 'flex-end' }}>
                         <div style={{ width: labelW, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 58 }}>
-                          <span style={{ fontSize: 9, fontWeight: 500, color: '#94a3b8' }}>波高</span>
+                          <span className="font-jp" style={{ fontSize: 9, fontWeight: 600, color: 'var(--ink-500)' }}>波高</span>
                         </div>
                         {hourly.map((c, i) => {
                           const barH = Math.round((c.waveHeight / maxHeight) * 44)
@@ -361,9 +457,9 @@ export default function SpotDetailContent({ id }: { id: string }) {
                           return (
                             <div key={i} style={{ width: colW, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                               <div style={{ height: 44, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                                <div style={{ width: '100%', height: Math.max(barH, 3), borderRadius: '2px 2px 0 0', background: co ? '#ef4444' : '#1d9e75' }} />
+                                <div style={{ width: '100%', height: Math.max(barH, 3), background: co ? 'var(--alert-red)' : 'var(--ink-900)' }} />
                               </div>
-                              <span style={{ fontSize: 8, color: '#64748b', fontWeight: 500, marginTop: 1, lineHeight: 1 }}>{c.waveHeight.toFixed(1)}</span>
+                              <span className="font-jp" style={{ fontSize: 8, color: 'var(--ink-700)', fontWeight: 600, marginTop: 1, lineHeight: 1 }}>{c.waveHeight.toFixed(1)}</span>
                             </div>
                           )
                         })}
@@ -371,24 +467,23 @@ export default function SpotDetailContent({ id }: { id: string }) {
 
                       <div style={rowSep} />
 
-                      {/* Row 2 — 風 */}
                       <div style={{ display: 'flex', gap, alignItems: 'flex-end' }}>
                         <div style={{ width: labelW, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38 }}>
-                          <span style={{ fontSize: 9, fontWeight: 500, color: '#94a3b8' }}>風</span>
+                          <span className="font-jp" style={{ fontSize: 9, fontWeight: 600, color: 'var(--ink-500)' }}>風</span>
                         </div>
                         {hourly.map((c, i) => {
                           const barH = Math.round((c.windSpeed / maxWind) * 24)
                           const wt = classifyWind(c.windDir, c.windSpeed)
                           const isOff = wt === 'offshore' || wt === 'calm' || wt === 'side-offshore'
-                          const barColor = isOff ? '#85b7eb' : '#f0997b'
-                          const labelColor = isOff ? '#185fa5' : '#b91c1c'
+                          const barColor = isOff ? 'var(--ink-900)' : 'var(--alert-red)'
+                          const labelColor = isOff ? 'var(--ink-700)' : 'var(--alert-red)'
                           return (
                             <div key={i} style={{ width: colW, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                               <div style={{ height: 24, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                                <div style={{ width: '100%', height: Math.max(barH, 2), borderRadius: '2px 2px 0 0', background: barColor }} />
+                                <div style={{ width: '100%', height: Math.max(barH, 2), background: barColor }} />
                               </div>
-                              <span style={{ fontSize: 8, color: '#94a3b8', marginTop: 1, lineHeight: 1 }}>{c.windSpeed.toFixed(1)}</span>
-                              <span style={{ fontSize: 8, fontWeight: 600, color: labelColor, lineHeight: 1 }}>{windTypeShort(wt)}</span>
+                              <span className="font-jp" style={{ fontSize: 8, color: 'var(--ink-500)', marginTop: 1, lineHeight: 1 }}>{c.windSpeed.toFixed(1)}</span>
+                              <span className="font-jp" style={{ fontSize: 8, fontWeight: 700, color: labelColor, lineHeight: 1 }}>{windTypeShort(wt)}</span>
                             </div>
                           )
                         })}
@@ -396,14 +491,24 @@ export default function SpotDetailContent({ id }: { id: string }) {
 
                       <div style={rowSep} />
 
-                      {/* Row 3 — うねり */}
                       <div style={{ display: 'flex', gap, alignItems: 'center' }}>
                         <div style={{ width: labelW, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 18 }}>
-                          <span style={{ fontSize: 9, fontWeight: 500, color: '#94a3b8' }}>うねり</span>
+                          <span className="font-jp" style={{ fontSize: 9, fontWeight: 600, color: 'var(--ink-500)' }}>うねり</span>
                         </div>
                         {hourly.map((c, i) => (
                           <div key={i} style={{ width: colW, flexShrink: 0, textAlign: 'center' }}>
-                            <span style={{ fontSize: 8, fontWeight: 600, color: '#185fa5', background: '#e6f1fb', padding: '1px 3px', borderRadius: 3, display: 'inline-block', lineHeight: 1.3 }}>
+                            <span
+                              className="font-jp"
+                              style={{
+                                fontSize: 8,
+                                fontWeight: 700,
+                                color: 'var(--ink-900)',
+                                background: 'var(--paper-300)',
+                                padding: '1px 3px',
+                                display: 'inline-block',
+                                lineHeight: 1.3,
+                              }}
+                            >
                               {swellDir8(c.swellDir)}
                             </span>
                           </div>
@@ -412,20 +517,29 @@ export default function SpotDetailContent({ id }: { id: string }) {
 
                       <div style={rowSep} />
 
-                      {/* Row 4 — 周期 */}
                       <div style={{ display: 'flex', gap, alignItems: 'center' }}>
                         <div style={{ width: labelW, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 18 }}>
-                          <span style={{ fontSize: 9, fontWeight: 500, color: '#94a3b8' }}>周期</span>
+                          <span className="font-jp" style={{ fontSize: 9, fontWeight: 600, color: 'var(--ink-500)' }}>周期</span>
                         </div>
                         {hourly.map((c, i) => (
                           <div key={i} style={{ width: colW, flexShrink: 0, textAlign: 'center' }}>
-                            <span style={{ fontSize: 8, fontWeight: 600, color: '#0f6e56', background: '#e1f5ee', padding: '1px 3px', borderRadius: 3, display: 'inline-block', lineHeight: 1.3 }}>
+                            <span
+                              className="font-jp"
+                              style={{
+                                fontSize: 8,
+                                fontWeight: 700,
+                                color: 'var(--ink-900)',
+                                background: 'var(--paper-300)',
+                                padding: '1px 3px',
+                                display: 'inline-block',
+                                lineHeight: 1.3,
+                              }}
+                            >
                               {Math.round(c.wavePeriod)}秒
                             </span>
                           </div>
                         ))}
                       </div>
-
                     </div>
                   </div>
                 </section>
@@ -447,14 +561,29 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 currentLevel - prevLevel > 2 ? 'rising' :
                 currentLevel - prevLevel < -2 ? 'falling' : 'steady'
               return (
-                <section className="bg-white mt-2 px-4 pt-4 pb-5 border-b border-[#eef1f4]">
-                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">
-                    {isToday ? '潮位' : '潮位（明日）'}
-                  </h2>
+                <section
+                  className="px-5 py-5"
+                  style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+                >
+                  <div className="mb-4">
+                    <div className="font-display text-xl leading-none">TIDE</div>
+                    <div
+                      className="font-jp text-[10px] font-medium mt-1"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      {isToday ? '潮位' : '潮位（明日）'}
+                    </div>
+                  </div>
                   <TideCurve tideSeries={tideArr} currentHour={currentHour} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                     {['0:00', '6:00', '12:00', '18:00', '24:00'].map(t => (
-                      <span key={t} style={{ fontSize: 10, color: '#8899aa', fontWeight: 500 }}>{t}</span>
+                      <span
+                        key={t}
+                        className="font-jp"
+                        style={{ fontSize: 10, color: 'var(--ink-500)', fontWeight: 600 }}
+                      >
+                        {t}
+                      </span>
                     ))}
                   </div>
                   <TideCardStrip events={tideEvents} />
@@ -463,12 +592,23 @@ export default function SpotDetailContent({ id }: { id: string }) {
               )
             })()}
 
-            {/* Windy map */}
-            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">風・波のマップ</h2>
-              <div className="relative" style={{ borderRadius: 12, overflow: 'hidden', height: 300 }}>
+            {/* 5. Windy map */}
+            <section
+              className="px-5 py-5"
+              style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+            >
+              <div className="mb-4">
+                <div className="font-display text-xl leading-none">WIND &amp; WAVE MAP</div>
+                <div
+                  className="font-jp text-[10px] font-medium mt-1"
+                  style={{ color: 'var(--ink-500)' }}
+                >
+                  風・波のマップ
+                </div>
+              </div>
+              <div className="relative" style={{ overflow: 'hidden', height: 300, border: '1px solid var(--ink-900)' }}>
                 {!windyLoaded && (
-                  <div className="absolute inset-0 bg-[#f0f9ff] animate-pulse" />
+                  <div className="absolute inset-0 animate-pulse" style={{ background: 'var(--paper-300)' }} />
                 )}
                 <iframe
                   src={`https://embed.windy.com/embed2.html?lat=${spot.lat}&lon=${spot.lng}&detailLat=${spot.lat}&detailLon=${spot.lng}&zoom=12&level=surface&overlay=waves&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default`}
@@ -480,10 +620,21 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </div>
             </section>
 
-            {/* Google Map */}
-            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4]">
-              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-3">ポイントマップ</h2>
-              <div className="relative" style={{ borderRadius: 12, overflow: 'hidden', height: 200 }}>
+            {/* 6. Google map */}
+            <section
+              className="px-5 py-5"
+              style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+            >
+              <div className="mb-4">
+                <div className="font-display text-xl leading-none">SPOT MAP</div>
+                <div
+                  className="font-jp text-[10px] font-medium mt-1"
+                  style={{ color: 'var(--ink-500)' }}
+                >
+                  ポイントマップ
+                </div>
+              </div>
+              <div className="relative" style={{ overflow: 'hidden', height: 200, border: '1px solid var(--ink-900)' }}>
                 <iframe
                   src={(() => {
                     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
@@ -501,98 +652,266 @@ export default function SpotDetailContent({ id }: { id: string }) {
                 href={spot.mapUrl ?? `https://www.google.com/maps?q=${spot.lat},${spot.lng}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-end gap-1 mt-2 text-xs font-semibold text-sky-700"
+                className="flex items-center justify-end gap-1 mt-3 font-jp text-xs font-bold"
+                style={{ color: 'var(--ink-900)' }}
               >
                 Google Mapで開く
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
             </section>
 
-            {/* Spot info */}
-            <section className="bg-white mt-2 p-4 border-b border-[#eef1f4] space-y-5">
-              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa]">スポット情報</h2>
-              {spot.description && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">スポットの特徴</p>
-                  <p className="text-sm text-[#0a1628] leading-relaxed">{spot.description}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ベストシーズン</p>
-                <div className="flex gap-2">
-                  {(['spring', 'summer', 'autumn', 'winter'] as const).map(s => {
-                    const isBest = spot.bestSeasons?.includes(s) ?? false
-                    return (
-                      <span key={s} className={`flex-1 text-center text-xs font-semibold py-1.5 rounded-full ${isBest ? 'bg-[#0284c7] text-white' : 'bg-[#f0f9ff] text-[#c0ccd8]'}`}>
-                        {seasonLabel(s)}
-                      </span>
-                    )
-                  })}
+            {/* 7. Spot info */}
+            <section
+              className="px-5 py-6"
+              style={{ background: 'var(--paper-100)', borderBottom: '2px solid var(--ink-900)' }}
+            >
+              <div className="mb-5">
+                <div className="font-display text-xl leading-none">SPOT INFO</div>
+                <div
+                  className="font-jp text-[10px] font-medium mt-1"
+                  style={{ color: 'var(--ink-500)' }}
+                >
+                  スポット情報
                 </div>
               </div>
-              {spot.bestTide && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">ベスト潮回り</p>
-                  <p className="text-sm text-[#0a1628] leading-relaxed">{spot.bestTide}</p>
-                </div>
-              )}
-              {spot.tideType && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">潮のタイプ</p>
-                  <p className="text-sm text-[#0a1628] leading-relaxed">{spot.tideType}</p>
-                </div>
-              )}
-              {(spot.offshoreLabel || spot.swellDirLabel) && (
-                <div className="grid grid-cols-2 gap-3">
-                  {spot.offshoreLabel && (
-                    <div className="bg-[#f0f9ff] rounded-xl p-3">
-                      <p className="text-[10px] font-semibold text-[#8899aa] mb-1">オフショア風向</p>
-                      <p className="text-sm font-medium text-[#0a1628]">{spot.offshoreLabel}</p>
+              <div className="space-y-5">
+                {spot.description && (
+                  <div>
+                    <div
+                      className="font-display text-[10px] tracking-[0.08em] mb-2"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      FEATURE / スポットの特徴
                     </div>
-                  )}
-                  {spot.swellDirLabel && (
-                    <div className="bg-[#f0f9ff] rounded-xl p-3">
-                      <p className="text-[10px] font-semibold text-[#8899aa] mb-1">対応うねり方向</p>
-                      <p className="text-sm font-medium text-[#0a1628]">{spot.swellDirLabel}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-              {spot.waveTypeTags && spot.waveTypeTags.length > 0 && (
+                    <p
+                      className="font-jp text-[13px] font-medium leading-[1.85]"
+                      style={{ color: 'var(--ink-900)' }}
+                    >
+                      {spot.description}
+                    </p>
+                  </div>
+                )}
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">波のタイプ</p>
-                  <div className="flex flex-wrap gap-2">
-                    {spot.waveTypeTags.map(tag => (
-                      <span key={tag} className="text-xs font-medium bg-[#f0f9ff] text-[#0a1628] px-3 py-1 rounded-full">{tag}</span>
-                    ))}
+                  <div
+                    className="font-display text-[10px] tracking-[0.08em] mb-2"
+                    style={{ color: 'var(--ink-500)' }}
+                  >
+                    BEST SEASON / ベストシーズン
+                  </div>
+                  <div className="flex gap-1.5">
+                    {(['spring', 'summer', 'autumn', 'winter'] as const).map(s => {
+                      const isBest = spot.bestSeasons?.includes(s) ?? false
+                      return (
+                        <div
+                          key={s}
+                          className="flex-1 text-center font-jp text-xs font-bold py-2"
+                          style={{
+                            background: isBest ? 'var(--ink-900)' : 'transparent',
+                            color: isBest ? 'var(--paper-100)' : 'var(--ink-300)',
+                            border: '1px solid var(--ink-900)',
+                          }}
+                        >
+                          {seasonLabel(s)}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-              )}
-              {spot.facilities && spot.facilities.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8899aa] mb-2">周辺施設</p>
-                  <div className="flex flex-wrap gap-2">
-                    {spot.facilities.map(f => (
-                      <span key={f} className="text-xs font-medium bg-[#f0f9ff] text-[#0a1628] px-3 py-1 rounded-full">{f}</span>
-                    ))}
+                {spot.bestTide && (
+                  <div>
+                    <div
+                      className="font-display text-[10px] tracking-[0.08em] mb-2"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      BEST TIDE / ベスト潮回り
+                    </div>
+                    <p
+                      className="font-jp text-[13px] font-medium leading-[1.7]"
+                      style={{ color: 'var(--ink-900)' }}
+                    >
+                      {spot.bestTide}
+                    </p>
                   </div>
+                )}
+                {spot.tideType && (
+                  <div>
+                    <div
+                      className="font-display text-[10px] tracking-[0.08em] mb-2"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      TIDE TYPE / 潮のタイプ
+                    </div>
+                    <p
+                      className="font-jp text-[13px] font-medium leading-[1.7]"
+                      style={{ color: 'var(--ink-900)' }}
+                    >
+                      {spot.tideType}
+                    </p>
+                  </div>
+                )}
+                {(spot.offshoreLabel || spot.swellDirLabel) && (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {spot.offshoreLabel && (
+                      <div style={{ border: '1px solid var(--ink-900)', padding: '10px 12px' }}>
+                        <div
+                          className="font-display text-[9px] tracking-[0.08em]"
+                          style={{ color: 'var(--ink-500)' }}
+                        >
+                          OFFSHORE
+                        </div>
+                        <div className="font-jp text-[10px] font-medium mt-0.5" style={{ color: 'var(--ink-500)' }}>
+                          オフショア風向
+                        </div>
+                        <div className="font-jp text-sm font-bold mt-1.5" style={{ color: 'var(--ink-900)' }}>
+                          {spot.offshoreLabel}
+                        </div>
+                      </div>
+                    )}
+                    {spot.swellDirLabel && (
+                      <div style={{ border: '1px solid var(--ink-900)', padding: '10px 12px' }}>
+                        <div
+                          className="font-display text-[9px] tracking-[0.08em]"
+                          style={{ color: 'var(--ink-500)' }}
+                        >
+                          SWELL DIR
+                        </div>
+                        <div className="font-jp text-[10px] font-medium mt-0.5" style={{ color: 'var(--ink-500)' }}>
+                          対応うねり方向
+                        </div>
+                        <div className="font-jp text-sm font-bold mt-1.5" style={{ color: 'var(--ink-900)' }}>
+                          {spot.swellDirLabel}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {spot.waveTypeTags && spot.waveTypeTags.length > 0 && (
+                  <div>
+                    <div
+                      className="font-display text-[10px] tracking-[0.08em] mb-2"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      WAVE TYPE / 波のタイプ
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {spot.waveTypeTags.map(tag => (
+                        <span
+                          key={tag}
+                          className="font-jp text-xs font-bold px-3 py-1"
+                          style={{
+                            border: '1px solid var(--ink-900)',
+                            color: 'var(--ink-900)',
+                            background: 'var(--paper-300)',
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {spot.facilities && spot.facilities.length > 0 && (
+                  <div>
+                    <div
+                      className="font-display text-[10px] tracking-[0.08em] mb-2"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      FACILITIES / 周辺施設
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {spot.facilities.map(f => (
+                        <span
+                          key={f}
+                          className="font-jp text-xs font-bold px-3 py-1"
+                          style={{
+                            border: '1px solid var(--ink-900)',
+                            color: 'var(--ink-900)',
+                            background: 'var(--paper-300)',
+                          }}
+                        >
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div
+                  className="font-jp text-[11px] font-medium pt-3"
+                  style={{ color: 'var(--ink-500)', borderTop: '1px solid var(--rule-thin)' }}
+                >
+                  {spot.access}
                 </div>
-              )}
-              {spot.beginnerNote && (
-                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 mb-2">初心者メモ</p>
-                  <p className="text-sm text-[#0a1628] leading-relaxed">{spot.beginnerNote}</p>
-                </div>
-              )}
-              <p className="text-xs text-[#8899aa]">{spot.access}</p>
+              </div>
             </section>
 
+            {/* 8. Beginner note */}
+            {spot.beginnerNote && (
+              <section
+                className="px-5 py-6"
+                style={{
+                  background: 'var(--alert-red-bg)',
+                  borderLeft: '4px solid var(--alert-red)',
+                  borderBottom: '2px solid var(--ink-900)',
+                }}
+              >
+                <div className="mb-3">
+                  <div
+                    className="font-display text-xl leading-none"
+                    style={{ color: 'var(--alert-red)' }}
+                  >
+                    BEGINNER NOTE
+                  </div>
+                  <div
+                    className="font-jp text-[10px] font-medium mt-1"
+                    style={{ color: 'var(--ink-500)' }}
+                  >
+                    初心者メモ
+                  </div>
+                </div>
+                <p
+                  className="font-jp text-[13px] font-medium leading-[1.85]"
+                  style={{ color: 'var(--ink-900)' }}
+                >
+                  {spot.beginnerNote}
+                </p>
+              </section>
+            )}
+
+            {/* 9. Live camera CTA */}
+            {spot.liveCameraUrl && (
+              <a
+                href={spot.liveCameraUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block px-5 py-6"
+                style={{
+                  background: 'var(--ink-900)',
+                  color: 'var(--paper-100)',
+                  borderBottom: '4px solid var(--ink-900)',
+                  textDecoration: 'none',
+                }}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div
+                      className="font-display text-[10px] tracking-[0.08em]"
+                      style={{ color: 'rgba(251,248,243,0.6)' }}
+                    >
+                      LIVE CAMERA
+                    </div>
+                    <div className="font-jp text-base font-black mt-1">
+                      ライブカメラを見る
+                    </div>
+                  </div>
+                  <ArrowButton variant="light" />
+                </div>
+              </a>
+            )}
           </>
         )}
       </main>
-
     </div>
   )
 }
