@@ -11,6 +11,7 @@ import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import AreaTabs from '@/components/AreaTabs'
 import HamburgerMenu from '@/components/HamburgerMenu'
 import AiCommentLoading from '@/components/AiCommentLoading'
+import DormantCommentPlaceholder from '@/components/DormantCommentPlaceholder'
 import TyphoonBanner from '@/components/TyphoonBanner'
 import WeeklyDayCard from '@/components/WeeklyDayCard'
 
@@ -130,6 +131,7 @@ export default function TopPage() {
   const [dailyComment, setDailyComment] = useState<string | null>(null)
   const [dailyCommentAt, setDailyCommentAt] = useState<string | null>(null)
   const [dailyCommentLoading, setDailyCommentLoading] = useState(false)
+  const [isOffSchedule, setIsOffSchedule] = useState(false)
   const [weeklyComments, setWeeklyComments] = useState<Record<string, string>>({})
   const [weeklyCommentsAt, setWeeklyCommentsAt] = useState<string | null>(null)
 
@@ -142,7 +144,12 @@ export default function TopPage() {
     const target = tab === 'today' ? 'today' : 'tomorrow'
     const jstHour = (new Date().getUTCHours() + 9) % 24
     const scheduleHour = getLatestScheduleHour(target, jstHour)
-    if (scheduleHour === null) { setDailyComment(null); return }
+    if (scheduleHour === null) {
+      setDailyComment(null)
+      setIsOffSchedule(true)
+      return
+    }
+    setIsOffSchedule(false)
     setDailyCommentLoading(true)
     fetch(`/api/daily-comment?target=${target}&hour=${padHour(scheduleHour)}`)
       .then(r => r.ok ? r.json() : null)
@@ -447,6 +454,10 @@ export default function TopPage() {
             {/* AI Forecast (Ace Hotel風) */}
             {!loading && (dailyCommentLoading ? (
               <div className="px-4 py-4"><AiCommentLoading /></div>
+            ) : isOffSchedule ? (
+              <div className="px-4 py-4">
+                <DormantCommentPlaceholder target={tab === 'today' ? 'today' : 'tomorrow'} />
+              </div>
             ) : dailyComment ? (
               <section
                 className="px-5 py-6"
