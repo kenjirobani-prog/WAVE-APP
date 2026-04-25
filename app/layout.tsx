@@ -36,6 +36,14 @@ export const metadata: Metadata = {
     siteName: 'AI波予報',
     locale: 'ja_JP',
     type: 'website',
+    images: [
+      {
+        url: 'https://jpwaveforecast.com/ogp.png',
+        width: 1200,
+        height: 630,
+        alt: 'AI WAVE FORECAST - AI波予報',
+      },
+    ],
   },
   keywords: '湘南, 波予報, サーフィン, 鵠沼, 辻堂, 茅ヶ崎, 七里ヶ浜, 由比ヶ浜, 千葉, 茨城, 一宮, 波情報, サーフ',
   twitter: {
@@ -43,6 +51,7 @@ export const metadata: Metadata = {
     title: 'AI波予報 | 湘南・千葉の波予報をAIがスコア化',
     description: '湘南・千葉北・千葉南・茨城の20スポットをAIがリアルタイム分析。',
     site: '@ichinisantaro',
+    images: ['https://jpwaveforecast.com/ogp.png'],
   },
   robots: {
     index: true,
@@ -56,12 +65,18 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon-512x512.png', sizes: '512x512', type: 'image/png' },
     ],
-    apple: '/favicon.png',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
-  manifest: '/manifest.json',
+  manifest: '/site.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
