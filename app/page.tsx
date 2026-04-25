@@ -307,17 +307,17 @@ export default function TopPage() {
 
       <AreaTabs />
 
-      {/* Date tabs (Ace Hotel風) */}
+      {/* Date tabs (黒ベース・選択時白反転) */}
       <div
-        className="flex border-b-2"
-        style={{ background: 'var(--paper-100)', borderColor: 'var(--ink-900)' }}
+        className="flex border-b-4"
+        style={{ background: 'var(--ink-900)', borderColor: 'var(--ink-900)' }}
       >
         <button
           onClick={() => setTab('today')}
-          className="flex-1 py-3.5 px-1 text-center"
+          className="flex-1 py-3.5 px-1 text-center transition-colors"
           style={{
-            background: tab === 'today' ? 'var(--ink-900)' : 'transparent',
-            color: tab === 'today' ? 'var(--paper-100)' : 'var(--ink-900)',
+            background: tab === 'today' ? 'var(--paper-100)' : 'transparent',
+            color: tab === 'today' ? 'var(--ink-900)' : 'rgba(237,229,213,0.6)',
           }}
         >
           <div className="font-jp text-[15px]" style={{ fontWeight: tab === 'today' ? 700 : 500 }}>
@@ -326,12 +326,12 @@ export default function TopPage() {
         </button>
         <button
           onClick={() => setTab('tomorrow')}
-          className="flex-1 py-3.5 px-1 text-center"
+          className="flex-1 py-3.5 px-1 text-center transition-colors"
           style={{
-            background: tab === 'tomorrow' ? 'var(--ink-900)' : 'transparent',
-            color: tab === 'tomorrow' ? 'var(--paper-100)' : 'var(--ink-900)',
-            borderLeft: '1px solid var(--ink-900)',
-            borderRight: '1px solid var(--ink-900)',
+            background: tab === 'tomorrow' ? 'var(--paper-100)' : 'transparent',
+            color: tab === 'tomorrow' ? 'var(--ink-900)' : 'rgba(237,229,213,0.6)',
+            borderLeft: '1px solid rgba(237,229,213,0.15)',
+            borderRight: '1px solid rgba(237,229,213,0.15)',
           }}
         >
           <div className="font-jp text-[15px]" style={{ fontWeight: tab === 'tomorrow' ? 700 : 500 }}>
@@ -340,10 +340,10 @@ export default function TopPage() {
         </button>
         <button
           onClick={() => setTab('weekly')}
-          className="flex-1 py-3.5 px-1 text-center"
+          className="flex-1 py-3.5 px-1 text-center transition-colors"
           style={{
-            background: tab === 'weekly' ? 'var(--ink-900)' : 'transparent',
-            color: tab === 'weekly' ? 'var(--paper-100)' : 'var(--ink-900)',
+            background: tab === 'weekly' ? 'var(--paper-100)' : 'transparent',
+            color: tab === 'weekly' ? 'var(--ink-900)' : 'rgba(237,229,213,0.6)',
           }}
         >
           <div className="font-jp text-[15px]" style={{ fontWeight: tab === 'weekly' ? 700 : 500 }}>

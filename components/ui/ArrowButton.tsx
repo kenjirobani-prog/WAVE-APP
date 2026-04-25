@@ -1,11 +1,16 @@
 interface Props {
-  variant?: 'dark' | 'light'
+  variant?: 'dark' | 'light' | 'red'
   size?: number
 }
 
+const VARIANT_COLORS: Record<NonNullable<Props['variant']>, { bg: string; stroke: string }> = {
+  dark: { bg: '#1a1815', stroke: '#fbf8f3' },
+  light: { bg: '#fbf8f3', stroke: '#1a1815' },
+  red: { bg: '#a82a1f', stroke: '#fbf8f3' },
+}
+
 export default function ArrowButton({ variant = 'dark', size = 32 }: Props) {
-  const bg = variant === 'dark' ? '#1a1815' : '#fbf8f3'
-  const stroke = variant === 'dark' ? '#fbf8f3' : '#1a1815'
+  const { bg, stroke } = VARIANT_COLORS[variant]
   const innerSize = Math.round(size * 0.375)
 
   return (

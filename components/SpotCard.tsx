@@ -44,31 +44,33 @@ export default function SpotCard({ spot, stars, waveHeights, isCloseout, date, i
         href={href}
         className="block p-5"
         style={{
-          background: 'var(--ink-900)',
-          color: 'var(--paper-100)',
+          background: 'var(--alert-red-bg)',
           borderBottom: '1px solid var(--ink-900)',
           textDecoration: 'none',
         }}
       >
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <div className="font-display text-3xl leading-[0.95]">
+            <div
+              className="font-display text-3xl leading-[0.95]"
+              style={{ color: 'var(--alert-red)' }}
+            >
               {nameEn}
             </div>
             <div
               className="font-jp text-[13px] font-bold mt-1"
-              style={{ color: 'rgba(251,248,243,0.7)' }}
+              style={{ color: 'var(--alert-red)' }}
             >
               {spot.name}
             </div>
             <div
-              className="font-jp text-xs font-bold mt-2 tracking-[0.08em]"
-              style={{ color: 'var(--alert-red-text-on-dark)' }}
+              className="font-jp text-xs font-black mt-2"
+              style={{ color: 'var(--alert-red)', letterSpacing: '0.05em' }}
             >
-              クローズアウト
+              ⚠ クローズアウト
             </div>
           </div>
-          <ArrowButton variant="light" />
+          <ArrowButton variant="red" />
         </div>
       </Link>
     )
@@ -79,7 +81,6 @@ export default function SpotCard({ spot, stars, waveHeights, isCloseout, date, i
     { label: '昼', score: stars.midday, waveHeight: waveHeights?.midday },
     { label: '夕', score: stars.evening, waveHeight: waveHeights?.evening },
   ]
-  const maxScore = Math.max(...timeSlots.map(s => s.score))
 
   return (
     <Link
@@ -104,29 +105,26 @@ export default function SpotCard({ spot, stars, waveHeights, isCloseout, date, i
         <ArrowButton variant="dark" />
       </div>
       <div className="grid grid-cols-3 gap-2">
-        {timeSlots.map(slot => {
-          const isBest = maxScore > 0 && slot.score === maxScore
-          return (
-            <div
-              key={slot.label}
-              className="text-center"
-              style={{
-                background: isBest ? 'var(--ink-900)' : 'var(--paper-100)',
-                color: isBest ? 'var(--paper-100)' : 'var(--ink-900)',
-                border: isBest ? 'none' : '1px solid var(--ink-900)',
-                padding: '12px 8px',
-              }}
-            >
-              <div className="font-jp text-base font-black">{slot.label}</div>
-              <div className="my-2 flex justify-center">
-                <StarRating stars={slot.score} onDark={isBest} size="xs" />
-              </div>
-              <div className="font-jp text-[10px] font-bold">
-                {slot.waveHeight && slot.waveHeight > 0 ? getWaveSizeLabel(slot.waveHeight) : '-'}
-              </div>
+        {timeSlots.map(slot => (
+          <div
+            key={slot.label}
+            className="text-center"
+            style={{
+              background: 'var(--paper-100)',
+              color: 'var(--ink-900)',
+              border: '1px solid var(--ink-900)',
+              padding: '12px 8px',
+            }}
+          >
+            <div className="font-jp text-base font-black">{slot.label}</div>
+            <div className="my-2 flex justify-center">
+              <StarRating stars={slot.score} size="xs" />
             </div>
-          )
-        })}
+            <div className="font-jp text-[10px] font-bold">
+              {slot.waveHeight && slot.waveHeight > 0 ? getWaveSizeLabel(slot.waveHeight) : '-'}
+            </div>
+          </div>
+        ))}
       </div>
     </Link>
   )
