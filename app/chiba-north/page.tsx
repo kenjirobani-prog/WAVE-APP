@@ -9,7 +9,6 @@ import { getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import type { WaveCondition } from '@/lib/wave/types'
 import SpotCard from '@/components/SpotCard'
-import StarRating from '@/components/StarRating'
 import AreaTabs from '@/components/AreaTabs'
 import HamburgerMenu from '@/components/HamburgerMenu'
 import AiCommentLoading from '@/components/AiCommentLoading'
@@ -181,14 +180,39 @@ export default function ChibaNorthPage() {
 
   return (
     <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      <header className="header-gradient" style={{ padding: '16px 1rem 1rem', color: '#fff' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginTop: 4 }}>{AREA_LABEL}エリア</div>
-            <div style={{ marginTop: 4 }}>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.6 }}>更新時刻：{UPDATE_HOURS_JST.join(', ')}時</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.6 }}>次回更新：{getNextUpdateTime()}</p>
+      {/* Header (Ace Hotel風) */}
+      <header
+        className="px-5 pt-6 pb-5 border-b-4"
+        style={{ background: 'var(--paper-100)', color: 'var(--ink-900)', borderColor: 'var(--ink-900)' }}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="inline-block px-3.5 py-2" style={{ border: '2px solid var(--ink-900)' }}>
+              <div className="font-display text-[32px] leading-[0.95] tracking-[0.02em]">
+                AI WAVE FORECAST
+              </div>
+            </div>
+            <div className="font-jp text-[11px] font-medium mt-2" style={{ color: 'var(--ink-500)' }}>
+              AI波予報
+            </div>
+            <div
+              className="flex items-center gap-2 mt-3.5 pt-2.5"
+              style={{ borderTop: '1px solid var(--ink-900)' }}
+            >
+              <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
+                UPDATE
+              </div>
+              <div className="font-jp text-[10px] font-medium" style={{ color: 'var(--ink-900)' }}>
+                {UPDATE_HOURS_JST.join('・')}時
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
+                NEXT
+              </div>
+              <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-900)' }}>
+                {getNextUpdateTime()}
+              </div>
             </div>
           </div>
           <HamburgerMenu />
@@ -197,10 +221,49 @@ export default function ChibaNorthPage() {
 
       <AreaTabs />
 
-      <div className="bg-white border-b border-[#eef1f4] px-3 flex items-center gap-1 py-2">
-        <button onClick={() => setTab('today')} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${tab === 'today' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'}`}>今日 {formatMD(today)}</button>
-        <button onClick={() => setTab('tomorrow')} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${tab === 'tomorrow' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'}`}>明日 {formatMD(tomorrow)}</button>
-        <button onClick={() => setTab('weekly')} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${tab === 'weekly' ? 'bg-[#0284c7] text-white' : 'text-[#8899aa]'}`}>週間</button>
+      {/* Date tabs (Ace Hotel風) */}
+      <div
+        className="flex border-b-2"
+        style={{ background: 'var(--paper-100)', borderColor: 'var(--ink-900)' }}
+      >
+        <button
+          onClick={() => setTab('today')}
+          className="flex-1 py-3.5 px-1 text-center"
+          style={{
+            background: tab === 'today' ? 'var(--ink-900)' : 'transparent',
+            color: tab === 'today' ? 'var(--paper-100)' : 'var(--ink-900)',
+          }}
+        >
+          <div className="font-jp text-[15px]" style={{ fontWeight: tab === 'today' ? 700 : 500 }}>
+            本日 {formatMD(today)}
+          </div>
+        </button>
+        <button
+          onClick={() => setTab('tomorrow')}
+          className="flex-1 py-3.5 px-1 text-center"
+          style={{
+            background: tab === 'tomorrow' ? 'var(--ink-900)' : 'transparent',
+            color: tab === 'tomorrow' ? 'var(--paper-100)' : 'var(--ink-900)',
+            borderLeft: '1px solid var(--ink-900)',
+            borderRight: '1px solid var(--ink-900)',
+          }}
+        >
+          <div className="font-jp text-[15px]" style={{ fontWeight: tab === 'tomorrow' ? 700 : 500 }}>
+            明日 {formatMD(tomorrow)}
+          </div>
+        </button>
+        <button
+          onClick={() => setTab('weekly')}
+          className="flex-1 py-3.5 px-1 text-center"
+          style={{
+            background: tab === 'weekly' ? 'var(--ink-900)' : 'transparent',
+            color: tab === 'weekly' ? 'var(--paper-100)' : 'var(--ink-900)',
+          }}
+        >
+          <div className="font-jp text-[15px]" style={{ fontWeight: tab === 'weekly' ? 700 : 500 }}>
+            週間
+          </div>
+        </button>
       </div>
 
       <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-4">
@@ -223,12 +286,39 @@ export default function ChibaNorthPage() {
         ) : (
           <>
             <TyphoonBanner />
+            {/* Recommendation banner (Ace Hotel風 黒帯) */}
             {!loading && bestSlot && (
-              <div style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)', borderRadius: 14, padding: '14px 18px', color: '#fff' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 6, opacity: 0.8 }}>{tab === 'today' ? '今日' : '明日'}のおすすめ</p>
-                <div className="flex items-center justify-between">
-                  <span style={{ fontSize: 16, fontWeight: 700 }}>{bestSlot.label}</span>
-                  <StarRating stars={bestSlot.stars} size="lg" />
+              <div className="-mx-4 py-4 px-5" style={{ background: 'var(--paper-100)' }}>
+                <div
+                  className="flex items-center justify-between"
+                  style={{
+                    background: 'var(--ink-900)',
+                    color: 'var(--paper-100)',
+                    padding: '14px 18px',
+                  }}
+                >
+                  <div>
+                    <div
+                      className="font-jp text-[10px] font-bold tracking-[0.08em] mb-1"
+                      style={{ color: 'rgba(251,248,243,0.7)' }}
+                    >
+                      {tab === 'today' ? '本日' : '明日'}のおすすめ
+                    </div>
+                    <div className="font-jp text-base font-black">
+                      {bestSlot.label}
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <span
+                        key={i}
+                        className="text-lg"
+                        style={{ color: i <= bestSlot.stars ? 'var(--paper-100)' : 'rgba(251,248,243,0.25)' }}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
