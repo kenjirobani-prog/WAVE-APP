@@ -6,29 +6,56 @@ interface Props {
 }
 
 const TREND_CONFIG = {
-  rising:  { icon: '↑', label: '上げ潮', color: '#0369a1' },
-  falling: { icon: '↓', label: '引き潮', color: '#94a3b8' },
-  steady:  { icon: '→', label: '停滞中', color: '#94a3b8' },
+  rising:  { icon: '↑', label: '上げ潮', color: 'var(--ink-900)' },
+  falling: { icon: '↓', label: '引き潮', color: 'var(--ink-500)' },
+  steady:  { icon: '→', label: '停滞中', color: 'var(--ink-500)' },
 }
 
 export default function TideStatusBar({ currentLevel, trend }: Props) {
   const cfg = TREND_CONFIG[trend]
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
-      {/* 緑ドット */}
-      <span style={{
-        display: 'inline-block',
-        width: 6, height: 6,
-        borderRadius: '50%',
-        background: '#22c55e',
-        flexShrink: 0,
-      }} />
-      <span style={{ fontSize: 12, color: '#94a3b8' }}>現在</span>
-      <span style={{ fontSize: 14, fontWeight: 500, color: '#0a1628' }}>
-        {Math.round(currentLevel)}<span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 1 }}>cm</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+      {/* 現在マーカードット（赤、TideCurve と統一） */}
+      <span
+        style={{
+          display: 'inline-block',
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: 'var(--alert-red)',
+          flexShrink: 0,
+        }}
+      />
+      <span
+        className="font-jp"
+        style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-500)' }}
+      >
+        現在
+      </span>
+      <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+        <span
+          className="font-display"
+          style={{ fontSize: 16, color: 'var(--ink-900)', letterSpacing: '0.02em' }}
+        >
+          {Math.round(currentLevel)}
+        </span>
+        <span
+          className="font-display"
+          style={{ fontSize: 11, color: 'var(--ink-500)', letterSpacing: '0.06em' }}
+        >
+          CM
+        </span>
       </span>
       {/* 右側：上げ/引き/停滞 */}
-      <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 600, color: cfg.color }}>
+      <span
+        className="font-jp"
+        style={{
+          marginLeft: 'auto',
+          fontSize: 13,
+          fontWeight: 700,
+          color: cfg.color,
+        }}
+      >
         {cfg.icon} {cfg.label}
       </span>
     </div>

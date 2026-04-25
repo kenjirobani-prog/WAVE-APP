@@ -16,24 +16,69 @@ export default function TideCardStrip({ events }: Props) {
           return <div key={i} />
         }
         const isHigh = ev.type === 'high'
-        const labelColor = isHigh ? '#0369a1' : '#94a3b8'
+        const labelColor = isHigh ? 'var(--ink-900)' : 'var(--ink-500)'
         return (
           <div
             key={i}
             style={{
-              background: '#f0f9ff',
-              borderRadius: 8,
-              padding: '6px 8px',
+              background: 'var(--paper-300)',
+              border: '1px solid var(--ink-900)',
+              borderRadius: 0,
+              padding: '8px 6px',
               textAlign: 'center',
             }}
           >
-            <p style={{ fontSize: 10, fontWeight: 600, color: labelColor, lineHeight: 1.3, marginBottom: 2 }}>
-              {isHigh ? '満' : '干'} {ev.label}
+            <p
+              className="font-jp"
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: labelColor,
+                lineHeight: 1.3,
+                marginBottom: 2,
+                margin: 0,
+              }}
+            >
+              {isHigh ? '満' : '干'}
             </p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: '#0a1628', lineHeight: 1.1 }}>
+            <p
+              className="font-jp"
+              style={{
+                fontSize: 10,
+                fontWeight: 500,
+                color: 'var(--ink-700)',
+                lineHeight: 1.3,
+                margin: 0,
+                marginBottom: 4,
+              }}
+            >
+              {ev.label}
+            </p>
+            <p
+              className="font-display"
+              style={{
+                fontSize: 18,
+                color: 'var(--ink-900)',
+                lineHeight: 1,
+                letterSpacing: '0.02em',
+                margin: 0,
+              }}
+            >
               {Math.round(ev.level)}
             </p>
-            <p style={{ fontSize: 9, color: '#94a3b8', lineHeight: 1.3 }}>cm</p>
+            <p
+              className="font-display"
+              style={{
+                fontSize: 9,
+                color: 'var(--ink-500)',
+                lineHeight: 1.3,
+                letterSpacing: '0.06em',
+                margin: 0,
+                marginTop: 1,
+              }}
+            >
+              CM
+            </p>
           </div>
         )
       })}

@@ -66,8 +66,8 @@ export default function TideCurve({ tideSeries, currentHour }: Props) {
     >
       <defs>
         <linearGradient id="tideGradC" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.05" />
+          <stop offset="0%" stopColor="var(--ink-900)" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="var(--ink-900)" stopOpacity="0.02" />
         </linearGradient>
       </defs>
 
@@ -78,7 +78,7 @@ export default function TideCurve({ tideSeries, currentHour }: Props) {
       <path
         d={linePath}
         fill="none"
-        stroke="#0ea5e9"
+        stroke="var(--ink-900)"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -89,14 +89,14 @@ export default function TideCurve({ tideSeries, currentHour }: Props) {
         <line
           x1={markerX} y1={PAD_Y}
           x2={markerX} y2={H - PAD_Y}
-          stroke="#22c55e"
+          stroke="var(--ink-900)"
           strokeWidth="1"
           strokeDasharray="3 2"
         />
       )}
 
-      {/* 現在時刻の緑ドット */}
-      {showMarker && <circle cx={markerX} cy={markerY} r="5" fill="#22c55e" />}
+      {/* 現在時刻の赤ドット（唯一のハイライト） */}
+      {showMarker && <circle cx={markerX} cy={markerY} r="5" fill="var(--alert-red)" />}
     </svg>
   )
 }

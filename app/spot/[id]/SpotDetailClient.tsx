@@ -263,32 +263,27 @@ export default function SpotDetailContent({ id }: { id: string }) {
           </div>
         ) : (
           <>
-            {/* 1. Time slot conditions (black section) */}
+            {/* 1. Time slot conditions (white-unified, SpotCard-rule) */}
             <section
               className="px-5 py-5"
               style={{
-                background: 'var(--ink-900)',
-                color: 'var(--paper-100)',
-                borderBottom: '4px solid var(--ink-900)',
+                background: 'var(--paper-100)',
+                color: 'var(--ink-900)',
+                borderBottom: '2px solid var(--ink-900)',
               }}
             >
-              <div
-                className="font-jp text-[11px] mb-3.5 font-bold tracking-[0.1em]"
-                style={{ color: 'rgba(251,248,243,0.6)' }}
+              <h2
+                className="font-display text-[12px] tracking-[0.1em] mb-3.5"
+                style={{ color: 'var(--ink-500)' }}
               >
-                時間帯別コンディション
-              </div>
+                TIME SLOT FORECAST / 時間帯別コンディション
+              </h2>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: 'morning', label: '朝', timeRange: '4〜10時', data: morningSlot },
                   { id: 'midday', label: '昼', timeRange: '10〜15時', data: middaySlot },
                   { id: 'evening', label: '夕方', timeRange: '15〜18時', data: eveningSlot },
                 ].map(slot => {
-                  const allSlots = [morningSlot, middaySlot, eveningSlot]
-                  const validScores = allSlots.filter(s => !s.isCloseout).map(s => s.stars)
-                  const bestScore = validScores.length > 0 ? Math.max(...validScores) : 0
-                  const isBest = !slot.data.isCloseout && bestScore > 0 && slot.data.stars === bestScore
-
                   if (slot.data.isCloseout) {
                     return (
                       <div
@@ -296,24 +291,26 @@ export default function SpotDetailContent({ id }: { id: string }) {
                         className="text-center"
                         style={{
                           background: 'var(--alert-red-bg)',
-                          color: 'var(--ink-900)',
+                          color: 'var(--alert-red)',
+                          border: '1px solid var(--alert-red)',
                           padding: '16px 8px',
                         }}
                       >
-                        <div className="font-jp text-lg font-black">{slot.label}</div>
+                        <div className="font-jp text-lg font-black" style={{ color: 'var(--alert-red)' }}>
+                          {slot.label}
+                        </div>
                         <div
                           className="font-jp text-[9px] mt-1 font-medium"
-                          style={{ color: 'var(--ink-500)' }}
+                          style={{ color: 'var(--alert-red)' }}
                         >
                           {slot.timeRange}
                         </div>
                         <div
-                          className="my-3 font-jp text-[10px] font-bold tracking-[0.08em]"
-                          style={{ color: 'var(--alert-red)' }}
+                          className="my-3 font-jp text-[10px] font-black"
+                          style={{ color: 'var(--alert-red)', letterSpacing: '0.05em' }}
                         >
-                          クローズ
+                          ⚠ クローズアウト
                         </div>
-                        <div className="font-jp text-[11px] font-bold">-</div>
                       </div>
                     )
                   }
@@ -322,8 +319,9 @@ export default function SpotDetailContent({ id }: { id: string }) {
                       key={slot.id}
                       className="text-center"
                       style={{
-                        background: isBest ? 'var(--paper-100)' : 'var(--paper-300)',
+                        background: 'var(--paper-100)',
                         color: 'var(--ink-900)',
+                        border: '1px solid var(--ink-900)',
                         padding: '16px 8px',
                       }}
                     >
@@ -846,33 +844,28 @@ export default function SpotDetailContent({ id }: { id: string }) {
               </div>
             </section>
 
-            {/* 8. Beginner note */}
+            {/* 8. Beginner note (neutral tone) */}
             {spot.beginnerNote && (
               <section
                 className="px-5 py-6"
                 style={{
-                  background: 'var(--alert-red-bg)',
-                  borderLeft: '4px solid var(--alert-red)',
-                  borderBottom: '2px solid var(--ink-900)',
+                  background: 'var(--paper-100)',
+                  borderTop: '1px solid var(--ink-900)',
+                  borderBottom: '1px solid var(--ink-900)',
                 }}
               >
-                <div className="mb-3">
-                  <div
-                    className="font-display text-xl leading-none"
-                    style={{ color: 'var(--alert-red)' }}
-                  >
-                    BEGINNER NOTE
-                  </div>
-                  <div
-                    className="font-jp text-[10px] font-medium mt-1"
-                    style={{ color: 'var(--ink-500)' }}
-                  >
-                    初心者メモ
-                  </div>
+                <div
+                  className="font-display text-[12px] tracking-[0.1em] mb-2"
+                  style={{ color: 'var(--ink-500)' }}
+                >
+                  BEGINNER NOTE / 初心者へのメモ
+                </div>
+                <div className="font-jp text-sm font-bold mb-2" style={{ color: 'var(--ink-900)' }}>
+                  {spot.name}
                 </div>
                 <p
                   className="font-jp text-[13px] font-medium leading-[1.85]"
-                  style={{ color: 'var(--ink-900)' }}
+                  style={{ color: 'var(--ink-700)' }}
                 >
                   {spot.beginnerNote}
                 </p>
