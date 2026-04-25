@@ -291,38 +291,71 @@ export default function IbarakiPage() {
             <div className="empty:hidden px-4 pt-4">
               <TyphoonBanner />
             </div>
-            {/* Recommendation banner (Ace Hotel風 黒帯) */}
+            {/* Recommendation banner (Ace Hotel風 紙面C案) */}
             {!loading && bestSlot && (
               <div className="py-4 px-5" style={{ background: 'var(--paper-100)' }}>
                 <div
-                  className="flex items-center justify-between"
                   style={{
-                    background: 'var(--ink-900)',
-                    color: 'var(--paper-100)',
-                    padding: '14px 18px',
+                    background: 'var(--paper-300)',
+                    border: '1px solid var(--ink-900)',
+                    padding: '20px 24px',
                   }}
                 >
-                  <div>
+                  {/* 上段: 英大型ラベル + 日本語サブ */}
+                  <div
+                    className="flex justify-between items-baseline gap-3"
+                    style={{
+                      paddingBottom: '10px',
+                      borderBottom: '1px solid var(--ink-900)',
+                      marginBottom: '12px',
+                    }}
+                  >
                     <div
-                      className="font-jp text-[10px] font-bold tracking-[0.08em] mb-1"
-                      style={{ color: 'rgba(251,248,243,0.7)' }}
+                      className="font-display"
+                      style={{
+                        fontSize: '18px',
+                        letterSpacing: '0.15em',
+                        color: 'var(--ink-900)',
+                      }}
                     >
-                      {tab === 'today' ? '本日' : '明日'}のおすすめ
+                      {tab === 'today' ? "TODAY'S PICK" : "TOMORROW'S PICK"}
                     </div>
-                    <div className="font-jp text-base font-black">
-                      {bestSlot.label}
+                    <div
+                      className="font-jp"
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        color: 'var(--ink-500)',
+                        letterSpacing: '0.05em',
+                      }}
+                    >
+                      {tab === 'today' ? '本日のおすすめ' : '明日のおすすめ'}
                     </div>
                   </div>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map(i => (
-                      <span
-                        key={i}
-                        className="text-lg"
-                        style={{ color: i <= bestSlot.stars ? 'var(--paper-100)' : 'rgba(251,248,243,0.25)' }}
-                      >
-                        ★
-                      </span>
-                    ))}
+                  {/* 下段: 時間帯ラベル + 星 */}
+                  <div className="flex justify-between items-center gap-3">
+                    <div
+                      className="font-jp"
+                      style={{
+                        fontSize: '22px',
+                        fontWeight: 900,
+                        color: 'var(--ink-900)',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {bestSlot.label}
+                    </div>
+                    <div className="flex gap-0.5 shrink-0">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <span
+                          key={i}
+                          className="text-lg"
+                          style={{ color: i <= bestSlot.stars ? 'var(--ink-900)' : 'var(--ink-300)' }}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
