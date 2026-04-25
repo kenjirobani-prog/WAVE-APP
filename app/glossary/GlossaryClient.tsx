@@ -1,18 +1,26 @@
 'use client'
 import { useState, useMemo } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import BackButton from '@/components/BackButton'
 import { glossaryData } from '@/data/glossary'
 
 const ALL_ID = 'all'
 
+const CATEGORY_EN: Record<string, string> = {
+  all: 'ALL',
+  wave: 'WAVE',
+  surf: 'SURF',
+  spot: 'SPOT',
+  gear: 'GEAR',
+  weather: 'WEATHER',
+  technique: 'TECHNIQUE',
+}
+
 export default function GlossaryClient() {
-  const router = useRouter()
   const [activeCategory, setActiveCategory] = useState(ALL_ID)
   const [query, setQuery] = useState('')
 
   const allTerms = useMemo(
-    () => glossaryData.flatMap(c => c.terms),
+    () => glossaryData.flatMap(c => c.terms.map(t => ({ ...t, categoryId: c.id, categoryLabel: c.label }))),
     []
   )
 
@@ -21,7 +29,7 @@ export default function GlossaryClient() {
     const terms =
       activeCategory === ALL_ID
         ? allTerms
-        : (glossaryData.find(c => c.id === activeCategory)?.terms ?? [])
+        : allTerms.filter(t => t.categoryId === activeCategory)
     if (!q) return terms
     return terms.filter(
       t =>
@@ -31,33 +39,35 @@ export default function GlossaryClient() {
     )
   }, [activeCategory, query, allTerms])
 
-  const totalCount =
-    activeCategory === ALL_ID
-      ? allTerms.length
-      : (glossaryData.find(c => c.id === activeCategory)?.terms.length ?? 0)
-
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
-      {/* ヘッダー */}
-      <header style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%)', padding: '16px 16px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, cursor: 'pointer', padding: '0 8px 0 0', lineHeight: 1 }}>←</button>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <Link href="/" style={{ textDecoration: 'none' }}><span style={{ fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: '-1px', lineHeight: 1 }}>AI 波予報</span></Link>
-              <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>サーフィン用語集</span>
-            </div>
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+      {/* Header */}
+      <header
+        className="px-5 pt-5 pb-5"
+        style={{ background: 'var(--paper-100)', borderBottom: '4px solid var(--ink-900)' }}
+      >
+        <div className="flex items-center gap-3 mb-3.5">
+          <BackButton />
+          <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-500)' }}>
+            メニューへ戻る
           </div>
         </div>
+        <div className="inline-block" style={{ border: '2px solid var(--ink-900)', padding: '6px 12px' }}>
+          <div className="font-display text-4xl leading-[0.95] tracking-[0.02em]">GLOSSARY</div>
+        </div>
+        <div className="font-jp text-sm font-bold mt-2">用語集</div>
       </header>
 
-      {/* 検索ボックス */}
-      <div className="bg-white border-b border-[#eef1f4] px-4 py-3">
+      {/* Search box */}
+      <div
+        className="px-5 py-4"
+        style={{ background: 'var(--paper-100)', borderBottom: '1px solid var(--ink-900)' }}
+      >
         <div className="relative">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8899aa]"
-            width="15" height="15" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            className="absolute left-3 top-1/2 -translate-y-1/2"
+            width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="#1a1815" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           >
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" />
@@ -67,15 +77,21 @@ export default function GlossaryClient() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="用語を検索..."
-            className="w-full pl-9 pr-4 py-2 rounded-lg text-sm text-[#0a1628] placeholder-[#8899aa] outline-none"
-            style={{ background: '#f0f9ff', border: '0.5px solid #eef1f4' }}
+            className="w-full pl-9 pr-9 py-2.5 font-jp text-sm outline-none"
+            style={{
+              background: 'var(--paper-100)',
+              border: '2px solid var(--ink-900)',
+              color: 'var(--ink-900)',
+            }}
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8899aa]"
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              aria-label="検索をクリア"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1815" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             </button>
@@ -83,79 +99,125 @@ export default function GlossaryClient() {
         </div>
       </div>
 
-      {/* カテゴリタブ */}
+      {/* Category tabs (black bar) */}
       <div
-        className="bg-white border-b border-[#eef1f4] px-3 py-2 flex gap-1.5 overflow-x-auto"
-        style={{ scrollbarWidth: 'none' }}
+        className="flex gap-px overflow-x-auto px-1 py-1"
+        style={{ background: 'var(--ink-900)', scrollbarWidth: 'none', borderBottom: '2px solid var(--ink-900)' }}
       >
         <CategoryTab
-          id={ALL_ID}
-          label="すべて"
+          en={CATEGORY_EN.all}
+          jp="すべて"
+          count={allTerms.length}
           active={activeCategory === ALL_ID}
           onClick={() => setActiveCategory(ALL_ID)}
         />
         {glossaryData.map(cat => (
           <CategoryTab
             key={cat.id}
-            id={cat.id}
-            label={cat.label}
+            en={CATEGORY_EN[cat.id] ?? cat.id.toUpperCase()}
+            jp={cat.label}
+            count={cat.terms.length}
             active={activeCategory === cat.id}
             onClick={() => setActiveCategory(cat.id)}
           />
         ))}
       </div>
 
-      {/* 件数表示 */}
-      <div className="px-4 pt-3 pb-1">
-        <span style={{ fontSize: 11, color: '#8899aa', fontWeight: 500 }}>
-          {query ? `「${query}」の検索結果 ${filtered.length}件` : `${filtered.length}件`}
-        </span>
+      {/* Result count */}
+      <div
+        className="px-5 py-3"
+        style={{ background: 'var(--paper-100)', borderBottom: '1px solid var(--ink-900)' }}
+      >
+        <div
+          className="font-jp text-[11px] font-bold"
+          style={{ color: 'var(--ink-500)' }}
+        >
+          {query ? `「${query}」の検索結果 ${filtered.length}件` : `全 ${filtered.length}件`}
+        </div>
       </div>
 
-      {/* 用語リスト */}
-      <main className="flex-1 overflow-auto pb-4 px-4 pt-1 space-y-2">
+      {/* Term list */}
+      <main className="flex-1 overflow-auto pb-4">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-2">
-            <p className="text-[#8899aa] text-sm">該当する用語がありません</p>
+          <div className="flex flex-col items-center justify-center py-16">
+            <p className="font-jp text-sm" style={{ color: 'var(--ink-500)' }}>該当する用語がありません</p>
           </div>
         ) : (
-          filtered.map(term => (
-            <div
-              key={term.term}
-              className="bg-white rounded-xl border border-[#eef1f4] px-4 py-3.5"
-            >
-              <div className="flex items-baseline gap-2 mb-1">
-                <span style={{ fontSize: 17, fontWeight: 700, color: '#0a1628' }}>{term.term}</span>
-                <span style={{ fontSize: 11, color: '#8899aa' }}>{term.reading}</span>
-              </div>
-              <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.65 }}>{term.description}</p>
-            </div>
-          ))
+          <div style={{ borderBottom: '4px solid var(--ink-900)' }}>
+            {filtered.map((term, i) => {
+              const altBg = i % 2 === 0 ? 'var(--paper-100)' : 'var(--paper-300)'
+              return (
+                <div
+                  key={`${term.categoryId}-${term.term}`}
+                  className="px-5 py-4"
+                  style={{
+                    background: altBg,
+                    borderBottom: '1px solid var(--ink-900)',
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span
+                      className="font-display text-[10px] tracking-[0.08em] px-2 py-0.5"
+                      style={{
+                        background: 'var(--ink-900)',
+                        color: 'var(--paper-100)',
+                      }}
+                    >
+                      {CATEGORY_EN[term.categoryId] ?? term.categoryLabel}
+                    </span>
+                    <span
+                      className="font-jp text-[10px] font-medium"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      {term.reading}
+                    </span>
+                  </div>
+                  <div className="font-jp text-base font-black" style={{ color: 'var(--ink-900)' }}>
+                    {term.term}
+                  </div>
+                  <p
+                    className="font-jp text-[12px] font-medium leading-[1.7] mt-2"
+                    style={{ color: 'var(--ink-700)' }}
+                  >
+                    {term.description}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
         )}
       </main>
-
     </div>
   )
 }
 
 function CategoryTab({
-  id, label, active, onClick,
+  en, jp, count, active, onClick,
 }: {
-  id: string
-  label: string
+  en: string
+  jp: string
+  count: number
   active: boolean
   onClick: () => void
 }) {
   return (
     <button
       onClick={onClick}
-      className="shrink-0 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors"
-      style={active
-        ? { background: '#0284c7', color: '#fff' }
-        : { background: '#f0f9ff', color: '#8899aa' }
-      }
+      className="shrink-0 px-3 py-2 text-center transition-colors"
+      style={{
+        background: active ? 'var(--paper-100)' : 'transparent',
+        color: active ? 'var(--ink-900)' : 'rgba(237,229,213,0.6)',
+        border: 'none',
+        cursor: 'pointer',
+      }}
     >
-      {label}
+      <div className="font-display text-[11px] tracking-[0.06em] leading-none">{en}</div>
+      <div
+        className="font-jp text-[10px] mt-1"
+        style={{ fontWeight: active ? 700 : 500 }}
+      >
+        {jp} <span style={{ opacity: 0.7 }}>({count})</span>
+      </div>
     </button>
   )
 }

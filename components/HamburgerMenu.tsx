@@ -3,15 +3,17 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 
 const CURRENT_YEAR = new Date().getFullYear()
-const MENU_ITEMS = [
-  { label: 'About Us', href: '/about' },
-  { label: '波予報', href: '/' },
-  { label: '台風情報', href: `/typhoon/${CURRENT_YEAR}` },
-  { label: 'サーフィンの始め方', href: '/howto' },
-  { label: '用語集', href: '/glossary' },
-  { label: 'サーフボード図鑑', href: '/surfboards' },
-  { label: 'FAQ', href: '/faq' },
+const MENU_ITEMS: { labelEn: string; labelJp: string; href: string }[] = [
+  { labelEn: 'ABOUT', labelJp: 'About Us', href: '/about' },
+  { labelEn: 'FORECAST', labelJp: '波予報', href: '/' },
+  { labelEn: 'TYPHOON', labelJp: '台風情報', href: `/typhoon/${CURRENT_YEAR}` },
+  { labelEn: 'HOW TO', labelJp: 'サーフィンの始め方', href: '/howto' },
+  { labelEn: 'GLOSSARY', labelJp: '用語集', href: '/glossary' },
+  { labelEn: 'SURFBOARDS', labelJp: 'サーフボード図鑑', href: '/surfboards' },
+  { labelEn: 'FAQ', labelJp: 'よくある質問', href: '/faq' },
 ]
+
+const FORECAST_PATHS = ['/', '/chiba-north', '/chiba-south', '/ibaraki']
 
 export default function HamburgerMenu() {
   const [open, setOpen] = useState(false)
@@ -34,7 +36,6 @@ export default function HamburgerMenu() {
 
   return (
     <>
-      {/* Hamburger icon */}
       <button
         onClick={() => setOpen(true)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 10, alignSelf: 'flex-end', marginBottom: 2 }}
@@ -47,62 +48,126 @@ export default function HamburgerMenu() {
         </svg>
       </button>
 
-      {/* Overlay + Menu */}
       {open && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-          {/* Backdrop */}
           <div
-            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }}
             onClick={() => setOpen(false)}
           />
-          {/* Menu panel */}
-          <div style={{
-            position: 'absolute', top: 0, right: 0, width: 260, height: '100%',
-            background: '#0B2545', padding: '20px 0',
-            animation: 'slideIn 0.2s ease-out',
-          }}>
-            {/* Close button */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 16px 16px' }}>
+          <div
+            className="flex flex-col"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 280,
+              height: '100%',
+              background: 'var(--ink-900)',
+              color: 'var(--paper-100)',
+              animation: 'slideIn 0.2s ease-out',
+            }}
+          >
+            {/* Header */}
+            <div
+              className="px-5 py-5 flex justify-between items-start"
+              style={{ borderBottom: '1px solid rgba(251,248,243,0.15)' }}
+            >
+              <div>
+                <div className="inline-block" style={{ border: '2px solid var(--paper-100)', padding: '6px 12px' }}>
+                  <div className="font-display text-2xl leading-[0.95] tracking-[0.02em]">AI WAVE FORECAST</div>
+                </div>
+                <div
+                  className="font-jp text-[10px] mt-2 font-medium"
+                  style={{ color: 'rgba(251,248,243,0.6)' }}
+                >
+                  AI波予報
+                </div>
+              </div>
               <button
                 onClick={() => setOpen(false)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
                 aria-label="メニューを閉じる"
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbf8f3" strokeWidth="2" strokeLinecap="round">
                   <line x1="6" y1="6" x2="18" y2="18" />
                   <line x1="18" y1="6" x2="6" y2="18" />
                 </svg>
               </button>
             </div>
+
             {/* Menu items */}
-            <nav>
+            <nav className="flex-1 py-2 overflow-auto">
               {MENU_ITEMS.map(item => {
-                const isActive = pathname === item.href || (item.href === '/' && ['/', '/chiba-north', '/chiba-south', '/ibaraki'].includes(pathname))
+                const isActive =
+                  item.href === '/'
+                    ? FORECAST_PATHS.includes(pathname)
+                    : pathname === item.href || pathname.startsWith(item.href + '/')
                 return (
                   <button
                     key={item.href}
                     onClick={() => navigate(item.href)}
+                    className="w-full text-left flex items-center gap-3 px-5 py-3.5"
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      width: '100%', padding: '14px 20px',
-                      background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-                      border: 'none', cursor: 'pointer', textAlign: 'left',
+                      background: isActive ? 'rgba(251,248,243,0.08)' : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
                     }}
                   >
                     {isActive && (
-                      <span style={{ width: 3, height: 20, borderRadius: 2, background: '#fff', flexShrink: 0 }} />
+                      <span
+                        style={{
+                          width: 3,
+                          height: 28,
+                          background: 'var(--paper-100)',
+                          flexShrink: 0,
+                        }}
+                      />
                     )}
-                    <span style={{
-                      fontSize: 15, fontWeight: isActive ? 700 : 400,
-                      color: isActive ? '#fff' : 'rgba(255,255,255,0.6)',
-                      marginLeft: isActive ? 0 : 15,
-                    }}>
-                      {item.label}
-                    </span>
+                    <div
+                      className="flex-1"
+                      style={{ marginLeft: isActive ? 0 : 15 }}
+                    >
+                      <div
+                        className="font-display text-sm leading-none tracking-[0.06em]"
+                        style={{
+                          color: isActive ? 'var(--paper-100)' : 'rgba(251,248,243,0.5)',
+                        }}
+                      >
+                        {item.labelEn}
+                      </div>
+                      <div
+                        className="font-jp text-[12px] mt-1"
+                        style={{
+                          fontWeight: isActive ? 700 : 500,
+                          color: isActive ? 'var(--paper-100)' : 'rgba(251,248,243,0.65)',
+                        }}
+                      >
+                        {item.labelJp}
+                      </div>
+                    </div>
                   </button>
                 )
               })}
             </nav>
+
+            {/* Footer */}
+            <div
+              className="px-5 py-5"
+              style={{ borderTop: '1px solid rgba(251,248,243,0.15)' }}
+            >
+              <div
+                className="font-display text-xs leading-none tracking-[0.06em]"
+                style={{ color: 'rgba(251,248,243,0.5)' }}
+              >
+                JPWAVEFORECAST.COM
+              </div>
+              <div
+                className="font-jp text-[9px] mt-1 font-medium"
+                style={{ color: 'rgba(251,248,243,0.4)' }}
+              >
+                AI波予報
+              </div>
+            </div>
           </div>
           <style>{`
             @keyframes slideIn {
