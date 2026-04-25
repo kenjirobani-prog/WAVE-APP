@@ -76,12 +76,6 @@ export const metadata: Metadata = {
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
-  manifest: '/site.webmanifest',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'AI 波予報',
-  },
 }
 
 export default function RootLayout({
@@ -92,11 +86,7 @@ export default function RootLayout({
   return (
     <html lang="ja" className={inter.variable}>
       <head>
-        <meta name="theme-color" content="#0284c7" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="apple-touch-icon" href="/images/icon.png" />
-        <meta name="apple-mobile-web-app-title" content="AI 波予報" />
+        <meta name="theme-color" content="#1a2845" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify({
