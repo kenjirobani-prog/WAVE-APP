@@ -10,6 +10,7 @@ import { getNextUpdateTime, UPDATE_HOURS_JST } from '@/lib/updateSchedule'
 import { getLatestScheduleHour, padHour } from '@/lib/commentSchedules'
 import AreaTabs from '@/components/AreaTabs'
 import HamburgerMenu from '@/components/HamburgerMenu'
+import RefreshButton from '@/components/RefreshButton'
 import AiCommentLoading from '@/components/AiCommentLoading'
 import DormantCommentPlaceholder from '@/components/DormantCommentPlaceholder'
 import TyphoonBanner from '@/components/TyphoonBanner'
@@ -289,24 +290,29 @@ export default function TopPage() {
         <div className="font-jp text-[11px] font-medium" style={{ color: 'var(--ink-500)' }}>
           AI波予報
         </div>
-        <div
-          className="flex items-center gap-2 mt-[14px] pt-[10px]"
-          style={{ borderTop: '1px solid var(--ink-900)' }}
-        >
-          <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
-            UPDATE
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <div
+              className="flex items-center gap-2 mt-[14px] pt-[10px]"
+              style={{ borderTop: '1px solid var(--ink-900)' }}
+            >
+              <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
+                UPDATE
+              </div>
+              <div className="font-jp text-[10px] font-medium" style={{ color: 'var(--ink-900)' }}>
+                {UPDATE_HOURS_JST.join('・')}時
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
+                NEXT
+              </div>
+              <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-900)' }}>
+                {getNextUpdateTime()}
+              </div>
+            </div>
           </div>
-          <div className="font-jp text-[10px] font-medium" style={{ color: 'var(--ink-900)' }}>
-            {UPDATE_HOURS_JST.join('・')}時
-          </div>
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="font-jp text-[10px] font-bold tracking-[0.08em]" style={{ color: 'var(--ink-500)' }}>
-            NEXT
-          </div>
-          <div className="font-jp text-[11px] font-bold" style={{ color: 'var(--ink-900)' }}>
-            {getNextUpdateTime()}
-          </div>
+          <RefreshButton />
         </div>
       </header>
 
