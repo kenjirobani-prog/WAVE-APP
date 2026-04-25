@@ -266,29 +266,36 @@ export default function ChibaNorthPage() {
         </button>
       </div>
 
-      <main className="flex-1 p-4 space-y-2.5 overflow-auto pb-4">
+      <main className="flex-1 overflow-auto pb-4">
         {tab === 'weekly' ? (
           weeklyLoading ? (
-            <div className="flex items-center justify-center py-16"><p className="text-[#8899aa] text-sm">週間データを読み込み中...</p></div>
+            <div className="flex items-center justify-center py-16">
+              <p className="text-sm font-jp" style={{ color: 'var(--ink-500)' }}>週間データを読み込み中...</p>
+            </div>
           ) : (
-            weeklyData.map(day => (
-              <WeeklyDayCard
-                key={day.dateStr}
-                date={day.date}
-                dateStr={day.dateStr}
-                bestStars={day.bestStars}
-                isCloseout={day.isCloseout}
-                comment={weeklyComments[day.dateStr]}
-                generatedAt={weeklyCommentsAt ?? undefined}
-              />
-            ))
+            <div style={{ borderBottom: '4px solid var(--ink-900)' }}>
+              {weeklyData.map((day, i) => (
+                <WeeklyDayCard
+                  key={day.dateStr}
+                  date={day.date}
+                  dateStr={day.dateStr}
+                  bestStars={day.bestStars}
+                  isCloseout={day.isCloseout}
+                  comment={weeklyComments[day.dateStr]}
+                  generatedAt={weeklyCommentsAt ?? undefined}
+                  index={i}
+                />
+              ))}
+            </div>
           )
         ) : (
           <>
-            <TyphoonBanner />
+            <div className="empty:hidden px-4 pt-4">
+              <TyphoonBanner />
+            </div>
             {/* Recommendation banner (Ace Hotel風 黒帯) */}
             {!loading && bestSlot && (
-              <div className="-mx-4 py-4 px-5" style={{ background: 'var(--paper-100)' }}>
+              <div className="py-4 px-5" style={{ background: 'var(--paper-100)' }}>
                 <div
                   className="flex items-center justify-between"
                   style={{
@@ -322,30 +329,80 @@ export default function ChibaNorthPage() {
                 </div>
               </div>
             )}
-            {/* AI comment */}
+            {/* AI Forecast (Ace Hotel風) */}
             {!loading && (dailyCommentLoading ? (
-              <AiCommentLoading />
+              <div className="px-4 py-4"><AiCommentLoading /></div>
             ) : dailyComment ? (
-              <div style={{ padding: 16, background: '#f0f9ff', borderRadius: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#7dd3fc', letterSpacing: '0.08em', marginBottom: 8 }}>AI{tab === 'today' ? '今日' : '明日'}の予報</div>
-                <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{dailyComment}</p>
-                {dailyCommentAt && (
-                  <div style={{ fontSize: 10, color: '#a0bac8', marginTop: 8, textAlign: 'right' }}>{dailyCommentAt} 生成</div>
-                )}
-              </div>
+              <section
+                className="px-5 py-6"
+                style={{
+                  background: 'var(--paper-100)',
+                  borderTop: '2px solid var(--ink-900)',
+                  borderBottom: '2px solid var(--ink-900)',
+                }}
+              >
+                <div
+                  className="flex justify-between items-center pb-3 mb-4"
+                  style={{ borderBottom: '1px solid var(--ink-900)' }}
+                >
+                  <div>
+                    <div className="font-display text-xl leading-none">AI FORECAST</div>
+                    <div
+                      className="font-jp text-[10px] font-medium mt-1"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      AI{tab === 'today' ? '今日' : '明日'}の予報
+                    </div>
+                  </div>
+                  {dailyCommentAt && (
+                    <div
+                      className="font-jp text-[11px] font-bold"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      {dailyCommentAt} 生成
+                    </div>
+                  )}
+                </div>
+                <div
+                  className="font-jp text-[13px] leading-[1.85] font-medium"
+                  style={{ color: 'var(--ink-900)', whiteSpace: 'pre-wrap' }}
+                >
+                  {dailyComment}
+                </div>
+              </section>
             ) : null)}
             {loading ? (
-              <div className="flex items-center justify-center py-16"><p className="text-[#8899aa] text-sm">読み込み中...</p></div>
+              <div className="flex items-center justify-center py-16">
+                <p className="text-sm font-jp" style={{ color: 'var(--ink-500)' }}>読み込み中...</p>
+              </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <p className="text-[#8899aa] text-sm text-center px-4">{error}</p>
-                <button onClick={() => loadForecast(targetDate)} className="px-6 py-2 bg-[#0284c7] text-white rounded-full text-sm font-semibold">再試行</button>
+                <p className="text-sm text-center px-4 font-jp" style={{ color: 'var(--ink-500)' }}>{error}</p>
+                <button
+                  onClick={() => loadForecast(targetDate)}
+                  className="px-6 py-2 font-jp text-sm font-bold"
+                  style={{ background: 'var(--ink-900)', color: 'var(--paper-100)' }}
+                >
+                  再試行
+                </button>
               </div>
             ) : (
-              spotCards.map(card => {
-                const spot = SPOTS.find(s => s.id === card.spotId)!
-                return <SpotCard key={card.spotId} spot={spot} stars={card.stars} waveHeights={card.waveHeights} isCloseout={card.isCloseout} date={targetDate} />
-              })
+              <div style={{ borderBottom: '4px solid var(--ink-900)' }}>
+                {spotCards.map((card, i) => {
+                  const spot = SPOTS.find(s => s.id === card.spotId)!
+                  return (
+                    <SpotCard
+                      key={card.spotId}
+                      spot={spot}
+                      stars={card.stars}
+                      waveHeights={card.waveHeights}
+                      isCloseout={card.isCloseout}
+                      date={targetDate}
+                      index={i}
+                    />
+                  )
+                })}
+              </div>
             )}
           </>
         )}

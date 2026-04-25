@@ -2,22 +2,31 @@
 
 interface Props {
   stars: number
-  size?: 'sm' | 'md' | 'lg'
-  color?: 'yellow' | 'red'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
+  onDark?: boolean
 }
 
-const sizeMap = { sm: 12, md: 16, lg: 20 }
+const sizeMap = { xs: 11, sm: 14, md: 18, lg: 26 }
 
-export default function StarRating({ stars, size = 'md', color = 'yellow' }: Props) {
-  const s = sizeMap[size]
-  const fill = color === 'red' ? '#ef4444' : '#f59e0b'
-  const empty = '#d1d5db'
+export default function StarRating({ stars, size = 'sm', onDark = false }: Props) {
+  const fontSize = sizeMap[size]
+  const activeColor = onDark ? 'var(--paper-100)' : 'var(--ink-900)'
+  const inactiveColor = onDark ? 'rgba(251,248,243,0.25)' : 'var(--rule-thin)'
+  const filled = Math.max(0, Math.min(5, Math.round(stars)))
+
   return (
-    <span className="inline-flex gap-0.5">
+    <span className="inline-flex gap-px" style={{ lineHeight: 1 }}>
       {[1, 2, 3, 4, 5].map(i => (
-        <svg key={i} width={s} height={s} viewBox="0 0 20 20" fill={i <= stars ? fill : empty}>
-          <path d="M10 1l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32L2.27 6.62l5.34-.78L10 1z" />
-        </svg>
+        <span
+          key={i}
+          style={{
+            fontSize,
+            lineHeight: 1,
+            color: i <= filled ? activeColor : inactiveColor,
+          }}
+        >
+          ★
+        </span>
       ))}
     </span>
   )

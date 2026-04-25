@@ -2,6 +2,8 @@
 import Link from 'next/link'
 import type { Spot } from '@/types'
 import { getWaveSizeLabel } from '@/lib/wave/waveSize'
+import StarRating from '@/components/StarRating'
+import ArrowButton from '@/components/ui/ArrowButton'
 
 interface TimeSlotStars {
   morning: number
@@ -21,6 +23,7 @@ interface Props {
   waveHeights?: TimeSlotWaveHeights
   isCloseout?: boolean
   date?: Date
+  index?: number
 }
 
 function toDateString(d: Date): string {
@@ -30,100 +33,100 @@ function toDateString(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-function renderStars(score: number): string {
-  const filled = Math.max(0, Math.min(5, Math.round(score)))
-  return '★'.repeat(filled) + '☆'.repeat(5 - filled)
-}
-
-export default function SpotCard({ spot, stars, waveHeights, isCloseout, date }: Props) {
+export default function SpotCard({ spot, stars, waveHeights, isCloseout, date, index = 0 }: Props) {
   const href = date ? `/spot/${spot.id}?date=${toDateString(date)}` : `/spot/${spot.id}`
+  const altBg = index % 2 === 0 ? 'var(--paper-100)' : 'var(--paper-300)'
+  const nameEn = (spot.nameEn || spot.name).toUpperCase()
 
-  const timeSlots = [
-    { label: '朝', stars: stars.morning, waveHeight: waveHeights?.morning },
-    { label: '昼', stars: stars.midday, waveHeight: waveHeights?.midday },
-    { label: '夕', stars: stars.evening, waveHeight: waveHeights?.evening },
-  ]
-
-  return (
-    <Link href={href} style={{ textDecoration: 'none' }}>
-      <div
+  if (isCloseout) {
+    return (
+      <Link
+        href={href}
+        className="block p-5"
         style={{
-          background: 'white',
-          border: isCloseout ? '2px solid #f87171' : '0.5px solid #e2e8f0',
-          borderRadius: 12,
-          padding: '12px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          cursor: 'pointer',
-          marginBottom: 8,
-          transition: 'background 0.15s ease',
+          background: 'var(--ink-900)',
+          color: 'var(--paper-100)',
+          borderBottom: '1px solid var(--ink-900)',
+          textDecoration: 'none',
         }}
       >
-        {/* スポット名 */}
-        <span style={{
-          fontSize: 15,
-          fontWeight: 600,
-          color: '#0a1628',
-          minWidth: 72,
-          whiteSpace: 'nowrap',
-        }}>
-          {spot.name}
-        </span>
-
-        {/* 朝・昼・夕 */}
-        {isCloseout ? (
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', flex: 1, textAlign: 'center' }}>
-            終日クローズアウト
-          </span>
-        ) : (
-          <div style={{ display: 'flex', gap: 16, flex: 1, justifyContent: 'center' }}>
-            {timeSlots.map(slot => (
-              <div key={slot.label} style={{
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: 3,
-              }}>
-                <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>
-                  {slot.label}
-                </span>
-                <span style={{ color: '#f59e0b', fontSize: 11, letterSpacing: '0.5px' }}>
-                  {renderStars(slot.stars)}
-                </span>
-                {slot.waveHeight != null && slot.waveHeight > 0 && (
-                  <span style={{
-                    fontSize: 10,
-                    color: '#64748b',
-                    background: '#f1f5f9',
-                    borderRadius: 20,
-                    padding: '1px 7px',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {getWaveSizeLabel(slot.waveHeight)}
-                  </span>
-                )}
-              </div>
-            ))}
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="font-display text-3xl leading-[0.95]">
+              {nameEn}
+            </div>
+            <div
+              className="font-jp text-[13px] font-bold mt-1"
+              style={{ color: 'rgba(251,248,243,0.7)' }}
+            >
+              {spot.name}
+            </div>
+            <div
+              className="font-jp text-xs font-bold mt-2 tracking-[0.08em]"
+              style={{ color: 'var(--alert-red-text-on-dark)' }}
+            >
+              クローズアウト
+            </div>
           </div>
-        )}
-
-        {/* ▶ボタン */}
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: '50%',
-          background: '#378ADD',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          animation: 'pulseRight 1s ease-in-out infinite',
-        }}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M4 2l4 4-4 4" stroke="white" strokeWidth="1.8"
-                  strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <ArrowButton variant="light" />
         </div>
+      </Link>
+    )
+  }
+
+  const timeSlots = [
+    { label: '朝', score: stars.morning, waveHeight: waveHeights?.morning },
+    { label: '昼', score: stars.midday, waveHeight: waveHeights?.midday },
+    { label: '夕', score: stars.evening, waveHeight: waveHeights?.evening },
+  ]
+  const maxScore = Math.max(...timeSlots.map(s => s.score))
+
+  return (
+    <Link
+      href={href}
+      className="block p-5"
+      style={{
+        background: altBg,
+        color: 'var(--ink-900)',
+        borderBottom: '1px solid var(--ink-900)',
+        textDecoration: 'none',
+      }}
+    >
+      <div className="flex items-end justify-between mb-3.5 gap-4">
+        <div className="min-w-0">
+          <div className="font-display text-3xl leading-[0.95]">
+            {nameEn}
+          </div>
+          <div className="font-jp text-[13px] font-bold mt-1">
+            {spot.name}
+          </div>
+        </div>
+        <ArrowButton variant="dark" />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {timeSlots.map(slot => {
+          const isBest = maxScore > 0 && slot.score === maxScore
+          return (
+            <div
+              key={slot.label}
+              className="text-center"
+              style={{
+                background: isBest ? 'var(--ink-900)' : 'var(--paper-100)',
+                color: isBest ? 'var(--paper-100)' : 'var(--ink-900)',
+                border: isBest ? 'none' : '1px solid var(--ink-900)',
+                padding: '12px 8px',
+              }}
+            >
+              <div className="font-jp text-base font-black">{slot.label}</div>
+              <div className="my-2 flex justify-center">
+                <StarRating stars={slot.score} onDark={isBest} size="xs" />
+              </div>
+              <div className="font-jp text-[10px] font-bold">
+                {slot.waveHeight && slot.waveHeight > 0 ? getWaveSizeLabel(slot.waveHeight) : '-'}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </Link>
   )
