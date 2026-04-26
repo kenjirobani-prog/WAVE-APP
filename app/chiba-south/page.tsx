@@ -304,6 +304,52 @@ export default function ChibaSouthPage() {
             <div className="empty:hidden px-4 pt-4">
               <TyphoonBanner />
             </div>
+            {/* AI Forecast (Ace Hotel風) */}
+            {!loading && (dailyCommentLoading ? (
+              <div className="px-4 py-4"><AiCommentLoading /></div>
+            ) : isOffSchedule ? (
+              <div className="px-4 py-4">
+                <DormantCommentPlaceholder target={tab === 'today' ? 'today' : 'tomorrow'} />
+              </div>
+            ) : dailyComment ? (
+              <section
+                className="px-5 py-6"
+                style={{
+                  background: 'var(--paper-100)',
+                  borderTop: '2px solid var(--ink-900)',
+                  borderBottom: '2px solid var(--ink-900)',
+                }}
+              >
+                <div
+                  className="flex justify-between items-center pb-3 mb-4"
+                  style={{ borderBottom: '1px solid var(--ink-900)' }}
+                >
+                  <div>
+                    <div className="font-display text-xl leading-none">AI FORECAST</div>
+                    <div
+                      className="font-jp text-[10px] font-medium mt-1"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      AI{tab === 'today' ? '今日' : '明日'}の予報
+                    </div>
+                  </div>
+                  {dailyCommentAt && (
+                    <div
+                      className="font-jp text-[11px] font-bold"
+                      style={{ color: 'var(--ink-500)' }}
+                    >
+                      {dailyCommentAt} 生成
+                    </div>
+                  )}
+                </div>
+                <div
+                  className="font-jp text-[13px] leading-[1.85] font-medium"
+                  style={{ color: 'var(--ink-900)', whiteSpace: 'pre-wrap' }}
+                >
+                  {dailyComment}
+                </div>
+              </section>
+            ) : null)}
             {/* Recommendation banner (Ace Hotel風 紙面C案) */}
             {!loading && bestSlot && (
               <div className="py-4 px-5" style={{ background: 'var(--paper-100)' }}>
@@ -373,52 +419,6 @@ export default function ChibaSouthPage() {
                 </div>
               </div>
             )}
-            {/* AI Forecast (Ace Hotel風) */}
-            {!loading && (dailyCommentLoading ? (
-              <div className="px-4 py-4"><AiCommentLoading /></div>
-            ) : isOffSchedule ? (
-              <div className="px-4 py-4">
-                <DormantCommentPlaceholder target={tab === 'today' ? 'today' : 'tomorrow'} />
-              </div>
-            ) : dailyComment ? (
-              <section
-                className="px-5 py-6"
-                style={{
-                  background: 'var(--paper-100)',
-                  borderTop: '2px solid var(--ink-900)',
-                  borderBottom: '2px solid var(--ink-900)',
-                }}
-              >
-                <div
-                  className="flex justify-between items-center pb-3 mb-4"
-                  style={{ borderBottom: '1px solid var(--ink-900)' }}
-                >
-                  <div>
-                    <div className="font-display text-xl leading-none">AI FORECAST</div>
-                    <div
-                      className="font-jp text-[10px] font-medium mt-1"
-                      style={{ color: 'var(--ink-500)' }}
-                    >
-                      AI{tab === 'today' ? '今日' : '明日'}の予報
-                    </div>
-                  </div>
-                  {dailyCommentAt && (
-                    <div
-                      className="font-jp text-[11px] font-bold"
-                      style={{ color: 'var(--ink-500)' }}
-                    >
-                      {dailyCommentAt} 生成
-                    </div>
-                  )}
-                </div>
-                <div
-                  className="font-jp text-[13px] leading-[1.85] font-medium"
-                  style={{ color: 'var(--ink-900)', whiteSpace: 'pre-wrap' }}
-                >
-                  {dailyComment}
-                </div>
-              </section>
-            ) : null)}
             {loading ? (
               <div className="flex items-center justify-center py-16">
                 <p className="text-sm font-jp" style={{ color: 'var(--ink-500)' }}>読み込み中...</p>
