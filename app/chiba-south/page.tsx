@@ -187,7 +187,7 @@ export default function ChibaSouthPage() {
   const targetDate = tab !== 'weekly' ? getTargetDate(tab) : today
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f0f9ff]">
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-100)' }}>
       {/* Header (Ace Hotel風 — ロゴBoxとハンバーガーを同行配置) */}
       <header
         className="px-5 pt-[18px] pb-[18px] border-b-4"
