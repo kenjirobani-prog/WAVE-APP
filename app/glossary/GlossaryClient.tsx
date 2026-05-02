@@ -40,7 +40,7 @@ export default function GlossaryClient() {
   }, [activeCategory, query, allTerms])
 
   return (
-    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-300)' }}>
+    <div className="flex-1 flex flex-col" style={{ background: 'var(--paper-100)' }}>
       {/* Header */}
       <header
         className="px-5 pt-5 pb-5"
@@ -144,14 +144,13 @@ export default function GlossaryClient() {
           </div>
         ) : (
           <div style={{ borderBottom: '4px solid var(--ink-900)' }}>
-            {filtered.map((term, i) => {
-              const altBg = i % 2 === 0 ? 'var(--paper-100)' : 'var(--paper-300)'
+            {filtered.map((term) => {
               return (
                 <div
                   key={`${term.categoryId}-${term.term}`}
                   className="px-5 py-4"
                   style={{
-                    background: altBg,
+                    background: 'var(--paper-100)',
                     borderBottom: '1px solid var(--ink-900)',
                   }}
                 >
