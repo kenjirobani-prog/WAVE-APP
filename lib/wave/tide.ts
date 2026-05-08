@@ -131,6 +131,68 @@ export async function fetchJcgTideHourly(area: AreaKey, date: Date): Promise<num
 }
 
 /**
+ * 指定エリアの JCG 検潮所から複数日分の潮位予測を取得。
+ * 返り値: JST日付文字列 YYYY-MM-DD → 24時間配列(cm, CD基準)
+ *
+ * 注意: JCGの検潮ページに含まれる日数分しか取得できない。
+ *       取得できなかった日はMapに含めない（呼び出し側でフォールバック判定）。
+ */
+export async function fetchJcgTideRange(
+  area: AreaKey,
+  startDate: Date,
+  endDate: Date,
+): Promise<Map<string, number[]>> {
+  const station = JCG_STATIONS[area]
+  if (!station) throw new Error(`No JCG station mapped for area: ${area}`)
+
+  const url = `${KAIHO_GAUGE_BASE}?s=${station.id}`
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+
+  const result = new Map<string, number[]>()
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (compatible; WaveForecast/1.0)',
+      },
+      signal: controller.signal,
+      next: { revalidate: 1800 },
+    } as RequestInit)
+    if (!res.ok) throw new Error(`JCG gauge error ${station.id}: ${res.status}`)
+
+    const html = await res.text()
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    const cur = new Date(start)
+    while (cur <= end) {
+      const predictions = parsePredictionTable(html, cur)
+      const jst = new Date(cur.getTime() + 9 * 60 * 60 * 1000)
+      const dateKey = jst.toISOString().split('T')[0]
+
+      const validCount = predictions.filter(v => v !== undefined).length
+      if (validCount >= 12) {
+        const arr = predictions.map((v, h) =>
+          v !== undefined ? v : estimateTideHeight(h)
+        )
+        result.set(dateKey, arr)
+      }
+
+      cur.setDate(cur.getDate() + 1)
+    }
+
+    console.log(`[JCG Range] ${area}(s=${station.id}): ${result.size} days available out of ${
+      Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+    }`)
+    return result
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+/**
  * StormGlass Tide API を多日分まとめて取得。
  * 返り値: JST日付文字列 YYYY-MM-DD → 24時間配列(cm, CD基準)
  * sg(MSL基準, m) → CD基準(cm) 変換: `sg*100 + stormglassOffsetCm`

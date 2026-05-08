@@ -90,7 +90,7 @@ export default function MyPage() {
           <div style={{ padding: 20, background: '#fff', borderRadius: 14, border: '1px solid #eef1f4' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: 8 }}>データの源泉</p>
             <p style={{ fontSize: 14, color: '#4a6fa5', lineHeight: 1.8 }}>
-              波データはStormGlass APIを通じて、NOAA・ECMWF・MeteoFranceなど世界トップの気象機関のモデルを統合して取得しています。潮位は当日が海上保安庁のリアルタイム験潮データ（エリア別観測点：湘南=横浜／千葉北=千葉／千葉南=布良／茨城=小名浜）、翌日以降はStormGlass Tide APIの予測値を使用。天気はWMO天気コードから取得し、UV指数も実データで計算します。
+              波データはOpen-Meteo Marine APIを通じて、ECMWFなど世界の気象機関の波浪モデルから取得しています。潮位は海上保安庁のリアルタイム験潮データ（エリア別観測点：湘南=横浜／千葉北=千葉／千葉南=布良／茨城=小名浜）を使用し、当日は実測値、翌日以降は予測値を取得します。天気はWMO天気コードから取得し、UV指数も実データで計算します。
             </p>
           </div>
 

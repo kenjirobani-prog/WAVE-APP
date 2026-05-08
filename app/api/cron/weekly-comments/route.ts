@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, ensureAnonymousAuth } from '@/lib/firebase'
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
 import { shouldMentionTyphoon, distanceToTokyoKm } from '@/lib/typhoon/mention'
-import { fetchStormGlass, hoursToConditions } from '@/lib/wave/adapters/stormglass'
+import { getForecast } from '@/lib/wave/waveService'
 import { calculateScore, getStarRating, detectWide } from '@/lib/wave/scoring'
 import { SPOTS } from '@/data/spots'
 import type { WaveCondition } from '@/lib/wave/types'
@@ -92,18 +92,15 @@ async function computeWeeklyData(
   const endDate = new Date(start)
   endDate.setDate(endDate.getDate() + 7)
 
-  let hours: Awaited<ReturnType<typeof fetchStormGlass>>
+  let conditions: WaveCondition[]
   try {
-    hours = await fetchStormGlass(areaCoord.lat, areaCoord.lon, start, endDate)
-    console.log(`[weekly-comments] StormGlass ${areaKey}: ${hours.length} hours`)
+    conditions = await getForecast(spot.id, 7)
+    console.log(`[weekly-comments] Forecast ${areaKey}: ${conditions.length} hours`)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error(`[weekly-comments] StormGlass fetch failed for ${areaKey}:`, msg)
+    console.error(`[weekly-comments] Forecast fetch failed for ${areaKey}:`, msg)
     return { ...empty, error: msg }
   }
-
-  // WaveConditionに変換
-  const conditions = hoursToConditions(spot.id, hours)
 
   // 日付ごとにグループ化
   const byDate = new Map<string, WaveCondition[]>()
@@ -447,7 +444,7 @@ export async function GET(request: NextRequest) {
         areaScores[key] = scores
         areaData[key] = summaries
         if (error) fetchErrors[key] = error
-        console.log(`[weekly-comments] ${coord.name}: ${summaries.length} days, ${Object.keys(scores).length} scores (StormGlass)`)
+        console.log(`[weekly-comments] ${coord.name}: ${summaries.length} days, ${Object.keys(scores).length} scores`)
       })
     )
 
@@ -455,7 +452,7 @@ export async function GET(request: NextRequest) {
     const emptyAreas = Object.entries(areaData).filter(([, days]) => days.length === 0).map(([k]) => k)
     if (emptyAreas.length > 0) {
       const detail = Object.entries(fetchErrors).map(([k, v]) => `${k}: ${v}`).join(' | ') || '(no explicit error)'
-      const msg = `StormGlass data empty for areas: ${emptyAreas.join(', ')} — ${detail}`
+      const msg = `Forecast data empty for areas: ${emptyAreas.join(', ')} — ${detail}`
       console.error(`[weekly-comments] ${msg}`)
       return NextResponse.json({ error: msg }, { status: 500 })
     }

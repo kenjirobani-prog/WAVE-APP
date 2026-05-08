@@ -5,6 +5,7 @@ import {
   defaultTide,
   estimateTideHeight,
   fetchJcgTideHourly,
+  fetchJcgTideRange,
 } from '../tide'
 
 const OPEN_METEO_MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine'
@@ -156,19 +157,31 @@ export const openMeteoAdapter: WaveAdapter = {
     const endStr = parseDate(endDate)
     const todayStr = startStr
 
-    const [marine, weather, jcgTide] = await Promise.all([
+    const [marine, weather, jcgToday, jcgRange] = await Promise.all([
       fetchMarineData(spot.lat, spot.lng, startStr, endStr),
       fetchWeatherData(spot.lat, spot.lng, startStr, endStr),
-      fetchJcgTideHourly(spot.area, today).catch(() => defaultTide()),
+      fetchJcgTideHourly(spot.area, today).catch(err => {
+        console.error(`[Tide] JCG today failed for ${spot.area}:`, err)
+        return null as number[] | null
+      }),
+      fetchJcgTideRange(spot.area, today, endDate).catch(err => {
+        console.error(`[Tide] JCG range failed for ${spot.area}:`, err)
+        return new Map<string, number[]>()
+      }),
     ])
 
+    const tideByDate = new Map<string, number[]>(jcgRange)
+    if (jcgToday) {
+      tideByDate.set(todayStr, jcgToday)
+    }
     const fallbackDay = defaultTide()
+
     const times: string[] = marine.hourly.time
     return times.map((time, i) => {
       const dt = new Date(time + '+09:00')
       const hour = parseInt(time.split('T')[1].split(':')[0], 10)
       const thisDateStr = parseDate(dt)
-      const tideHourly = thisDateStr === todayStr ? jcgTide : fallbackDay
+      const tideHourly = tideByDate.get(thisDateStr) ?? fallbackDay
 
       const tideHeight = tideHourly[hour] ?? estimateTideHeight(hour)
       const prevTide = hour > 0
