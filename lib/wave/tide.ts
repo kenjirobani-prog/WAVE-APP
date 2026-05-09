@@ -13,6 +13,17 @@ export const JCG_STATIONS: Record<AreaKey, { id: string; name: string; stormglas
 
 const KAIHO_GAUGE_BASE = 'https://www1.kaiho.mlit.go.jp/TIDE/gauge/gauge.php'
 
+// 気象庁（JMA）潮位推算 地点コード（年1ファイル50KB / 365行）
+// 既存JCG_STATIONSと同じ観測点を選択し、当日(JCG実測)→翌日以降(JMA天文潮位)が連続するように対応付け。
+export const JMA_STATIONS: Record<AreaKey, { code: string; name: string }> = {
+  'shonan':      { code: 'QS', name: '横浜' },
+  'chiba-north': { code: 'QL', name: '千葉' },
+  'chiba-south': { code: 'MR', name: '布良' },
+  'ibaraki':     { code: 'ON', name: '小名浜' },
+}
+
+const JMA_TIDE_BASE = 'https://www.data.jma.go.jp/kaiyou/data/db/tide/suisan/txt'
+
 // フォールバック専用のサイン波推定（JCG/StormGlass両方取得失敗時のみ）
 // JCG実測値がだいたい45〜185cmに収まるため、115±70を標準値とする
 const FALLBACK_CENTER_CM = 115
@@ -131,61 +142,61 @@ export async function fetchJcgTideHourly(area: AreaKey, date: Date): Promise<num
 }
 
 /**
- * 指定エリアの JCG 検潮所から複数日分の潮位予測を取得。
- * 返り値: JST日付文字列 YYYY-MM-DD → 24時間配列(cm, CD基準)
+ * 気象庁の潮位推算テキスト（年1ファイル50KB）を取得し、
+ * その年のすべての日の毎時潮位 Map<YYYY-MM-DD, number[24]> を返す。
  *
- * 注意: JCGの検潮ページに含まれる日数分しか取得できない。
- *       取得できなかった日はMapに含めない（呼び出し側でフォールバック判定）。
+ * 改行 LF、各行 136 bytes、固定長フォーマット:
+ *  cols 1-72  : 24時間 × 3桁 毎時潮位 (cm, CD基準ほぼ同等)
+ *  cols 73-78 : YY MM DD (各2桁右詰め空白padded)
+ *  cols 79-80 : 地点記号
+ *  cols 81-   : 満潮・干潮データ（本実装では未使用）
  */
-export async function fetchJcgTideRange(
+export async function fetchJmaTideTable(
   area: AreaKey,
-  startDate: Date,
-  endDate: Date,
+  year: number,
 ): Promise<Map<string, number[]>> {
-  const station = JCG_STATIONS[area]
-  if (!station) throw new Error(`No JCG station mapped for area: ${area}`)
+  const station = JMA_STATIONS[area]
+  if (!station) throw new Error(`No JMA station mapped for area: ${area}`)
 
-  const url = `${KAIHO_GAUGE_BASE}?s=${station.id}`
+  const url = `${JMA_TIDE_BASE}/${year}/${station.code}.txt`
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 8000)
-
-  const result = new Map<string, number[]>()
+  const timeout = setTimeout(() => controller.abort(), 10000)
 
   try {
     const res = await fetch(url, {
-      headers: {
-        Accept: 'text/html,application/xhtml+xml',
-        'User-Agent': 'Mozilla/5.0 (compatible; WaveForecast/1.0)',
-      },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WaveForecast/1.0)' },
       signal: controller.signal,
-      next: { revalidate: 1800 },
+      next: { revalidate: 86400 * 30 },
     } as RequestInit)
-    if (!res.ok) throw new Error(`JCG gauge error ${station.id}: ${res.status}`)
+    if (!res.ok) throw new Error(`JMA Tide ${station.code}/${year}: ${res.status}`)
 
-    const html = await res.text()
+    const text = await res.text()
+    const lines = text.split('\n').filter(l => l.length >= 78)
 
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    const cur = new Date(start)
-    while (cur <= end) {
-      const predictions = parsePredictionTable(html, cur)
-      const jst = new Date(cur.getTime() + 9 * 60 * 60 * 1000)
-      const dateKey = jst.toISOString().split('T')[0]
+    const result = new Map<string, number[]>()
+    for (const line of lines) {
+      const ymdRaw = line.substring(72, 78)
+      const yy = ymdRaw.substring(0, 2).trim()
+      const mmRaw = ymdRaw.substring(2, 4).trim()
+      const ddRaw = ymdRaw.substring(4, 6).trim()
 
-      const validCount = predictions.filter(v => v !== undefined).length
-      if (validCount >= 12) {
-        const arr = predictions.map((v, h) =>
-          v !== undefined ? v : estimateTideHeight(h)
-        )
-        result.set(dateKey, arr)
+      const yyyy = 2000 + parseInt(yy)
+      const mm = parseInt(mmRaw)
+      const dd = parseInt(ddRaw)
+      if (!Number.isInteger(yyyy) || !Number.isInteger(mm) || !Number.isInteger(dd)) continue
+      if (mm < 1 || mm > 12 || dd < 1 || dd > 31) continue
+
+      const hours: number[] = []
+      for (let h = 0; h < 24; h++) {
+        const v = parseInt(line.substring(h * 3, h * 3 + 3).trim())
+        hours.push(Number.isFinite(v) ? v : 115)
       }
 
-      cur.setDate(cur.getDate() + 1)
+      const dateKey = `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
+      result.set(dateKey, hours)
     }
 
-    console.log(`[JCG Range] ${area}(s=${station.id}): ${result.size} days available out of ${
-      Math.round((end.getTime() - start.getTime()) / 86400000) + 1
-    }`)
+    console.log(`[JMA Tide] ${area}(${station.code}/${station.name}) year=${year}: ${result.size} days loaded`)
     return result
   } finally {
     clearTimeout(timeout)

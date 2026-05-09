@@ -5,7 +5,7 @@ import {
   defaultTide,
   estimateTideHeight,
   fetchJcgTideHourly,
-  fetchJcgTideRange,
+  fetchJmaTideTable,
 } from '../tide'
 
 const OPEN_METEO_MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine'
@@ -157,20 +157,20 @@ export const openMeteoAdapter: WaveAdapter = {
     const endStr = parseDate(endDate)
     const todayStr = startStr
 
-    const [marine, weather, jcgToday, jcgRange] = await Promise.all([
+    const [marine, weather, jcgToday, jmaTable] = await Promise.all([
       fetchMarineData(spot.lat, spot.lng, startStr, endStr),
       fetchWeatherData(spot.lat, spot.lng, startStr, endStr),
       fetchJcgTideHourly(spot.area, today).catch(err => {
         console.error(`[Tide] JCG today failed for ${spot.area}:`, err)
         return null as number[] | null
       }),
-      fetchJcgTideRange(spot.area, today, endDate).catch(err => {
-        console.error(`[Tide] JCG range failed for ${spot.area}:`, err)
+      fetchJmaTideTable(spot.area, today.getFullYear()).catch(err => {
+        console.error(`[Tide] JMA failed for ${spot.area}:`, err)
         return new Map<string, number[]>()
       }),
     ])
 
-    const tideByDate = new Map<string, number[]>(jcgRange)
+    const tideByDate = new Map<string, number[]>(jmaTable)
     if (jcgToday) {
       tideByDate.set(todayStr, jcgToday)
     }
